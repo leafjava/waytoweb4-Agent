@@ -55,13 +55,13 @@ def test_drawdown_limit_stops_without_judge_click(client):
     assert record["stop_requested"] is True
 
 
-def test_engine_stop_is_terminal_before_revoke(client):
+def test_engine_stop_stops_then_revokes(client):
     pid = _mint_and_face(client)
     client.post("/api/engine/start", json={"passport_id": pid})
     r = client.post("/api/engine/stop", json={"passport_id": pid})
     assert r.status_code == 200
     pr = client.get(f"/api/passport/{pid}").json()
-    assert pr["status"] == "stopped"
+    assert pr["status"] == "revoked"
     assert pr["tx_revoke_hash"] is None
     assert pr["stop_requested"] is True
     assert client.post("/api/engine/start", json={"passport_id": pid}).status_code == 409

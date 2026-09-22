@@ -79,6 +79,26 @@ Status: complete for code/stub/offline scope; real Kiln remains a field validati
 
 Validation: full combined suite: 118 passed. No real Kiln request was made; no public transaction was broadcast.
 
-### T5–T6
+### T5 — frontend flow and two-round rehearsal
+
+Status: complete for offline scope.
+
+- React SpecCard now performs prepare → explicit confirmation → mint with request IDs; it never sends a raw Spec to mint.
+- Status colors and cards support prepared/confirmed/authorized/pending/uncertain states; transaction fields remain empty in mock mode.
+- Added `scripts/rehearse.py --mode offline`, which runs round A, then a fresh round B with the same frozen intent and a policy allowlist removal. The worker stops round B automatically with `POLICY_REVOKED` and records the shared comparison ID.
+
+Validation: offline rehearsal completed and produced `comparison.json`; frontend `npm run build` passed. Browser interaction is still a manual field check, not claimed here.
+
+### T6 — delivery package
+
+Status: complete for local delivery package.
+
+- Updated README to describe the real offline behavior, isolated chain worker, explicit Kiln modes, null simulation hashes, and local verification commands.
+- Added `docs/INTEGRATION-HANDOFF.md` with commit order, test results, rollback and field-only checklist.
+- Added the two-round rehearsal output contract and evidence verifier invocation.
+
+Validation: Python 118 passed; Node chain 2 passed; frontend build passed; offline rehearsal and offline evidence verification passed.
+
+Field acceptance still required: real Kiln `gpt-oss-120b` call with API usage, at least one authorized public testnet transaction and hash, a fresh two-round live run with changed policy condition and stop log, final README token table, video and Deck. These are intentionally not fabricated locally.
 
 Status: pending.

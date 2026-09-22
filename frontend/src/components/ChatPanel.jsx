@@ -29,7 +29,7 @@ export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
         setBusy(false)
         return
       }
-      setDraft((d) => ({ ...d, locked_spec: spec, draft_id: draft.draft_id }))
+      setDraft((d) => ({ ...d, locked_spec: spec, passport_id: null, mint: null, draft_id: draft.draft_id }))
       onSpecLocked?.(spec)
     } catch (e) {
       setError(e.message || String(e))
