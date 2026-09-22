@@ -40,7 +40,35 @@
         "model_may_override_hard_limit": false
       },
       "backend_label": "mock"
+    },
+    "0x668a84d7f7334fc7": {
+      "passport_id": "0x668a84d7f7334fc7",
+      "spec_hash": "0x668a84d7f7334fc765c46c12f2e77e0ac526d686d1b53deaaf5f0f6faf3ec97d",
+      "spec": {
+        "mode": "copy",
+        "leaderId": "leader-demo-001",
+        "venue": "paper",
+        "notionalUsd": 500.0,
+        "maxLossUsd": 50.0,
+        "expiry": "2026-09-24T11:23:32.200571Z",
+        "faceVerified": false,
+        "paper": true
+      },
+      "leader_id": "leader-demo-001",
+      "notional_usd": 500.0,
+      "fee_bps": 25,
+      "expiry": "2026-09-24T11:23:32.200571Z",
+      "face_verified": true,
+      "status": "active",
+      "tx_mint_hash": "0x76a6d3f2c000b05345d1e1ba2e562c3f2c6719f6e4305af207f31399bde5b050",
+      "tx_revoke_hash": null,
+      "engine_running": true,
+      "engine_started_at": "2026-09-22T11:23:39.600558+00:00",
+      "drawdown_usd": 0.0,
+      "trip_seconds": 60,
+      "last_verdict": null,
+      "backend_label": "mock"
     }
   },
-  "saved_at": "2026-09-22T05:51:04.825964+00:00"
+  "saved_at": "2026-09-22T11:23:39.600558+00:00"
 }

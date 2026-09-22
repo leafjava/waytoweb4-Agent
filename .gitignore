@@ -1,3 +1,37 @@
-node_modules
-/node_modules
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtualenvs
+.venv/
+venv/
+env/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Node / Vite
 node_modules/
+/node_modules
+frontend/dist/
+.vite/
+
+# Backend runtime data (mock ledger — recreated by the demo)
+/backend/var/passports.json
+
+# Coverage / build artifacts
+.coverage
+htmlcov/
+*.log
