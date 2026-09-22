@@ -14,7 +14,10 @@ from backend.app.deps import get_state
 from backend.app.main import create_app
 from backend.app.policy import write_policy
 from backend.app.state import AppState
-from backend.tests.helpers import valid_spec
+
+
+def valid_spec():
+    return {"mode": "copy", "leaderId": "leader-demo-001", "venue": "paper", "notionalUsd": 500, "maxLossUsd": 50, "expiry": "2099-01-01T00:00:00+00:00", "faceVerified": False, "paper": True}
 
 
 def _prepare(client, spec, prefix):
