@@ -48,6 +48,7 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 | Drawdown hard gate | RedLine rule gate | `agent/redline_agent/rule_gate.py` |
 | Event classification (海力士/杠杆/...) | RedLine LLM classifier | `agent/redline_agent/llm_classifier.py` |
 | Face verification, start/stop | Backend | `backend/app/routers/{face,engine}.py` |
+| Provisional waytoweb4 adapter contract | Backend + docs | `backend/app/execution_contract.py`, `docs/WAYTOWEB4-INTERFACE-CONTRACT.md` |
 | Passport mint / revoke | Backend + isolated Node worker | `backend/app/routers/passport.py`, `chain/` |
 | Mock ledger / Sepolia keccak | Backend | `backend/app/passport_backends/` |
 | Web UI | Frontend | `frontend/src/` |
@@ -108,6 +109,7 @@ ASCII ≈ 1 tok / 4 chars) and 8 ms per call.
   paths record tokens through the same `TokenLogger`.
 - **Passport**: offline mode never fabricates a tx hash. The local chain worker uses a temporary EVM and the v2 contract; public Sepolia broadcast is deliberately not enabled in this local pass.
 - **Engine**: the paper worker is a separate process with drawdown, expiry, policy and lease hard stops. No real waytoweb4 service is called.
+- **waytoweb4 interface**: official endpoint documentation is still pending. The paper worker consumes the provisional internal adapter DTO so a documented HTTP transport can replace it without changing authorization rules.
 - **Face gate**: a button. No real face recognition.
 
 ## Tests

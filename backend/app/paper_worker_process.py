@@ -39,7 +39,7 @@ def main():
     if config.get("op") != "init":
         emit("stopped", reason="INIT_REQUIRED"); return 2
     leader = config["leader_id"]
-    max_loss = float(config["max_loss_usd"])
+    max_loss = int(config["max_loss_cents"]) / 100
     expiry = datetime.fromisoformat(config["expiry"].replace("Z", "+00:00")).astimezone(timezone.utc)
     policy_path = Path(config["policy_path"])
     lease_s = float(config.get("lease_s", 3.0))

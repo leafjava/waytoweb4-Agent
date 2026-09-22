@@ -137,3 +137,13 @@ Status: implementation and offline validation complete; authorized field transac
 - Split the two-round rehearsal into independent run directories so the second intent can no longer overwrite the first run's evidence.
 
 Validation: Python 131 passed; Node chain 4 passed; frontend production build passed; both independent offline run directories passed evidence verification. No public transaction was broadcast.
+
+### Provisional waytoweb4 adapter boundary
+
+Status: mock contract complete; official endpoint mapping pending teammate documentation.
+
+- Added a frozen, extra-forbidden execution start DTO with request/run/passport IDs, confirmed Spec hash, integer cents, expiry and paper-only mode.
+- The existing isolated paper worker now consumes that DTO, so offline development exercises the same trust boundary that a future HTTP adapter must satisfy.
+- Added `docs/WAYTOWEB4-INTERFACE-CONTRACT.md` with idempotency, stop, status, evidence and official-document mapping requirements. It deliberately contains no guessed endpoint names or authentication scheme.
+
+Validation: Python 133 passed after adding adapter-boundary and unconfirmed-record tests.

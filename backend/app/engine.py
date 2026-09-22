@@ -12,6 +12,7 @@ from typing import Any
 
 from .authorization import AuthorizationError, authorization_service
 from .audit import make_event
+from .execution_contract import build_start_command
 from .intent import is_expired
 from .policy import write_policy
 from .state import AppState, PassportRecord
@@ -42,7 +43,8 @@ class PaperWorkerController:
             stderr=asyncio.subprocess.PIPE, env=env,
         )
         self.reader_task = asyncio.create_task(self._read())
-        await self._send({"op": "init", "leader_id": rec.leader_id, "max_loss_usd": rec.spec["maxLossUsd"], "expiry": rec.expiry, "policy_path": str(policy_path), "lease_s": 3.0})
+        command = build_start_command(rec, str(policy_path))
+        await self._send({"op": "init", **command.model_dump(mode="json")})
         try:
             await asyncio.wait_for(self.ready.wait(), 2)
         except TimeoutError as exc:
