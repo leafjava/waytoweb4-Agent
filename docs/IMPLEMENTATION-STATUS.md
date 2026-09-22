@@ -56,6 +56,18 @@ Validation: Node chain tests 2 passed; combined Python suite 112 passed, includi
 
 Dependency note: Ganache reports a µWS native-binary fallback on Node 24 and npm reports advisories in its transitive development tree; the tests use the JavaScript fallback successfully.
 
-### T3–T6
+### T3 — independent paper worker and hard stops
+
+Status: complete for offline scope.
+
+- Replaced the broken in-process asyncio loop with a credential-free Python subprocess and controller.
+- Worker checks drawdown, expiry, atomic policy version/leader allowlist, invalid inputs and a 3-second controller lease every 100ms.
+- Controller heartbeats every 500ms, records stop reason, handles protocol errors, waits for acknowledgement and terminates an unresponsive process.
+- RedLine and explicit stop routes share the worker stop path; mock authorization is marked revoked without inventing a transaction hash, while local-chain records become revoke_pending.
+- Added tests for no-button DD_LIMIT, POLICY_REVOKED and real controller-disconnect process exit.
+
+Validation: T3 engine/RedLine/integration tests: 11 passed. Full combined suite remains the gate after T4 changes.
+
+### T4–T6
 
 Status: pending.

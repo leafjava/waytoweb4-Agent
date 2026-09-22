@@ -58,15 +58,18 @@ async def engine_stop(
 
 
 @router.post("/tick", response_model=EngineTickResponse)
-def engine_tick(
+async def engine_tick(
     req: EngineStartRequest,
     amount: float = Query(..., ge=0.0, description="Drawdown advance in USD."),
     state: AppState = Depends(get_state),
 ):
     try:
-        rec = tick_drawdown(req.passport_id, amount, state)
+        rec = await tick_drawdown(req.passport_id, amount, state)
     except KeyError:
         raise not_found(f"passport {req.passport_id} not found")
+    except ValueError as e:
+        from ..errors import conflict
+        raise conflict(str(e))
     state.append_event(make_event(
         "engine_tick", req.passport_id, {"drawdown_usd": rec.drawdown_usd},
     ))
