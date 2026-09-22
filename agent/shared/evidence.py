@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import os
 import threading
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -28,10 +30,14 @@ class EvidenceWriter:
 
 
 _writer: EvidenceWriter | None = None
+_active_writer: ContextVar[EvidenceWriter | None] = ContextVar("active_evidence_writer", default=None)
 
 
 def get_evidence_writer() -> EvidenceWriter | None:
     global _writer
+    active = _active_writer.get()
+    if active is not None:
+        return active
     root, run_id = os.environ.get("EVIDENCE_DIR"), os.environ.get("RUN_ID")
     if not root or not run_id:
         return None
@@ -40,4 +46,14 @@ def get_evidence_writer() -> EvidenceWriter | None:
     return _writer
 
 
-__all__ = ["EvidenceWriter", "get_evidence_writer"]
+@contextmanager
+def use_evidence_writer(writer: EvidenceWriter | None):
+    """Bind call evidence to the current backend workflow context."""
+    token = _active_writer.set(writer)
+    try:
+        yield
+    finally:
+        _active_writer.reset(token)
+
+
+__all__ = ["EvidenceWriter", "get_evidence_writer", "use_evidence_writer"]

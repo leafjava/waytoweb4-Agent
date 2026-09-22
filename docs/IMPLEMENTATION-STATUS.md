@@ -63,7 +63,7 @@ Status: complete for offline scope.
 - Replaced the broken in-process asyncio loop with a credential-free Python subprocess and controller.
 - Worker checks drawdown, expiry, atomic policy version/leader allowlist, invalid inputs and a 3-second controller lease every 100ms.
 - Controller heartbeats every 500ms, records stop reason, handles protocol errors, waits for acknowledgement and terminates an unresponsive process.
-- RedLine and explicit stop routes share the worker stop path; mock authorization is marked revoked without inventing a transaction hash, while local-chain records become revoke_pending.
+- RedLine, worker hard stops, explicit engine stop and passport revoke share one stop-and-revoke path. Mock authorization is marked revoked without inventing a transaction hash; local-chain authorization becomes revoked only after a successful receipt and revoked readback.
 - Added tests for no-button DD_LIMIT, POLICY_REVOKED and real controller-disconnect process exit.
 
 Validation: T3 engine/RedLine/integration tests: 11 passed. Full combined suite remains the gate after T4 changes.
@@ -74,7 +74,7 @@ Status: complete for code/stub/offline scope; real Kiln remains a field validati
 
 - `KILN_MODE=live` now fails closed when the key is missing; it never silently selects mock.
 - HTTP responses are checked for the configured `gpt-oss-120b` model. Usage source is classified as `api`, `estimated` or `unavailable`; all calls retain flow, model, request ID, latency and 180W-derived energy estimate.
-- Added a strict `KilnEventClassifier` under the teammate EventClassifier protocol. Rule-first hard trips still avoid a model call.
+- Added a strict `KilnEventClassifier` under the teammate EventClassifier protocol and wired it into backend RedLine requests in live mode. Rule-first hard trips still avoid a model call.
 - Added per-run `manifest.json`, `intent.json`, `events.jsonl`, `calls.jsonl`, `chain.jsonl` and a fail-closed evidence verifier. Live verification rejects offline mode, estimated/unavailable usage, malformed hashes and missing stop evidence.
 
 Validation: full combined suite: 118 passed. No real Kiln request was made; no public transaction was broadcast.
@@ -110,3 +110,17 @@ Status: synchronized with teammate `master` at `fdb3c8a`.
 - Removed tracked runtime/build artifacts deleted by the teammate mainline.
 
 Validation: Python 118 passed; Node chain 2 passed; frontend production build passed; offline two-round rehearsal passed.
+
+### Post-integration hardening
+
+Status: local stop/revoke and live Kiln routing complete; external field calls remain pending.
+
+- Centralized revocation in the authorization service so every stop source uses the same state transition, receipt validation, readback validation and evidence path.
+- Added local-EVM integration coverage proving both RedLine TRIP and drawdown hard stop revoke the contract passport, rather than only changing the UI state.
+- Backend RedLine now selects `KilnEventClassifier` for live HTTP mode and the deterministic classifier for offline mode.
+- Live Kiln rejects any requested or returned model other than `gpt-oss-120b`, including responses that omit the model identity.
+- Bound token-call evidence to the active backend run, avoiding a separate environment-only evidence destination.
+- Enforced the teammate UI's face-gate requirement in the backend engine boundary, so direct API calls cannot bypass it.
+- Serialized revoke attempts per Passport and added stop-during-mint recovery: once a pending mint confirms, an already-requested stop immediately performs and verifies the revoke.
+
+Validation: Python 125 passed; Node chain 2 passed; frontend production build passed. No real Kiln request or public-chain transaction was made by this hardening pass.

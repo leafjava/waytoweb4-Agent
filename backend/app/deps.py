@@ -50,4 +50,13 @@ def get_trip_seconds() -> int:
     return settings.trip_seconds
 
 
-__all__ = ["get_state", "get_passport_backend", "get_trip_seconds", "close_passport_backend"]
+def get_redline_judge():
+    from agent.follow_agent.kiln_client import HttpKilnClient, build_kiln_client
+    from agent.redline_agent import HynixMockClassifier, KilnEventClassifier, RedLineJudge
+
+    client = build_kiln_client()
+    classifier = KilnEventClassifier(client) if isinstance(client, HttpKilnClient) else HynixMockClassifier()
+    return RedLineJudge(classifier=classifier)
+
+
+__all__ = ["get_state", "get_passport_backend", "get_trip_seconds", "get_redline_judge", "close_passport_backend"]

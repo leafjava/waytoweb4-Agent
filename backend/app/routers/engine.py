@@ -5,6 +5,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, Query
 
 from ..audit import make_event
+from ..authorization import AuthorizationError
 from ..deps import get_passport_backend, get_state, get_trip_seconds
 from ..engine import start_engine, stop_engine, tick_drawdown
 from ..errors import not_found
@@ -25,9 +26,10 @@ async def engine_start(
     req: EngineStartRequest,
     state: AppState = Depends(get_state),
     trip_seconds: int = Depends(get_trip_seconds),
+    backend=Depends(get_passport_backend),
 ):
     try:
-        rec = await start_engine(req.passport_id, state, trip_seconds)
+        rec = await start_engine(req.passport_id, state, trip_seconds, backend)
     except KeyError:
         raise not_found(f"passport {req.passport_id} not found")
     except ValueError as e:
@@ -49,26 +51,12 @@ async def engine_stop(
     backend=Depends(get_passport_backend),
 ):
     try:
-        rec = await stop_engine(req.passport_id, state)
+        rec = await stop_engine(req.passport_id, state, backend)
     except KeyError:
         raise not_found(f"passport {req.passport_id} not found")
-    if rec.authorization_status != "revoked":
-        if backend.label == "local" and rec.chain_passport_id:
-            try:
-                result = await backend.revoke_record(rec, "STOP_REQUESTED")
-                rec.tx_revoke_hash = result["tx_hash"]
-            except Exception as exc:
-                rec.authorization_status = "uncertain"
-                rec.status = "uncertain"
-                state.upsert_passport(rec)
-                from ..errors import conflict
-                raise conflict(f"revoke outcome uncertain: {exc}")
-        rec.authorization_status = "revoked"
-        rec.status = "revoked"
-        state.upsert_passport(rec)
-    elif rec.status != "revoked":
-        rec.status = "revoked"
-        state.upsert_passport(rec)
+    except AuthorizationError as exc:
+        from ..errors import conflict
+        raise conflict(str(exc))
     state.append_event(make_event(
         "engine_stop", req.passport_id, {"drawdown_usd": rec.drawdown_usd},
     ))

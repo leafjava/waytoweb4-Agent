@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 
 def test_check_returns_missing_fields(client):
     r = client.post("/api/spec/check", json={"user_text": "500 USD 跟单"})
@@ -63,3 +65,15 @@ def test_clarify_returns_question(client):
     # Mock clarifier picks "leaderId" as the first missing field.
     assert body["field"] == "leaderId"
     assert body["question"]  # any non-empty question
+
+
+def test_spec_calls_are_written_to_backend_run_evidence(client, fresh_state):
+    response = client.post(
+        "/api/spec/emit",
+        json={"user_text": "follow leader-demo-001 500 USD max loss 50 USD 48 hours"},
+    )
+    assert response.status_code == 200
+    calls_path = fresh_state.evidence.dir / "calls.jsonl"
+    calls = [json.loads(line) for line in calls_path.read_text(encoding="utf-8").splitlines()]
+    assert calls[-1]["run_id"] == fresh_state.run_id
+    assert calls[-1]["flow"] == "spec_emit"

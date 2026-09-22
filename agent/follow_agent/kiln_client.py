@@ -244,7 +244,7 @@ class HttpKilnClient:
         # Try the OpenAI-style usage block first; fall back to a rough
         # approximation if the provider omits it.
         response_model = body.get("model")
-        if response_model and response_model != self.model:
+        if response_model != self.model:
             raise RuntimeError(f"Kiln response model mismatch: expected {self.model!r}, got {response_model!r}")
         usage = body.get("usage") or {}
         usage_source = "api" if "prompt_tokens" in usage and "completion_tokens" in usage else "unavailable"
@@ -294,12 +294,16 @@ def build_kiln_client(env: Mapping[str, str] | None = None) -> KilnClient:
     src: Mapping[str, str] = env if env is not None else os.environ  # type: ignore[assignment]
     mode = (src.get("KILN_MODE") or _env("KILN_MODE") or "offline").lower()
     key = src.get(KILN_API_KEY_ENV) or _env(KILN_API_KEY_ENV)
-    if mode == "live" and not key:
-        raise RuntimeError("KILN_MODE=live requires KILN_API_KEY; refusing mock fallback")
-    if key:
+    if mode not in {"offline", "live"}:
+        raise RuntimeError(f"KILN_MODE must be 'offline' or 'live'; got {mode!r}")
+    if mode == "live":
+        if not key:
+            raise RuntimeError("KILN_MODE=live requires KILN_API_KEY; refusing mock fallback")
         base = src.get(KILN_API_BASE_ENV) or _env(KILN_API_BASE_ENV) or DEFAULT_API_BASE
         model = src.get(KILN_MODEL_ENV) or _env(KILN_MODEL_ENV) or DEFAULT_MODEL
-        return HttpKilnClient(api_base=base, api_key=key, model=model)
+        if model != DEFAULT_MODEL:
+            raise RuntimeError(f"Challenge A requires KILN_MODEL={DEFAULT_MODEL}; got {model!r}")
+        return HttpKilnClient(api_base=base, api_key=key, model=DEFAULT_MODEL)
     return MockKilnClient()
 
 

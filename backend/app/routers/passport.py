@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Path
 from ..audit import make_event
 from ..authorization import AuthorizationError, authorization_service
 from ..deps import get_passport_backend, get_state
+from ..engine import stop_engine
 from ..errors import conflict, not_found, spec_error
 from ..models import ConfirmRequest, MintRequest, MintResponse, PrepareRequest, RevokeResponse
 from ..state import AppState
@@ -64,39 +65,16 @@ async def mint_passport(req: MintRequest, state: AppState = Depends(get_state), 
 
 @router.post("/{passport_id}/revoke", response_model=RevokeResponse)
 async def revoke_passport(passport_id: str = Path(...), state: AppState = Depends(get_state), backend=Depends(get_passport_backend)):
-    async with state._lock:
-        rec = state.passports.get(passport_id)
-        if rec is None:
-            raise not_found(f"passport {passport_id} not found")
-        if rec.authorization_status == "revoked":
-            raise conflict(f"passport {passport_id} already revoked")
-        previous = rec.authorization_status
-        rec.stop_requested = True
-        rec.engine_running = False
-        rec.engine_status = "stopped"
-        rec.authorization_status = "revoked" if backend.label == "mock" else "revoke_pending"
-        rec.status = rec.authorization_status
-        rec.tx_revoke_hash = None
-        state._save_locked()
-    if backend.label == "local":
-        try:
-            result = await backend.revoke_record(rec, "STOP_REQUESTED")
-        except Exception as exc:
-            async with state._lock:
-                rec.authorization_status = "uncertain"
-                rec.status = "uncertain"
-                state._save_locked()
-            raise conflict(f"revoke outcome uncertain: {exc}")
-        async with state._lock:
-            rec.tx_revoke_hash = result["tx_hash"]
-            rec.authorization_status = "revoked"
-            rec.status = "revoked"
-            state._save_locked()
-        if state.evidence:
-            state.evidence.append("chain.jsonl", {"run_id": state.run_id, "action": "revoke_confirmed", "passport_id": passport_id, **result})
-        state.append_event(make_event("revoke", passport_id, {"tx_hash": rec.tx_revoke_hash, "previous_status": previous}))
-    else:
-        state.append_event(make_event("revoke_simulated", passport_id, {"previous_status": previous}))
+    rec = state.passports.get(passport_id)
+    if rec is None:
+        raise not_found(f"passport {passport_id} not found")
+    if rec.authorization_status == "revoked":
+        raise conflict(f"passport {passport_id} already revoked")
+    previous = rec.authorization_status
+    try:
+        rec = await stop_engine(passport_id, state, backend, "PASSPORT_REVOKE")
+    except AuthorizationError as exc:
+        raise conflict(str(exc))
     return RevokeResponse(passport_id=passport_id, tx_hash=rec.tx_revoke_hash, status=rec.authorization_status, previous_status=previous)
 
 

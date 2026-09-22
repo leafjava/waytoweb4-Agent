@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from .helpers import prepare_confirm_mint
+from agent.redline_agent import KilnEventClassifier
+from backend.app.deps import get_redline_judge
 
 
 def _mint_and_face(client) -> str:
@@ -41,3 +43,10 @@ def test_redline_inject_hynix_trips(client):
 def test_redline_judge_unknown_returns_404(client):
     r = client.post("/api/redline/judge", json={"passport_id": "0xnope"})
     assert r.status_code == 404
+
+
+def test_live_mode_wires_kiln_classifier(monkeypatch):
+    monkeypatch.setenv("KILN_MODE", "live")
+    monkeypatch.setenv("KILN_API_KEY", "test-key")
+    judge = get_redline_judge()
+    assert isinstance(judge.classifier, KilnEventClassifier)

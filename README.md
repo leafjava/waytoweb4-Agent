@@ -59,7 +59,7 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 |---|---|---|
 | `PASSPORT_BACKEND` | `mock` | `mock` (offline simulation), `local` (temporary Ganache EVM), or `sepolia` (disabled until a real bridge is configured). |
 | `KILN_MODE` | `offline` | `offline` permits mock; `live` requires `KILN_API_KEY` and never falls back. |
-| `KILN_API_KEY` | (unset) | Set to switch from `MockKilnClient` to `HttpKilnClient`. |
+| `KILN_API_KEY` | (unset) | Required with `KILN_MODE=live`; ignored in offline mode to prevent accidental live calls. |
 | `TRIP_SECONDS` | `60` | Seconds for the mock engine drawdown to reach `maxLossUsd`. |
 | `LEDGER_PATH` | `backend/var/passports.json` | Mock passport ledger. |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | CORS origin for the backend. |

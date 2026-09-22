@@ -21,6 +21,13 @@ def test_engine_start_requires_authorized_passport(client):
     assert r.status_code == 409
 
 
+def test_engine_start_requires_face_gate_after_authorization(client):
+    body = prepare_confirm_mint(client)
+    response = client.post("/api/engine/start", json={"passport_id": body["passport_id"]})
+    assert response.status_code == 409
+    assert "face gate" in response.json()["detail"]
+
+
 def test_engine_start_and_tick(client):
     pid = _mint_and_face(client)
     r = client.post("/api/engine/start", json={"passport_id": pid})

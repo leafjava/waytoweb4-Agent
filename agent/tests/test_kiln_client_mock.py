@@ -48,7 +48,7 @@ def test_mock_returns_canned_spec_json() -> None:
 
 
 def test_factory_picks_http_when_key_present() -> None:
-    client = build_kiln_client(env={"KILN_API_KEY": "test-key"})
+    client = build_kiln_client(env={"KILN_MODE": "live", "KILN_API_KEY": "test-key"})
     assert isinstance(client, HttpKilnClient)
     assert client.model == "gpt-oss-120b"
 
@@ -58,15 +58,15 @@ def test_factory_picks_mock_when_no_key() -> None:
     assert isinstance(client, MockKilnClient)
 
 
-def test_factory_honors_custom_model() -> None:
-    client = build_kiln_client(
-        env={
-            "KILN_API_KEY": "k",
-            "KILN_MODEL": "custom-120b",
-        }
-    )
-    assert isinstance(client, HttpKilnClient)
-    assert client.model == "custom-120b"
+def test_factory_rejects_non_challenge_model() -> None:
+    with pytest.raises(RuntimeError, match="requires KILN_MODEL=gpt-oss-120b"):
+        build_kiln_client(
+            env={
+                "KILN_API_KEY": "k",
+                "KILN_MODE": "live",
+                "KILN_MODEL": "custom-120b",
+            }
+        )
 
 
 def test_mock_records_into_default_logger(fresh_logger: TokenLogger) -> None:

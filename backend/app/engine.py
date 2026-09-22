@@ -10,20 +10,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from agent.redline_agent import HynixMockClassifier, RedLineJudge
-
+from .authorization import AuthorizationError, authorization_service
 from .intent import is_expired
 from .policy import write_policy
 from .state import AppState, PassportRecord
 
-_JUDGE = RedLineJudge(classifier=HynixMockClassifier())
 _WORKERS: dict[str, "PaperWorkerController"] = {}
 
 
 class PaperWorkerController:
-    def __init__(self, passport_id: str, state: AppState):
+    def __init__(self, passport_id: str, state: AppState, backend):
         self.passport_id = passport_id
         self.state = state
+        self.backend = backend
         self.process: asyncio.subprocess.Process | None = None
         self.reader_task: asyncio.Task | None = None
         self.heartbeat_task: asyncio.Task | None = None
@@ -94,11 +93,17 @@ class PaperWorkerController:
                 rec.stop_requested = True
                 rec.engine_running = False
                 rec.engine_status = "stop_failed" if failed else "stopped"
-                rec.status = rec.engine_status
+                if rec.authorization_status not in {"revoked", "uncertain"}:
+                    rec.status = rec.engine_status
                 rec.stop_reason = reason
-                if rec.backend_label == "mock": rec.authorization_status = "revoked"
-                elif rec.authorization_status == "authorized": rec.authorization_status = "revoke_pending"
                 self.state._save_locked()
+        try:
+            await authorization_service.revoke(self.state, self.passport_id, self.backend, reason)
+        except (AuthorizationError, KeyError):
+            # The authorization service has already persisted an uncertain
+            # outcome. The worker must remain stopped even when chain status
+            # cannot be confirmed.
+            pass
 
     async def tick(self, amount: float):
         await self._send({"op": "tick", "amount": amount})
@@ -130,15 +135,17 @@ class PaperWorkerController:
             except (asyncio.CancelledError, Exception): pass
 
 
-async def start_engine(passport_id: str, state: AppState, trip_seconds: int) -> PassportRecord:
+async def start_engine(passport_id: str, state: AppState, trip_seconds: int, backend) -> PassportRecord:
     rec = state.passports.get(passport_id)
     if rec is None: raise KeyError(passport_id)
     if rec.authorization_status != "authorized" or rec.confirmed_spec_hash != rec.spec_hash:
         raise ValueError(f"passport {passport_id} is not authorized")
+    if not rec.face_verified:
+        raise ValueError(f"passport {passport_id} has not passed the face gate")
     if rec.stop_requested or is_expired(rec.expiry) or rec.engine_status in {"stopped", "stop_failed"}:
         raise ValueError(f"passport {passport_id} is stopped or expired")
     if rec.engine_running: return rec
-    controller = PaperWorkerController(passport_id, state)
+    controller = PaperWorkerController(passport_id, state, backend)
     rec.engine_status = "starting"; rec.status = "starting"; state.upsert_passport(rec)
     await controller.start(rec)
     _WORKERS[passport_id] = controller
@@ -148,14 +155,15 @@ async def start_engine(passport_id: str, state: AppState, trip_seconds: int) -> 
     return rec
 
 
-async def stop_engine(passport_id: str, state: AppState) -> PassportRecord:
+async def stop_engine(passport_id: str, state: AppState, backend, reason: str = "STOP_REQUESTED") -> PassportRecord:
     rec = state.passports.get(passport_id)
     if rec is None: raise KeyError(passport_id)
     rec.stop_requested = True; state.upsert_passport(rec)
     controller = _WORKERS.pop(passport_id, None)
-    if controller: await controller.stop()
+    if controller: await controller.stop(reason)
     else:
-        rec.engine_running = False; rec.engine_status = "stopped"; rec.status = "stopped"; rec.stop_reason = rec.stop_reason or "STOP_REQUESTED"; state.upsert_passport(rec)
+        rec.engine_running = False; rec.engine_status = "stopped"; rec.status = "stopped"; rec.stop_reason = rec.stop_reason or reason; state.upsert_passport(rec)
+    rec, _, _ = await authorization_service.revoke(state, passport_id, backend, reason)
     return rec
 
 
@@ -171,9 +179,9 @@ async def cancel_all() -> None:
     await asyncio.gather(*(c.close() for c in controllers), return_exceptions=True)
 
 
-def run_judge(spec: dict[str, Any], drawdown_usd: float, events: list[Any] | None):
+def run_judge(spec: dict[str, Any], drawdown_usd: float, events: list[Any] | None, judge):
     from agent.follow_agent.spec_schema import CopyTradingSpec
-    return _JUDGE.judge(CopyTradingSpec.model_validate(spec), drawdown_usd, events or [])
+    return judge.judge(CopyTradingSpec.model_validate(spec), drawdown_usd, events or [])
 
 
 __all__ = ["start_engine", "stop_engine", "tick_drawdown", "cancel_all", "run_judge", "PaperWorkerController"]
