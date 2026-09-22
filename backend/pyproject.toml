@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "FastAPI backend for the waytoweb4 copy-trading agent demo."
 requires-python = ">=3.11"
 dependencies = [
-    "agent",  # sibling package; install via `pip install -e agent[dev]`
+    "waytoweb4-agent",  # sibling package; install both editable packages together
     "fastapi>=0.115",
     "uvicorn>=0.34",
     "pydantic>=2.6",
@@ -18,10 +18,18 @@ dev = [
     "pytest-asyncio>=0.23",
 ]
 
-[tool.setuptools.packages.find]
-include = ["app*"]
+[tool.setuptools]
+packages = [
+    "backend",
+    "backend.app",
+    "backend.app.passport_backends",
+    "backend.app.routers",
+    "backend.scripts",
+]
+package-dir = {"backend" = "."}
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 asyncio_mode = "auto"
+addopts = ["--import-mode=importlib"]

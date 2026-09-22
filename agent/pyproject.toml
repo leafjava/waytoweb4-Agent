@@ -19,12 +19,19 @@ dev = [
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
-[tool.setuptools.packages.find]
-include = ["agent*"]
+[tool.setuptools]
+packages = [
+    "agent",
+    "agent.follow_agent",
+    "agent.redline_agent",
+    "agent.shared",
+]
+package-dir = {"agent" = "."}
 
 [tool.pytest.ini_options]
 testpaths = ["agent/tests"]
 python_files = ["test_*.py"]
+addopts = ["--import-mode=importlib"]
 
 [tool.ruff]
 line-length = 100
