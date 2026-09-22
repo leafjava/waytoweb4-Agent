@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { HYNIX_EVENTS, predictFromLLM, predictFromRuleGate } from '../predict'
+import { useI18n } from '../i18n.jsx'
 
 const SPEC_RANGES = {
   notionalUsd: { min: 100, max: 10000, step: 50, default: 500 },
@@ -8,6 +9,7 @@ const SPEC_RANGES = {
 }
 
 export default function SpecSimulator({ initialSpec }) {
+  const { t } = useI18n()
   const [notional, setNotional] = useState(initialSpec?.notionalUsd ?? SPEC_RANGES.notionalUsd.default)
   const [maxLoss, setMaxLoss] = useState(
     Math.min(initialSpec?.maxLossUsd ?? SPEC_RANGES.maxLossUsd.default, notional),
@@ -29,13 +31,13 @@ export default function SpecSimulator({ initialSpec }) {
   return (
     <div className="bg-slate-900/50 border border-slate-800 rounded-lg p-6">
       <h3 className="text-sm uppercase tracking-wider text-slate-400 mb-4">
-        <i className="fa fa-calculator mr-2"></i> Spec simulator
+        <i className="fa fa-calculator mr-2"></i> {t('sim.title')}
       </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-5">
           <Slider
-            label="notional (USD)"
+            label={t('sim.notional')}
             value={notional}
             min={SPEC_RANGES.notionalUsd.min}
             max={SPEC_RANGES.notionalUsd.max}
@@ -47,7 +49,7 @@ export default function SpecSimulator({ initialSpec }) {
             format={(v) => `$${v}`}
           />
           <Slider
-            label="max loss (USD)"
+            label={t('sim.maxloss')}
             value={maxLoss}
             min={SPEC_RANGES.maxLossUsd.min}
             max={Math.min(SPEC_RANGES.maxLossUsd.max, notional)}
@@ -56,37 +58,39 @@ export default function SpecSimulator({ initialSpec }) {
             format={(v) => `$${v}`}
           />
           <div className="text-xs text-slate-400">
-            expiry: <span className="text-slate-200">+{SPEC_RANGES.expiryHours}h</span> &nbsp;
-            venue: <span className="text-slate-200">paper</span> &nbsp;
-            mode: <span className="text-slate-200">copy</span>
+            {t('sim.expiry')}: <span className="text-slate-200">{t('sim.expiry_val', { hours: SPEC_RANGES.expiryHours })}</span> &nbsp;
+            {t('sim.venue')}: <span className="text-slate-200">{t('sim.venue_val')}</span> &nbsp;
+            {t('sim.mode')}: <span className="text-slate-200">{t('sim.mode_val')}</span>
           </div>
           {invalid && (
-            <div className="text-xs text-rose-300">
-              max loss cannot exceed notional — backend will reject this Spec.
-            </div>
+            <div className="text-xs text-rose-300">{t('sim.invalid')}</div>
           )}
         </div>
 
         <div className="space-y-4">
           <Outcome
             tone="rose"
-            title="Without any events"
+            title={t('sim.outcome.no_events')}
             via={ruleGate.via}
-            level={invalid ? '—' : ruleGate.level}
+            level={invalid ? t('sim.outcome.dash') : ruleGate.level}
             codes={invalid ? [] : ruleGate.reasonCodes}
-            note={invalid ? '—' : `at ${ruleGate.timeToTripSec}s, model never gets a say`}
-            bullet={ruleGate.modelMayOverride === false ? 'model_may_override = false' : null}
+            note={
+              invalid
+                ? t('sim.outcome.dash')
+                : t('sim.outcome.no_events.note', { sec: ruleGate.timeToTripSec, maxLoss: spec.maxLossUsd })
+            }
+            bullet={invalid ? null : t('sim.frozen_attr')}
           />
           <Outcome
             tone="fuchsia"
-            title="With Hynix event pack injected"
+            title={t('sim.outcome.hynix')}
             via={llmTrip.via}
-            level={invalid ? '—' : llmTrip.level}
+            level={invalid ? t('sim.outcome.dash') : llmTrip.level}
             codes={invalid ? [] : llmTrip.reasonCodes}
             note={
               invalid
-                ? '—'
-                : `LLM classifier scores structural impact; worst move ${llmTrip.worstChange}%`
+                ? t('sim.outcome.dash')
+                : t('sim.outcome.hynix.note', { pct: llmTrip.worstChange })
             }
             bullet={null}
           />

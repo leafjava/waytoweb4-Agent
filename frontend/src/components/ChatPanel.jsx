@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { apiPost } from '../api'
+import { useI18n } from '../i18n.jsx'
 
 const DEMO_PROMPT = 'follow leader-demo-001 with 500 USD max loss 50 USD for 48 hours'
 
 export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
+  const { t } = useI18n()
   const [input, setInput] = useState(DEMO_PROMPT)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
@@ -13,18 +15,28 @@ export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
     setBusy(true)
     setError(null)
     try {
-      // 1. Decide: clarify vs emit.
       const chk = await apiPost('/api/spec/check', { user_text: input })
       let spec
       if (chk.ready) {
         const r = await apiPost('/api/spec/emit', { user_text: input, draft_id: draft.draft_id })
         spec = r.spec
-        setDraft((d) => ({ ...d, history: [...d.history, { role: 'user', text: input }, { role: 'agent', text: 'Spec locked.' }] }))
+        setDraft((d) => ({
+          ...d,
+          history: [
+            ...d.history,
+            { role: 'user', text: input },
+            { role: 'agent', text: t('chat.locked_note') },
+          ],
+        }))
       } else {
         const r = await apiPost('/api/spec/clarify', { user_text: input, draft_id: draft.draft_id })
         setDraft((d) => ({
           ...d,
-          history: [...d.history, { role: 'user', text: input }, { role: 'agent', text: r.question || '(clarifying question)' }],
+          history: [
+            ...d.history,
+            { role: 'user', text: input },
+            { role: 'agent', text: r.question || '(clarifying question)' },
+          ],
         }))
         setBusy(false)
         return
@@ -46,13 +58,13 @@ export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-2 text-sm">
         {draft.history.length === 0 && (
-          <div className="text-slate-500 italic">
-            Describe your copy-trading intent. Example: "follow leader-demo-001, 500 USD, max loss 50, 48h".
-          </div>
+          <div className="text-slate-500 italic">{t('chat.empty')}</div>
         )}
         {draft.history.map((m, i) => (
           <div key={i} className={m.role === 'user' ? 'text-sky-300' : 'text-emerald-300'}>
-            <span className="text-slate-500 mr-2">{m.role === 'user' ? 'User>' : 'Agent>'}</span>
+            <span className="text-slate-500 mr-2">
+              {m.role === 'user' ? t('chat.user_prefix') : t('chat.agent_prefix')}
+            </span>
             {m.text}
           </div>
         ))}
@@ -70,7 +82,7 @@ export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-sm resize-none focus:outline-none focus:border-sky-500"
-          placeholder="Type your follow-trading intent..."
+          placeholder={t('chat.placeholder')}
         />
         <button
           onClick={handleSend}
@@ -78,7 +90,7 @@ export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
           className="px-4 py-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 rounded text-sm font-medium"
         >
           <i className="fa fa-paper-plane mr-1"></i>
-          Send
+          {t('chat.send')}
         </button>
       </div>
     </div>

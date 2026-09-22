@@ -1,8 +1,10 @@
 import { LEVEL_COLORS } from '../colors'
+import { useI18n } from '../i18n.jsx'
 
 export default function VerdictBadge({ verdict }) {
+  const { t } = useI18n()
   if (!verdict) {
-    return <span className="text-xs text-slate-500 italic">no verdict yet</span>
+    return <span className="text-xs text-slate-500 italic">{t('verdict.no_verdict')}</span>
   }
   const lvl = verdict.level
   const palette = LEVEL_COLORS[lvl] ?? LEVEL_COLORS.HOLD
@@ -12,7 +14,7 @@ export default function VerdictBadge({ verdict }) {
         <span className={`text-xs px-2 py-0.5 rounded ${palette.bg} ${palette.fg}`}>
           {lvl}
         </span>
-        <span className="text-xs text-slate-400">via {verdict.source}</span>
+        <span className="text-xs text-slate-400">{t('verdict.via')} {verdict.source}</span>
       </div>
       {(verdict.reason_codes || []).length > 0 && (
         <div className="flex flex-wrap gap-1">
