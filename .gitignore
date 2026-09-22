@@ -30,6 +30,7 @@ frontend/dist/
 
 # Backend runtime data (mock ledger — recreated by the demo)
 /backend/var/passports.json
+/backend/var/evidence/
 
 # Coverage / build artifacts
 .coverage
