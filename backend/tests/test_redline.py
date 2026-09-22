@@ -2,21 +2,11 @@
 
 from __future__ import annotations
 
+from .helpers import prepare_confirm_mint
+
 
 def _mint_and_face(client) -> str:
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    body = client.post("/api/passport/mint", json=payload).json()
+    body = prepare_confirm_mint(client)
     pid = body["passport_id"]
     client.post("/api/face/verify", json={"passport_id": pid})
     client.post("/api/engine/start", json={"passport_id": pid})
@@ -39,13 +29,13 @@ def test_redline_inject_hynix_trips(client):
     body = r.json()
     assert body["verdict"]["level"] == "TRIP"
     assert body["flow"] == "redline_trip"
-    # side effects: revoked with a tx hash
+    # Offline side effects are explicit and never masquerade as a transaction.
     assert body["side_effects"]["revoked"] is True
-    assert body["side_effects"]["revoke_tx_hash"] is not None
+    assert body["side_effects"]["revoke_tx_hash"] is None
     # passport is now revoked
     pr = client.get(f"/api/passport/{pid}").json()
     assert pr["status"] == "revoked"
-    assert pr["tx_revoke_hash"] is not None
+    assert pr["tx_revoke_hash"] is None
 
 
 def test_redline_judge_unknown_returns_404(client):

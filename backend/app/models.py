@@ -62,14 +62,26 @@ class FaceVerifyResponse(BaseModel):
     verified_at: str
 
 
-class MintRequest(BaseModel):
+class PrepareRequest(BaseModel):
     spec: dict[str, Any]
+    request_id: str = Field(min_length=1, max_length=128)
+
+
+class ConfirmRequest(BaseModel):
+    passport_id: str
+    spec_hash: str
+    request_id: str = Field(min_length=1, max_length=128)
+
+
+class MintRequest(BaseModel):
+    passport_id: str
+    request_id: str = Field(min_length=1, max_length=128)
 
 
 class MintResponse(BaseModel):
     passport_id: str
     spec_hash: str
-    tx_hash: str
+    tx_hash: str | None
     status: str
     leader_id: str
     notional_usd: float
@@ -80,7 +92,7 @@ class MintResponse(BaseModel):
 
 class RevokeResponse(BaseModel):
     passport_id: str
-    tx_hash: str
+    tx_hash: str | None
     status: str
     previous_status: str
 
@@ -137,6 +149,8 @@ __all__ = [
     "EmitResponse",
     "FaceVerifyRequest",
     "FaceVerifyResponse",
+    "PrepareRequest",
+    "ConfirmRequest",
     "MintRequest",
     "MintResponse",
     "RevokeResponse",

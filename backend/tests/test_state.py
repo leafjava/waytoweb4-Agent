@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from .helpers import prepare
+
 
 def test_state_snapshot_shape(client):
     r = client.get("/api/state")
@@ -20,20 +22,7 @@ def test_tokens_endpoint_returns_markdown(client):
 
 
 def test_reset_wipes_everything(client):
-    # mint something first
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    client.post("/api/passport/mint", json=payload)
+    prepare(client)
     assert client.get("/api/state").json()["passports"] != {}
 
     r = client.post("/api/state/reset")

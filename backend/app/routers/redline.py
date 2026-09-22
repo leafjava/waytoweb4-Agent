@@ -16,7 +16,7 @@ from agent.redline_agent.schema import RedLineAction, RedLineLevel
 from fastapi import APIRouter, Depends
 
 from ..audit import make_event
-from ..deps import get_passport_backend, get_state
+from ..deps import get_state
 from ..engine import run_judge, stop_engine
 from ..errors import not_found
 from ..models import RedLineJudgeRequest, RedLineJudgeResponse
@@ -24,6 +24,18 @@ from ..state import AppState
 
 
 router = APIRouter(prefix="/api/redline", tags=["redline"])
+
+
+async def _apply_trip(passport_id: str, state: AppState, trigger: str) -> dict:
+    rec = await stop_engine(passport_id, state)
+    rec.authorization_status = "revoked"
+    rec.status = "revoked"
+    rec.tx_revoke_hash = None
+    state.upsert_passport(rec)
+    state.append_event(make_event(
+        "revoke_simulated", passport_id, {"tx_hash": None, "trigger": trigger},
+    ))
+    return {"stopped": True, "revoked": True, "revoke_tx_hash": None}
 
 
 def _verdict_to_dict(v) -> dict:
@@ -41,7 +53,6 @@ def _verdict_to_dict(v) -> dict:
 async def judge(
     req: RedLineJudgeRequest,
     state: AppState = Depends(get_state),
-    backend=Depends(get_passport_backend),
 ):
     rec = state.passports.get(req.passport_id)
     if rec is None:
@@ -54,21 +65,7 @@ async def judge(
     side_effects: dict | None = None
 
     if verdict.action == RedLineAction.STOP_AND_REVOKE:
-        await stop_engine(req.passport_id, state)
-        try:
-            new_rec = backend.revoke(req.passport_id, state)
-        except (KeyError, ValueError):
-            new_rec = None
-        if new_rec is not None:
-            state.append_event(make_event(
-                "revoke", req.passport_id,
-                {"tx_hash": new_rec.tx_revoke_hash, "trigger": "redline_trip"},
-            ))
-            side_effects = {
-                "stopped": True,
-                "revoked": True,
-                "revoke_tx_hash": new_rec.tx_revoke_hash,
-            }
+        side_effects = await _apply_trip(req.passport_id, state, "redline_trip")
 
     rec.last_verdict = _verdict_to_dict(verdict)
     state.upsert_passport(rec)
@@ -88,7 +85,6 @@ async def judge(
 async def inject_hynix(
     req: RedLineJudgeRequest,
     state: AppState = Depends(get_state),
-    backend=Depends(get_passport_backend),
 ):
     """Inject the canonical Hynix crash pack and judge."""
     rec = state.passports.get(req.passport_id)
@@ -100,21 +96,7 @@ async def inject_hynix(
 
     side_effects: dict | None = None
     if verdict.action == RedLineAction.STOP_AND_REVOKE:
-        await stop_engine(req.passport_id, state)
-        try:
-            new_rec = backend.revoke(req.passport_id, state)
-        except (KeyError, ValueError):
-            new_rec = None
-        if new_rec is not None:
-            state.append_event(make_event(
-                "revoke", req.passport_id,
-                {"tx_hash": new_rec.tx_revoke_hash, "trigger": "demo_inject"},
-            ))
-            side_effects = {
-                "stopped": True,
-                "revoked": True,
-                "revoke_tx_hash": new_rec.tx_revoke_hash,
-            }
+        side_effects = await _apply_trip(req.passport_id, state, "demo_inject")
 
     rec.last_verdict = _verdict_to_dict(verdict)
     state.upsert_passport(rec)

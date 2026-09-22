@@ -30,4 +30,18 @@ Validation:
 
 ## T1–T6
 
+### T1 — contract and lifecycle
+
+Status: complete.
+
+- Added `intent-keccak-v1` canonicalization with exact cents, whole-second UTC expiry, ASCII leader IDs and a 10,000 USD cap.
+- Replaced raw-Spec mint with prepare → hash-bound manual confirm → mint.
+- Added UUID local identities, independent authorization/engine states, terminal stop flag, atomic ledger writes and request-id payload binding.
+- Offline authorization uses `simulation_id`; transaction hash fields remain null.
+- Updated prior backend tests to exercise the new API without removing their validation, engine, RedLine, face or reset coverage; added boundary/idempotency tests.
+
+Validation: combined agent/backend suite: 109 passed.
+
+### T2–T6
+
 Status: pending.

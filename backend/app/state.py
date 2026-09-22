@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,7 +45,7 @@ class PassportRecord:
     expiry: str
     face_verified: bool
     status: str
-    tx_mint_hash: str
+    tx_mint_hash: str | None
     tx_revoke_hash: str | None = None
     engine_running: bool = False
     engine_started_at: str | None = None
@@ -51,6 +53,21 @@ class PassportRecord:
     trip_seconds: int = 60
     last_verdict: dict[str, Any] | None = None
     backend_label: str = "mock"
+    run_id: str = ""
+    chain_passport_id: str | None = None
+    chain_id: int | None = None
+    contract_address: str | None = None
+    hash_version: str = "intent-keccak-v1"
+    canonical_intent: str = ""
+    confirmed_spec_hash: str | None = None
+    confirmed_at: str | None = None
+    confirmation_kind: str | None = None
+    face_verification_mode: str = "mock"
+    authorization_status: str = "prepared"
+    engine_status: str = "idle"
+    stop_requested: bool = False
+    simulation_id: str | None = None
+    stop_reason: str | None = None
 
     def to_public_dict(self) -> dict[str, Any]:
         """Shape returned to the frontend. Stable field names so the
@@ -73,6 +90,20 @@ class PassportRecord:
             "trip_seconds": self.trip_seconds,
             "last_verdict": self.last_verdict,
             "backend": self.backend_label,
+            "run_id": self.run_id,
+            "chain_passport_id": self.chain_passport_id,
+            "chain_id": self.chain_id,
+            "contract_address": self.contract_address,
+            "hash_version": self.hash_version,
+            "confirmed_spec_hash": self.confirmed_spec_hash,
+            "confirmed_at": self.confirmed_at,
+            "confirmation_kind": self.confirmation_kind,
+            "face_verification_mode": self.face_verification_mode,
+            "authorization_status": self.authorization_status,
+            "engine_status": self.engine_status,
+            "stop_requested": self.stop_requested,
+            "simulation_id": self.simulation_id,
+            "stop_reason": self.stop_reason,
         }
 
 
@@ -88,6 +119,7 @@ class AppState:
     ledger_path: Path
     passports: dict[str, PassportRecord] = field(default_factory=dict)
     events: list[AuditEvent] = field(default_factory=list)
+    requests: dict[str, dict[str, Any]] = field(default_factory=dict)
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     # ---- persistence ------------------------------------------------------
@@ -99,6 +131,7 @@ class AppState:
         raw = json.loads(self.ledger_path.read_text(encoding="utf-8"))
         for pid, p in raw.get("passports", {}).items():
             self.passports[pid] = PassportRecord(**p)
+        self.requests = raw.get("requests", {})
 
     def _save_locked(self) -> None:
         """Write passports to the JSON ledger. Caller must hold the lock."""
@@ -108,10 +141,19 @@ class AppState:
                 pid: _dataclass_to_jsonable(rec) for pid, rec in self.passports.items()
             },
             "saved_at": datetime.now(timezone.utc).isoformat(),
+            "requests": self.requests,
         }
-        self.ledger_path.write_text(
-            json.dumps(body, indent=2, ensure_ascii=False), encoding="utf-8"
-        )
+        content = json.dumps(body, indent=2, ensure_ascii=False)
+        fd, tmp_name = tempfile.mkstemp(prefix=self.ledger_path.name, dir=self.ledger_path.parent)
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(content)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp_name, self.ledger_path)
+        finally:
+            if os.path.exists(tmp_name):
+                os.unlink(tmp_name)
 
     # ---- mutation helpers (caller still holds the lock) -------------------
 
@@ -156,6 +198,7 @@ class AppState:
         async with self._lock:
             self.passports.clear()
             self.events.clear()
+            self.requests.clear()
             if self.ledger_path.exists():
                 self.ledger_path.unlink()
             self.append_event_unlocked(make_event("demo_reset", None, {}))
@@ -186,6 +229,21 @@ def _dataclass_to_jsonable(rec: PassportRecord) -> dict[str, Any]:
         "trip_seconds": rec.trip_seconds,
         "last_verdict": rec.last_verdict,
         "backend_label": rec.backend_label,
+        "run_id": rec.run_id,
+        "chain_passport_id": rec.chain_passport_id,
+        "chain_id": rec.chain_id,
+        "contract_address": rec.contract_address,
+        "hash_version": rec.hash_version,
+        "canonical_intent": rec.canonical_intent,
+        "confirmed_spec_hash": rec.confirmed_spec_hash,
+        "confirmed_at": rec.confirmed_at,
+        "confirmation_kind": rec.confirmation_kind,
+        "face_verification_mode": rec.face_verification_mode,
+        "authorization_status": rec.authorization_status,
+        "engine_status": rec.engine_status,
+        "stop_requested": rec.stop_requested,
+        "simulation_id": rec.simulation_id,
+        "stop_reason": rec.stop_reason,
     }
 
 

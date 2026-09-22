@@ -1,95 +1,99 @@
-"""Passport mint / revoke tests."""
+"""Authorization lifecycle and intent boundary tests."""
 
 from __future__ import annotations
 
-import pytest
+from .helpers import prepare, prepare_confirm_mint, valid_spec
 
 
-def _mint(client, spec_extra: dict | None = None) -> dict:
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-            **(spec_extra or {}),
-        }
-    }
-    r = client.post("/api/passport/mint", json=payload)
-    assert r.status_code == 200, r.text
-    return r.json()
+def test_prepare_returns_uuid_hash_and_no_fake_transaction(client):
+    body = prepare(client)
+    assert len(body["passport_id"]) == 36
+    assert len(body["spec_hash"]) == 66
+    assert body["tx_hash"] is None
+    assert body["status"] == "prepared"
 
 
-def test_mint_returns_valid_hash(client):
-    body = _mint(client)
-    assert body["passport_id"].startswith("0x")
-    assert len(body["tx_hash"]) == 66
-    assert body["backend"] in {"mock", "sepolia"}
+def test_raw_spec_cannot_bypass_confirm_at_mint(client):
+    response = client.post("/api/passport/mint", json={"spec": valid_spec()})
+    assert response.status_code == 422
 
 
-def test_mint_rejects_mode_grid_bot(client):
-    payload = {
-        "spec": {
-            "mode": "grid_bot",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    r = client.post("/api/passport/mint", json=payload)
-    assert r.status_code == 422
+def test_mint_requires_confirmation(client):
+    prepared = prepare(client)
+    response = client.post("/api/passport/mint", json={
+        "passport_id": prepared["passport_id"], "request_id": "mint-unconfirmed"
+    })
+    assert response.status_code == 409
 
 
-def test_mint_rejects_max_loss_above_notional(client):
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 100,
-            "maxLossUsd": 999,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    r = client.post("/api/passport/mint", json=payload)
-    assert r.status_code == 422
+def test_confirmation_rejects_wrong_hash(client):
+    prepared = prepare(client)
+    response = client.post("/api/passport/confirm", json={
+        "passport_id": prepared["passport_id"], "spec_hash": "0x" + "00" * 32,
+        "request_id": "confirm-wrong",
+    })
+    assert response.status_code == 409
 
 
-def test_mint_strips_face_verified_even_if_client_claims_true(client):
-    # The spec claims faceVerified=true; server must force false.
-    body = _mint(client, spec_extra={"faceVerified": True})
-    # Backend still mints, but face_verified on the record is False.
-    r = client.get(f"/api/passport/{body['passport_id']}")
-    assert r.status_code == 200
-    assert r.json()["face_verified"] is False
+def test_mock_mint_uses_simulation_id_not_transaction_hash(client):
+    body = prepare_confirm_mint(client)
+    assert body["status"] == "authorized"
+    assert body["tx_hash"] is None
+    record = client.get(f"/api/passport/{body['passport_id']}").json()
+    assert record["simulation_id"].startswith("sim-")
 
 
-def test_revoke_returns_distinct_tx_hash(client):
-    body = _mint(client)
-    r = client.post(f"/api/passport/{body['passport_id']}/revoke")
-    assert r.status_code == 200
-    rev = r.json()
-    assert rev["status"] == "revoked"
-    assert rev["tx_hash"] != body["tx_hash"]
+def test_prepare_strips_client_face_claim(client):
+    body = prepare(client, valid_spec(faceVerified=True))
+    record = client.get(f"/api/passport/{body['passport_id']}").json()
+    assert record["face_verified"] is False
 
 
-def test_revoke_twice_returns_409(client):
-    body = _mint(client)
-    client.post(f"/api/passport/{body['passport_id']}/revoke")
-    r = client.post(f"/api/passport/{body['passport_id']}/revoke")
-    assert r.status_code == 409
+def test_invalid_mode_and_limit_are_rejected_at_prepare(client):
+    assert client.post("/api/passport/prepare", json={
+        "spec": valid_spec(mode="grid_bot"), "request_id": "bad-mode"
+    }).status_code == 422
+    assert client.post("/api/passport/prepare", json={
+        "spec": valid_spec(notionalUsd=100, maxLossUsd=999), "request_id": "bad-loss"
+    }).status_code == 422
+
+
+def test_fractional_cents_nan_and_infinity_are_rejected(client):
+    for index, value in enumerate(("1.001", "NaN", "Infinity")):
+        response = client.post("/api/passport/prepare", json={
+            "spec": valid_spec(notionalUsd=value), "request_id": f"bad-money-{index}"
+        })
+        assert response.status_code == 422
+
+
+def test_request_id_is_idempotent_and_payload_bound(client):
+    first = prepare(client, request_id="same-prepare")
+    second = prepare(client, request_id="same-prepare")
+    assert second["passport_id"] == first["passport_id"]
+    changed = client.post("/api/passport/prepare", json={
+        "spec": valid_spec(leaderId="different"), "request_id": "same-prepare"
+    })
+    assert changed.status_code == 409
+
+
+def test_second_mint_request_reuses_authorization_without_fake_tx(client):
+    body = prepare_confirm_mint(client)
+    response = client.post("/api/passport/mint", json={
+        "passport_id": body["passport_id"], "request_id": "another-mint-request"
+    })
+    assert response.status_code == 200
+    assert response.json()["tx_hash"] is None
+    assert response.json()["passport_id"] == body["passport_id"]
+
+
+def test_revoke_is_terminal_and_has_no_mock_tx_hash(client):
+    body = prepare_confirm_mint(client)
+    response = client.post(f"/api/passport/{body['passport_id']}/revoke")
+    assert response.status_code == 200
+    assert response.json()["tx_hash"] is None
+    assert client.post(f"/api/passport/{body['passport_id']}/revoke").status_code == 409
+    assert client.post("/api/engine/start", json={"passport_id": body["passport_id"]}).status_code == 409
 
 
 def test_revoke_unknown_returns_404(client):
-    r = client.post("/api/passport/0xdeadbeef/revoke")
-    assert r.status_code == 404
+    assert client.post("/api/passport/missing/revoke").status_code == 404

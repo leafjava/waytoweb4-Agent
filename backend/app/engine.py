@@ -52,15 +52,15 @@ async def _engine_loop(passport_id: str, state: AppState, trip_seconds: int) -> 
     """
     try:
         while True:
-            async with state:
-                    rec = state.passports.get(passport_id)
-                    if rec is None or rec.status != PASS_ACTIVE or not rec.engine_running:
-                        return
-                    started = datetime.fromisoformat(rec.engine_started_at) if rec.engine_started_at else datetime.now(timezone.utc)
-                    elapsed = (datetime.now(timezone.utc) - started).total_seconds()
-                    ratio = min(1.0, max(0.0, elapsed / max(trip_seconds, 1)))
-                    rec.drawdown_usd = float(rec.spec["maxLossUsd"]) * ratio
-                    state.upsert_passport(rec)
+            async with state._lock:
+                rec = state.passports.get(passport_id)
+                if rec is None or rec.status != PASS_ACTIVE or not rec.engine_running:
+                    return
+                started = datetime.fromisoformat(rec.engine_started_at) if rec.engine_started_at else datetime.now(timezone.utc)
+                elapsed = (datetime.now(timezone.utc) - started).total_seconds()
+                ratio = min(1.0, max(0.0, elapsed / max(trip_seconds, 1)))
+                rec.drawdown_usd = float(rec.spec["maxLossUsd"]) * ratio
+                state.upsert_passport(rec)
             await asyncio.sleep(1.0)
     except asyncio.CancelledError:
         return
@@ -74,15 +74,22 @@ async def start_engine(passport_id: str, state: AppState, trip_seconds: int) -> 
     rec = state.passports.get(passport_id)
     if rec is None:
         raise KeyError(passport_id)
-    if not rec.face_verified:
-        raise ValueError(f"passport {passport_id} has not passed face verification")
-    if rec.status == PASS_PENDING_FACE:
-        rec.status = PASS_ACTIVE
+    from .intent import is_expired
+    if rec.authorization_status != "authorized":
+        raise ValueError(f"passport {passport_id} is not authorized")
+    if rec.confirmed_spec_hash != rec.spec_hash:
+        raise ValueError(f"passport {passport_id} confirmation no longer matches")
+    if rec.stop_requested or is_expired(rec.expiry):
+        raise ValueError(f"passport {passport_id} is stopped or expired")
+    if rec.engine_status in {"stopped", "stop_failed"}:
+        raise ValueError(f"passport {passport_id} cannot be restarted")
+    rec.status = PASS_ACTIVE
     if rec.engine_running:
         return rec
     rec.engine_started_at = datetime.now(timezone.utc).isoformat()
     rec.drawdown_usd = 0.0
     rec.engine_running = True
+    rec.engine_status = "running"
     rec.trip_seconds = trip_seconds
     state.upsert_passport(rec)
     task = asyncio.create_task(_engine_loop(passport_id, state, trip_seconds))
@@ -102,6 +109,8 @@ async def stop_engine(passport_id: str, state: AppState) -> PassportRecord:
     if rec.status == PASS_ACTIVE:
         rec.status = PASS_STOPPED
     rec.engine_running = False
+    rec.engine_status = "stopped"
+    rec.stop_requested = True
     state.upsert_passport(rec)
     return rec
 

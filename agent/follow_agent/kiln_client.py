@@ -162,7 +162,7 @@ class MockKilnClient:
         # expected to parse this with json.loads and then re-validate
         # via CopyTradingSpec; tests assert both paths.
         from datetime import datetime, timedelta, timezone
-        expiry = (datetime.now(timezone.utc) + timedelta(hours=48)).isoformat()
+        expiry = (datetime.now(timezone.utc) + timedelta(hours=48)).replace(microsecond=0).isoformat()
         payload = {
             "mode": "copy",
             "leaderId": "leader-demo-001",

@@ -33,16 +33,16 @@ async def verify_face(
     rec = state.passports.get(req.passport_id)
     if rec is None:
         raise not_found(f"passport {req.passport_id} not found")
-    if rec.status != PASS_PENDING_FACE:
+    if rec.stop_requested or rec.authorization_status in {"revoked", "failed"}:
         raise conflict(
-            f"passport {req.passport_id} is in status {rec.status!r}; "
-            "face verify only valid from pending_face"
+            f"passport {req.passport_id} cannot be face-verified in its current state"
         )
 
     # Simulate the human-in-the-loop face match.
     await asyncio.sleep(0.5)
 
     rec.face_verified = True
+    rec.face_verification_mode = "mock"
     state.upsert_passport(rec)
 
     ts = datetime.now(timezone.utc).isoformat()

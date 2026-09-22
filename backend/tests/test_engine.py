@@ -2,42 +2,20 @@
 
 from __future__ import annotations
 
+from .helpers import prepare, prepare_confirm_mint
+
 
 def _mint_and_face(client) -> str:
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    body = client.post("/api/passport/mint", json=payload).json()
+    body = prepare_confirm_mint(client)
     pid = body["passport_id"]
     client.post("/api/face/verify", json={"passport_id": pid})
     return pid
 
 
-def test_engine_start_requires_face_verified(client):
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    pid = client.post("/api/passport/mint", json=payload).json()["passport_id"]
+def test_engine_start_requires_authorized_passport(client):
+    pid = prepare(client)["passport_id"]
     r = client.post("/api/engine/start", json={"passport_id": pid})
-    assert r.status_code == 409  # face not verified
+    assert r.status_code == 409
 
 
 def test_engine_start_and_tick(client):
@@ -45,7 +23,7 @@ def test_engine_start_and_tick(client):
     r = client.post("/api/engine/start", json={"passport_id": pid})
     assert r.status_code == 200
     body = r.json()
-    assert body["status"] in {"active", "pending_face"}
+    assert body["status"] == "active"
     assert body["drawdown_usd"] == 0.0
 
 
@@ -68,7 +46,7 @@ def test_tick_clamps_to_max_loss(client):
     assert body["drawdown_usd"] == 50.0  # clamped to maxLossUsd
 
 
-def test_engine_stop_does_not_revoke(client):
+def test_engine_stop_is_terminal_before_revoke(client):
     pid = _mint_and_face(client)
     client.post("/api/engine/start", json={"passport_id": pid})
     r = client.post("/api/engine/stop", json={"passport_id": pid})
@@ -76,3 +54,5 @@ def test_engine_stop_does_not_revoke(client):
     pr = client.get(f"/api/passport/{pid}").json()
     assert pr["status"] == "stopped"
     assert pr["tx_revoke_hash"] is None
+    assert pr["stop_requested"] is True
+    assert client.post("/api/engine/start", json={"passport_id": pid}).status_code == 409

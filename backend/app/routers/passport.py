@@ -1,95 +1,89 @@
-"""Passport router: mint / revoke / get."""
+"""Passport preparation, confirmation, mint and revoke routes."""
 
 from __future__ import annotations
 
-from agent.follow_agent.spec_schema import CopyTradingSpec
-from agent.shared.exceptions import SpecValidationError
 from fastapi import APIRouter, Depends, Path
 
 from ..audit import make_event
+from ..authorization import AuthorizationError, authorization_service
 from ..deps import get_passport_backend, get_state
-from ..errors import conflict, map_agent_error, not_found, spec_error
-from ..hash import spec_hash
-from ..models import MintRequest, MintResponse, RevokeResponse
-from ..state import PASS_REVOKED, AppState
-
+from ..errors import conflict, not_found, spec_error
+from ..models import ConfirmRequest, MintRequest, MintResponse, PrepareRequest, RevokeResponse
+from ..state import AppState
 
 router = APIRouter(prefix="/api/passport", tags=["passport"])
 
 
-@router.post("/mint", response_model=MintResponse)
-def mint_passport(
-    req: MintRequest,
-    state: AppState = Depends(get_state),
-    backend=Depends(get_passport_backend),
-):
-    # Defence in depth: re-validate even if the frontend claims locked.
-    try:
-        spec_obj = CopyTradingSpec.model_validate(req.spec)
-    except SpecValidationError as e:
-        raise spec_error(str(e))
-    spec_dict = spec_obj.model_dump(mode="json")
-    spec_dict["faceVerified"] = False  # ignore any client-side claim
-
-    sh = spec_hash(spec_dict)
-    rec = backend.mint(spec_dict, sh, state)
-    state.append_event(make_event(
-        "mint", rec.passport_id,
-        {
-            "tx_hash": rec.tx_mint_hash,
-            "spec_hash": rec.spec_hash,
-            "leader_id": rec.leader_id,
-            "notional_usd": rec.notional_usd,
-            "fee_bps": rec.fee_bps,
-            "expiry": rec.expiry,
-            "backend": backend.label,
-        },
-    ))
+def _response(rec) -> MintResponse:
     return MintResponse(
-        passport_id=rec.passport_id,
-        spec_hash=rec.spec_hash,
-        tx_hash=rec.tx_mint_hash,
-        status=rec.status,
-        leader_id=rec.leader_id,
-        notional_usd=rec.notional_usd,
-        fee_bps=rec.fee_bps,
-        expiry=rec.expiry,
-        backend=backend.label,
+        passport_id=rec.passport_id, spec_hash=rec.spec_hash, tx_hash=rec.tx_mint_hash,
+        status=rec.authorization_status, leader_id=rec.leader_id,
+        notional_usd=rec.notional_usd, fee_bps=rec.fee_bps, expiry=rec.expiry,
+        backend=rec.backend_label,
     )
+
+
+@router.post("/prepare", response_model=MintResponse)
+async def prepare_passport(req: PrepareRequest, state: AppState = Depends(get_state)):
+    try:
+        rec = await authorization_service.prepare(state, req.spec, req.request_id)
+    except AuthorizationError as exc:
+        if "request_id" in str(exc):
+            raise conflict(str(exc))
+        raise spec_error(str(exc))
+    state.append_event(make_event("prepare", rec.passport_id, {"spec_hash": rec.spec_hash}))
+    return _response(rec)
+
+
+@router.post("/confirm", response_model=MintResponse)
+async def confirm_passport(req: ConfirmRequest, state: AppState = Depends(get_state)):
+    try:
+        rec = await authorization_service.confirm(state, req.passport_id, req.spec_hash, req.request_id)
+    except KeyError:
+        raise not_found(f"passport {req.passport_id} not found")
+    except AuthorizationError as exc:
+        raise conflict(str(exc))
+    state.append_event(make_event("confirm", rec.passport_id, {"spec_hash": rec.spec_hash}))
+    return _response(rec)
+
+
+@router.post("/mint", response_model=MintResponse)
+async def mint_passport(req: MintRequest, state: AppState = Depends(get_state), backend=Depends(get_passport_backend)):
+    try:
+        rec = await authorization_service.mint(state, req.passport_id, req.request_id, backend.label)
+    except KeyError:
+        raise not_found(f"passport {req.passport_id} not found")
+    except AuthorizationError as exc:
+        raise conflict(str(exc))
+    state.append_event(make_event(
+        "mint_simulated" if rec.backend_label == "mock" else "mint", rec.passport_id,
+        {"tx_hash": rec.tx_mint_hash, "simulation_id": rec.simulation_id, "spec_hash": rec.spec_hash},
+    ))
+    return _response(rec)
 
 
 @router.post("/{passport_id}/revoke", response_model=RevokeResponse)
-def revoke_passport(
-    passport_id: str = Path(...),
-    state: AppState = Depends(get_state),
-    backend=Depends(get_passport_backend),
-):
-    try:
-        rec = backend.revoke(passport_id, state)
-    except KeyError:
-        raise not_found(f"passport {passport_id} not found")
-    except ValueError as e:
-        raise conflict(str(e))
-    except Exception as e:  # noqa: BLE001
-        raise map_agent_error(e)
-
-    state.append_event(make_event(
-        "revoke", passport_id,
-        {"tx_hash": rec.tx_revoke_hash, "previous_status": "active"},
-    ))
-    return RevokeResponse(
-        passport_id=passport_id,
-        tx_hash=rec.tx_revoke_hash or "",
-        status=rec.status,
-        previous_status="active",
-    )
+async def revoke_passport(passport_id: str = Path(...), state: AppState = Depends(get_state)):
+    async with state._lock:
+        rec = state.passports.get(passport_id)
+        if rec is None:
+            raise not_found(f"passport {passport_id} not found")
+        if rec.authorization_status == "revoked":
+            raise conflict(f"passport {passport_id} already revoked")
+        previous = rec.authorization_status
+        rec.stop_requested = True
+        rec.engine_running = False
+        rec.engine_status = "stopped"
+        rec.authorization_status = "revoked"
+        rec.status = "revoked"
+        rec.tx_revoke_hash = None
+        state._save_locked()
+    state.append_event(make_event("revoke_simulated", passport_id, {"previous_status": previous}))
+    return RevokeResponse(passport_id=passport_id, tx_hash=None, status="revoked", previous_status=previous)
 
 
 @router.get("/{passport_id}")
-def get_passport(
-    passport_id: str = Path(...),
-    state: AppState = Depends(get_state),
-):
+def get_passport(passport_id: str = Path(...), state: AppState = Depends(get_state)):
     rec = state.passports.get(passport_id)
     if rec is None:
         raise not_found(f"passport {passport_id} not found")
