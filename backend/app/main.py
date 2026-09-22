@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
     ledger_path: Path = settings.ledger_path
     state = AppState(ledger_path=ledger_path)
     state.load()
+    await state.reconcile_after_restart()
     app.state.app_state = state
     try:
         yield

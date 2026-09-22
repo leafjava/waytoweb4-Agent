@@ -16,7 +16,6 @@ import asyncio
 import json
 import os
 import tempfile
-import os
 from uuid import uuid4
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -143,6 +142,34 @@ class AppState:
         if raw.get("run_id"):
             self.run_id = raw["run_id"]
             self.evidence = EvidenceWriter(self.ledger_path.parent / "evidence", self.run_id, os.environ.get("KILN_MODE", "offline"))
+
+    async def reconcile_after_restart(self) -> None:
+        """Fail closed for ledger entries whose worker died with this process."""
+        async with self._lock:
+            changed = False
+            reconciled: list[str] = []
+            for rec in self.passports.values():
+                if not rec.engine_running and rec.engine_status not in {"starting", "running"}:
+                    continue
+                rec.engine_running = False
+                rec.engine_status = "stopped"
+                rec.stop_requested = True
+                rec.stop_reason = "PROCESS_RESTART"
+                if rec.backend_label == "mock":
+                    rec.authorization_status = "revoked"
+                    rec.status = "revoked"
+                else:
+                    rec.authorization_status = "uncertain"
+                    rec.status = "uncertain"
+                reconciled.append(rec.passport_id)
+                changed = True
+            if changed:
+                self._save_locked()
+                for passport_id in reconciled:
+                    self.append_event_unlocked(make_event(
+                        "restart_reconcile", passport_id,
+                        {"stop_reason": "PROCESS_RESTART"},
+                    ))
 
     def _save_locked(self) -> None:
         """Write passports to the JSON ledger. Caller must hold the lock."""

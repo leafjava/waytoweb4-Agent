@@ -61,6 +61,7 @@ AUDIT_KINDS: frozenset[str] = frozenset(
         "redline_judge",
         "demo_inject",
         "demo_reset",
+        "restart_reconcile",
     }
 )
 

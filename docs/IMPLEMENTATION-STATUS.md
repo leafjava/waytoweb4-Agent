@@ -122,5 +122,6 @@ Status: local stop/revoke and live Kiln routing complete; external field calls r
 - Bound token-call evidence to the active backend run, avoiding a separate environment-only evidence destination.
 - Enforced the teammate UI's face-gate requirement in the backend engine boundary, so direct API calls cannot bypass it.
 - Serialized revoke attempts per Passport and added stop-during-mint recovery: once a pending mint confirms, an already-requested stop immediately performs and verifies the revoke.
+- Demo reset now stops active workers before clearing state and is refused for chain-backed or live runs. Persisted running states fail closed on restart and emit `restart_reconcile` evidence.
 
-Validation: Python 125 passed; Node chain 2 passed; frontend production build passed. No real Kiln request or public-chain transaction was made by this hardening pass.
+Validation: Python 129 passed; Node chain 2 passed; frontend production build passed. No real Kiln request or public-chain transaction was made by this hardening pass.
