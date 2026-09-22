@@ -1,6 +1,8 @@
 import { apiPost } from '../api'
+import { useI18n } from '../i18n.jsx'
 
 export default function SpecCard({ draft, setDraft, onMinted }) {
+  const { t } = useI18n()
   const spec = draft.locked_spec
 
   async function handleLock() {
@@ -10,7 +12,6 @@ export default function SpecCard({ draft, setDraft, onMinted }) {
       setDraft((d) => ({ ...d, passport_id: r.passport_id, mint: r }))
       onMinted?.(r)
     } catch (e) {
-      // surface inline via console; user can also see error in ChatPanel if needed.
       console.error(e)
       alert(`mint failed: ${e.message || e}`)
     }
@@ -20,27 +21,25 @@ export default function SpecCard({ draft, setDraft, onMinted }) {
     <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm uppercase tracking-wider text-slate-400">
-          <i className="fa fa-file-text-o mr-2"></i> Spec
+          <i className="fa fa-file-text-o mr-2"></i> {t('spec.title')}
         </h2>
         {spec && (
           <span className="text-xs px-2 py-0.5 rounded bg-cyan-900/40 border border-cyan-700 text-cyan-200">
-            locked
+            {t('spec.locked')}
           </span>
         )}
       </div>
 
       {!spec ? (
-        <div className="text-slate-500 italic text-sm">
-          No spec yet. Send a message in Chat to fill in the fields.
-        </div>
+        <div className="text-slate-500 italic text-sm">{t('spec.empty')}</div>
       ) : (
         <div className="space-y-1.5 text-sm font-mono">
-          <Row k="leader" v={spec.leaderId} />
-          <Row k="notional" v={`${spec.notionalUsd} USD`} />
-          <Row k="max loss" v={`${spec.maxLossUsd} USD`} />
-          <Row k="expiry" v={spec.expiry} />
-          <Row k="venue" v={spec.venue} />
-          <Row k="paper" v={String(spec.paper)} />
+          <Row k={t('spec.leader')} v={spec.leaderId} />
+          <Row k={t('spec.notional')} v={`${spec.notionalUsd} USD`} />
+          <Row k={t('spec.maxloss')} v={`${spec.maxLossUsd} USD`} />
+          <Row k={t('spec.expiry')} v={spec.expiry} />
+          <Row k={t('spec.venue')} v={spec.venue} />
+          <Row k={t('spec.paper')} v={String(spec.paper)} />
         </div>
       )}
 
@@ -51,7 +50,7 @@ export default function SpecCard({ draft, setDraft, onMinted }) {
           className="w-full px-3 py-2 rounded bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-sm font-medium"
         >
           <i className="fa fa-link mr-1"></i>
-          {draft.passport_id ? 'Spec locked in passport' : 'Lock Spec & Mint Passport'}
+          {draft.passport_id ? t('spec.locked_btn') : t('spec.lock_btn')}
         </button>
       </div>
     </div>

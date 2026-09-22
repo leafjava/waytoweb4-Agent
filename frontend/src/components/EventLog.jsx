@@ -1,9 +1,11 @@
 import { KIND_COLORS } from '../colors'
+import { useI18n } from '../i18n.jsx'
 
 export default function EventLog({ events }) {
+  const { t } = useI18n()
   return (
     <div>
-      <div className="text-xs text-slate-400 mb-1">events (latest)</div>
+      <div className="text-xs text-slate-400 mb-1">{t('events.title')}</div>
       <div className="bg-slate-950 border border-slate-800 rounded p-2 max-h-40 overflow-y-auto text-[11px] space-y-0.5">
         {events?.length ? events.map((e, i) => (
           <div key={i} className="flex gap-2">
@@ -16,7 +18,7 @@ export default function EventLog({ events }) {
             )}
           </div>
         )) : (
-          <div className="text-slate-600 italic">no events yet</div>
+          <div className="text-slate-600 italic">{t('events.empty')}</div>
         )}
       </div>
     </div>
