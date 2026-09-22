@@ -1,0 +1,46 @@
+{
+  "passports": {
+    "0x1100ed85097daf18": {
+      "passport_id": "0x1100ed85097daf18",
+      "spec_hash": "0x1100ed85097daf1864938552feb8553057d8ae0ba56377025a9d7ed64165beab",
+      "spec": {
+        "mode": "copy",
+        "leaderId": "leader-demo-001",
+        "venue": "paper",
+        "notionalUsd": 500.0,
+        "maxLossUsd": 50.0,
+        "expiry": "2026-09-24T05:51:03.802942Z",
+        "faceVerified": false,
+        "paper": true
+      },
+      "leader_id": "leader-demo-001",
+      "notional_usd": 500.0,
+      "fee_bps": 25,
+      "expiry": "2026-09-24T05:51:03.802942Z",
+      "face_verified": true,
+      "status": "revoked",
+      "tx_mint_hash": "0xa25628887fad922b7fe1bf8979a2b61ab30fa0aca730322f72f4011ca8cb64aa",
+      "tx_revoke_hash": "0x2299ee3e3da131c540da0bf3bfc5a4a76ca840f832f55f71f5ac964e35d7b8ad",
+      "engine_running": false,
+      "engine_started_at": "2026-09-22T05:51:04.706163+00:00",
+      "drawdown_usd": 25.0,
+      "trip_seconds": 60,
+      "last_verdict": {
+        "level": "TRIP",
+        "reason_codes": [
+          "CB_LIKE",
+          "LEV_ETF_AMP"
+        ],
+        "evidence": [
+          "worst_change=-27.0",
+          "events=3"
+        ],
+        "action": "stop_and_revoke",
+        "source": "llm",
+        "model_may_override_hard_limit": false
+      },
+      "backend_label": "mock"
+    }
+  },
+  "saved_at": "2026-09-22T05:51:04.825964+00:00"
+}

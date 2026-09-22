@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "description": "Hynix-style eval set. Each case has 'events' (one or more MarketEvent-shaped dicts) and 'expected_level' (HOLD/WATCH/TRIP). The judge should produce expected_level for every case when drawdown is below the spec limit.",
+  "cases": [
+    {
+      "id": "hynix_single_leg",
+      "events": [
+        {"symbol": "000660.KS", "change_pct": -12.0, "kind": "tick"}
+      ],
+      "expected_level": "TRIP",
+      "expected_codes": ["CB_LIKE"],
+      "note": "Single Hynix leg down 12% counts as CB-grade."
+    },
+    {
+      "id": "lev_etf_only",
+      "events": [
+        {"symbol": "HIYS2X.KS", "change_pct": -27.0, "kind": "leveraged_etf"}
+      ],
+      "expected_level": "TRIP",
+      "expected_codes": ["LEV_ETF_AMP", "CB_LIKE"],
+      "note": "Leveraged ETF triggers LEV_ETF_AMP + CB on threshold."
+    },
+    {
+      "id": "kospi_circuit",
+      "events": [
+        {"symbol": "KS200", "change_pct": -8.5, "kind": "circuit_breaker"}
+      ],
+      "expected_level": "TRIP",
+      "expected_codes": ["CB_LIKE"],
+      "note": "Index circuit breaker text + 8% move."
+    },
+    {
+      "id": "small_dip",
+      "events": [
+        {"symbol": "005930.KS", "change_pct": -1.5, "kind": "tick"}
+      ],
+      "expected_level": "HOLD",
+      "expected_codes": [],
+      "note": "Routine 1.5% Samsung move, no action."
+    },
+    {
+      "id": "moderate_lev",
+      "events": [
+        {"symbol": "KODEX2X.KS", "change_pct": -5.0, "kind": "leveraged_etf"}
+      ],
+      "expected_level": "WATCH",
+      "expected_codes": ["LEV_ETF_AMP"],
+      "note": "Leveraged ETF at -5% is concerning but not CB-grade."
+    },
+    {
+      "id": "gap_pre_market",
+      "events": [
+        {"symbol": "000660.KS", "change_pct": -3.0, "kind": "pre-market_gap"}
+      ],
+      "expected_level": "WATCH",
+      "expected_codes": ["GAP_ORACLE"],
+      "note": "Pre-market gap detected; tighten but don't stop."
+    },
+    {
+      "id": "cascade_text",
+      "events": [
+        {"symbol": "KS200", "change_pct": -2.0, "kind": "liquidation_cascade"}
+      ],
+      "expected_level": "TRIP",
+      "expected_codes": ["LIQ_CASCADE"],
+      "note": "Liquidation cascade text + index moves."
+    },
+    {
+      "id": "human_override",
+      "events": [
+        {"symbol": "005930.KS", "change_pct": 0.0, "kind": "human_kill"}
+      ],
+      "expected_level": "TRIP",
+      "expected_codes": ["HUMAN_OVERRIDE"],
+      "note": "Human override always trips regardless of PnL."
+    },
+    {
+      "id": "mixed_calm",
+      "events": [
+        {"symbol": "005930.KS", "change_pct": 0.5, "kind": "tick"},
+        {"symbol": "000660.KS", "change_pct": -0.3, "kind": "tick"}
+      ],
+      "expected_level": "HOLD",
+      "expected_codes": [],
+      "note": "Two benign ticks."
+    },
+    {
+      "id": "lev_then_cb",
+      "events": [
+        {"symbol": "HIYS2X.KS", "change_pct": -10.0, "kind": "leveraged_etf"},
+        {"symbol": "KS200", "change_pct": -8.0, "kind": "circuit_breaker"}
+      ],
+      "expected_level": "TRIP",
+      "expected_codes": ["LEV_ETF_AMP", "CB_LIKE"],
+      "note": "Leveraged ETF followed by index CB -> TRIP."
+    }
+  ]
+}
