@@ -100,5 +100,3 @@ Status: complete for local delivery package.
 Validation: Python 118 passed; Node chain 2 passed; frontend build passed; offline rehearsal and offline evidence verification passed.
 
 Field acceptance still required: real Kiln `gpt-oss-120b` call with API usage, at least one authorized public testnet transaction and hash, a fresh two-round live run with changed policy condition and stop log, final README token table, video and Deck. These are intentionally not fabricated locally.
-
-Status: pending.
