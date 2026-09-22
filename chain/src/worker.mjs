@@ -1,11 +1,13 @@
 import readline from "node:readline";
 import { createLocalRuntime } from "./runtime.mjs";
+import { createLiveRuntime } from "./live-runtime.mjs";
 
-if (process.env.CHAIN_MODE !== "local") {
-  process.stderr.write("CHAIN_MODE must be local for this offline worker; live transport is intentionally disabled until configured.\n");
+const mode = process.env.CHAIN_MODE || "local";
+if (!new Set(["local", "live"]).has(mode)) {
+  process.stderr.write("CHAIN_MODE must be local or live.\n");
   process.exit(2);
 }
-const runtime = await createLocalRuntime();
+const runtime = mode === "live" ? await createLiveRuntime() : await createLocalRuntime();
 const rl = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
 for await (const line of rl) {
   let request;

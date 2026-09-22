@@ -19,7 +19,7 @@ def _backend_root() -> Path:
 
 @dataclass(frozen=True)
 class Settings:
-    passport_backend: str        # "mock" | "sepolia"
+    passport_backend: str        # "mock" | "local" | "testnet"
     trip_seconds: int            # seconds for the mock engine to drawdown -> maxLoss
     ledger_path: Path            # JSON ledger for the mock backend
     frontend_origin: str         # for CORS
@@ -28,9 +28,11 @@ class Settings:
     @classmethod
     def load(cls) -> "Settings":
         backend = os.environ.get("PASSPORT_BACKEND", "mock").strip().lower()
-        if backend not in {"mock", "local", "sepolia"}:
+        if backend == "sepolia":
+            backend = "testnet"
+        if backend not in {"mock", "local", "testnet"}:
             raise ValueError(
-                f"PASSPORT_BACKEND must be 'mock', 'local' or 'sepolia'; got {backend!r}"
+                f"PASSPORT_BACKEND must be 'mock', 'local' or 'testnet'; got {backend!r}"
             )
         return cls(
             passport_backend=backend,

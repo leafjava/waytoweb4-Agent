@@ -60,7 +60,7 @@ class AuthorizationService:
                 face_verified=False,
                 status="prepared",
                 tx_mint_hash=None,
-                run_id=str(uuid4()),
+                run_id=state.run_id,
                 canonical_intent=canonical,
                 hash_version=HASH_VERSION,
             )
@@ -122,8 +122,8 @@ class AuthorizationService:
                 rec.tx_mint_hash = None
                 state._save_locked()
                 return rec
-            if backend.label != "local":
-                raise AuthorizationError("public-chain transport is not configured")
+            if not hasattr(backend, "mint_record"):
+                raise AuthorizationError("configured backend cannot mint a chain passport")
             rec.authorization_status = "mint_pending"
             rec.status = "mint_pending"
             rec.backend_label = backend.label
@@ -200,7 +200,6 @@ class AuthorizationService:
             if rec.engine_status not in {"stopped", "stop_failed"}:
                 rec.engine_status = "stopped"
             rec.stop_reason = rec.stop_reason or reason_code
-            rec.tx_revoke_hash = None
             if backend.label == "mock":
                 rec.authorization_status = "revoked"
                 rec.status = "revoked"
@@ -234,6 +233,24 @@ class AuthorizationService:
 
         receipt = result.get("receipt", {})
         chain_state = result.get("state", {})
+        if result.get("already_revoked") is True and chain_state.get("status") == "revoked":
+            async with state._lock:
+                rec.authorization_status = "revoked"
+                rec.status = "revoked"
+                state._save_locked()
+            if state.evidence:
+                state.evidence.append("chain.jsonl", {
+                    "run_id": state.run_id,
+                    "action": "revoke_readback",
+                    "passport_id": passport_id,
+                    "reason_code": reason_code,
+                    **result,
+                })
+            state.append_event(make_event(
+                "revoke_readback", passport_id,
+                {"previous_status": previous, "reason_code": reason_code},
+            ))
+            return rec, previous, result
         if (
             result.get("status") != "confirmed"
             or receipt.get("status") != 1

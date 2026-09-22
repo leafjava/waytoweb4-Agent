@@ -89,4 +89,4 @@ def test_health(client):
     body = r.json()
     assert body["ok"] is True
     assert body["kiln"] in {"mock", "http", "misconfigured"}
-    assert body["passport_backend"] in {"mock", "local", "sepolia"}
+    assert body["passport_backend"] in {"mock", "local", "testnet"}

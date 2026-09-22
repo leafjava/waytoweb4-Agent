@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from .authorization import AuthorizationError, authorization_service
+from .audit import make_event
 from .intent import is_expired
 from .policy import write_policy
 from .state import AppState, PassportRecord
@@ -86,9 +87,11 @@ class PaperWorkerController:
                 self.state._save_locked()
 
     async def _record_stop(self, reason: str, drawdown=None, failed=False):
+        should_log = False
         async with self.state._lock:
             rec = self.state.passports.get(self.passport_id)
             if rec:
+                should_log = rec.engine_running or rec.engine_status not in {"stopped", "stop_failed"}
                 if drawdown is not None: rec.drawdown_usd = float(drawdown)
                 rec.stop_requested = True
                 rec.engine_running = False
@@ -104,6 +107,11 @@ class PaperWorkerController:
             # outcome. The worker must remain stopped even when chain status
             # cannot be confirmed.
             pass
+        if should_log:
+            self.state.append_event(make_event(
+                "engine_stop", self.passport_id,
+                {"reason": reason, "drawdown_usd": drawdown, "failed": failed},
+            ))
 
     async def tick(self, amount: float):
         await self._send({"op": "tick", "amount": amount})

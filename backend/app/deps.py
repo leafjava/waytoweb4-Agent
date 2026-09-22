@@ -26,14 +26,13 @@ def get_passport_backend(request: Request):
     We resolve on every call rather than caching on app.state so a
     test can monkey-patch the backend via `app.dependency_overrides`.
     """
-    if settings.passport_backend == "sepolia":
-        from .passport_backends.sepolia import SepoliaPassportBackend
-        return SepoliaPassportBackend()
-    if settings.passport_backend == "local":
+    if settings.passport_backend in {"local", "testnet"}:
         global _node_backend
         if _node_backend is None:
+            from .chain_bridge import ChainBridge
             from .passport_backends.node import NodePassportBackend
-            _node_backend = NodePassportBackend()
+            mode = "live" if settings.passport_backend == "testnet" else "local"
+            _node_backend = NodePassportBackend(ChainBridge(mode=mode), label=settings.passport_backend)
         return _node_backend
     from .passport_backends.mock import MockPassportBackend
     return MockPassportBackend()

@@ -57,9 +57,14 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 
 | Name | Default | Purpose |
 |---|---|---|
-| `PASSPORT_BACKEND` | `mock` | `mock` (offline simulation), `local` (temporary Ganache EVM), or `sepolia` (disabled until a real bridge is configured). |
+| `PASSPORT_BACKEND` | `mock` | `mock` (offline simulation), `local` (temporary Ganache EVM), or `testnet` (real public-testnet transport). Legacy `sepolia` is accepted as an alias for `testnet`. |
 | `KILN_MODE` | `offline` | `offline` permits mock; `live` requires `KILN_API_KEY` and never falls back. |
 | `KILN_API_KEY` | (unset) | Required with `KILN_MODE=live`; ignored in offline mode to prevent accidental live calls. |
+| `RPC_URL` | (unset) | HTTPS JSON-RPC endpoint required by `PASSPORT_BACKEND=testnet`. |
+| `PRIVATE_KEY` | (unset) | Dedicated funded testnet wallet; passed only to the isolated Node worker. |
+| `CHAIN_ID` | (unset) | Public testnet chain ID: Kairos `1001` or Sepolia `11155111`. |
+| `PASSPORT_ADDRESS` | (unset) | Existing StrategyPassport v2 address; when absent, the live worker deploys it before minting. |
+| `TX_TIMEOUT_MS` | `60000` | Receipt wait timeout, constrained to 1–120 seconds. |
 | `TRIP_SECONDS` | `60` | Seconds for the mock engine drawdown to reach `maxLossUsd`. |
 | `LEDGER_PATH` | `backend/var/passports.json` | Mock passport ledger. |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | CORS origin for the backend. |
@@ -87,7 +92,7 @@ ASCII ≈ 1 tok / 4 chars) and 8 ms per call.
 
 ## On-chain tx hashes
 
-Only `PASSPORT_BACKEND=local` produces actual local-EVM transaction hashes. Offline simulation stores a `simulation_id` and leaves transaction fields null. No public-chain transaction was made by this integration work.
+`PASSPORT_BACKEND=local` produces local-EVM transaction hashes. `PASSPORT_BACKEND=testnet` enables the real isolated public-testnet worker only when its explicit RPC, wallet and chain configuration is present. Offline simulation stores a `simulation_id` and leaves transaction fields null. No public-chain transaction was made by this integration work.
 
 > Public testnet hashes must be pasted only after the authorized field rehearsal; never copy historical hashes into a new run.
 

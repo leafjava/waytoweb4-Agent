@@ -1,25 +1,13 @@
-import fs from "node:fs";
-import path from "node:path";
 import ganache from "ganache";
-import solc from "solc";
 import { BrowserProvider, ContractFactory } from "ethers";
 import { validateCanonicalIntent } from "./intent.mjs";
-
-function compile() {
-  const source = fs.readFileSync(path.join(import.meta.dirname, "../contracts/StrategyPassport.sol"), "utf8");
-  const input = { language: "Solidity", sources: { "StrategyPassport.sol": { content: source } }, settings: { evmVersion: "paris", optimizer: { enabled: true, runs: 200 }, outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } } } };
-  const out = JSON.parse(solc.compile(JSON.stringify(input)));
-  const errors = (out.errors || []).filter((x) => x.severity === "error");
-  if (errors.length) throw Error(errors.map((x) => x.formattedMessage).join("\n"));
-  const c = out.contracts["StrategyPassport.sol"].StrategyPassport;
-  return { abi: c.abi, bytecode: `0x${c.evm.bytecode.object}` };
-}
+import { compileContract } from "./contract.mjs";
 
 export async function createLocalRuntime() {
   const eip1193 = ganache.provider({ logging: { quiet: true }, chain: { chainId: 1337 }, wallet: { totalAccounts: 2 } });
   const provider = new BrowserProvider(eip1193);
   const signer = await provider.getSigner();
-  const artifact = compile();
+  const artifact = compileContract();
   const contract = await new ContractFactory(artifact.abi, artifact.bytecode, signer).deploy();
   await contract.waitForDeployment();
   const address = await contract.getAddress();

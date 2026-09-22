@@ -50,7 +50,7 @@ Status: complete for offline/local-EVM scope.
 - Ported StrategyPassport v2 and exact cents handling; Python and Node independently verify a golden canonical-intent fixture.
 - Added the Python bridge with a minimal environment allowlist, request correlation and timeout/uncertain errors.
 - FastAPI can use the local backend for prepare → confirm → mint/readback → revoke; duplicate mint requests reuse the recorded transaction.
-- Public-chain mode remains intentionally disabled in the worker and no public transaction was broadcast.
+- Public-chain transport is implemented behind explicit `PASSPORT_BACKEND=testnet` configuration, with public-testnet/HTTPS/key validation, submitted/confirmed journaling, receipt checks and full contract readback. No public transaction was broadcast during local implementation.
 
 Validation: Node chain tests 2 passed; combined Python suite 112 passed, including FastAPI → Node → Ganache integration.
 
@@ -125,3 +125,15 @@ Status: local stop/revoke and live Kiln routing complete; external field calls r
 - Demo reset now stops active workers before clearing state and is refused for chain-backed or live runs. Persisted running states fail closed on restart and emit `restart_reconcile` evidence.
 
 Validation: Python 129 passed; Node chain 2 passed; frontend production build passed. No real Kiln request or public-chain transaction was made by this hardening pass.
+
+### Public-testnet transport and evidence hardening
+
+Status: implementation and offline validation complete; authorized field transaction still pending.
+
+- Replaced the fake Sepolia-shaped adapter with an isolated real testnet worker selected only by `PASSPORT_BACKEND=testnet` (`sepolia` remains a compatibility alias).
+- Restricted live RPC to HTTPS and public testnet IDs Kairos `1001` or Sepolia `11155111`; validated the dedicated key format, RPC chain ID, wallet gas balance and StrategyPassport v2 version.
+- Added deployment/mint/revoke submission journaling before receipt waits, bounded receipt timeouts, author/event/receipt checks and full contract readback against the canonical keccak intent.
+- Strengthened live evidence verification to require one run ID, exact Kiln model/API token usage, public-testnet receipts, matching contract/passport IDs, active→revoked readback and an engine-stop log. Local-chain hashes and simulated revoke events now fail live verification.
+- Split the two-round rehearsal into independent run directories so the second intent can no longer overwrite the first run's evidence.
+
+Validation: Python 131 passed; Node chain 4 passed; frontend production build passed; both independent offline run directories passed evidence verification. No public transaction was broadcast.

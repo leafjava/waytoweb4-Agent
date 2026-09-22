@@ -14,9 +14,12 @@ class ChainBridgeError(RuntimeError):
 
 
 class ChainBridge:
-    def __init__(self, root: Path | None = None, timeout: float = 15.0):
+    def __init__(self, root: Path | None = None, timeout: float = 15.0, mode: str = "local"):
+        if mode not in {"local", "live"}:
+            raise ValueError("chain bridge mode must be local or live")
         self.root = root or Path(__file__).resolve().parents[2] / "chain"
         self.timeout = timeout
+        self.mode = mode
         self.process: asyncio.subprocess.Process | None = None
         self._lock = asyncio.Lock()
 
@@ -24,8 +27,10 @@ class ChainBridge:
         if self.process and self.process.returncode is None:
             return
         allowed = ("PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "APPDATA", "LOCALAPPDATA", "USERPROFILE", "COMSPEC", "PATHEXT")
+        if self.mode == "live":
+            allowed += ("RPC_URL", "PRIVATE_KEY", "CHAIN_ID", "PASSPORT_ADDRESS", "TX_TIMEOUT_MS", "CHAIN_JOURNAL_DIR")
         env = {name: os.environ[name] for name in allowed if name in os.environ}
-        env["CHAIN_MODE"] = "local"
+        env["CHAIN_MODE"] = self.mode
         self.process = await asyncio.create_subprocess_exec(
             "node", str(self.root / "src" / "worker.mjs"), cwd=self.root,
             stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,

@@ -6,10 +6,9 @@ from ..chain_bridge import ChainBridge
 
 
 class NodePassportBackend:
-    label = "local"
-
-    def __init__(self, bridge: ChainBridge | None = None):
+    def __init__(self, bridge: ChainBridge | None = None, label: str | None = None):
         self.bridge = bridge or ChainBridge()
+        self.label = label or ("testnet" if self.bridge.mode == "live" else "local")
 
     async def mint_record(self, rec):
         return await self.bridge.call("mint", rec.run_id, {

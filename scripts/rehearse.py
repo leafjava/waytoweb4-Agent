@@ -28,38 +28,56 @@ def _prepare(client, spec, prefix):
     return minted.json()
 
 
-def run(output: str | Path) -> dict:
-    root = Path(output); root.mkdir(parents=True, exist_ok=True)
-    comparison_id = str(uuid4())
-    app = create_app(); state = AppState(root / "ledger.json")
+def _run_round(root: Path, name: str, spec: dict, policy_revoked: bool):
+    round_root = root / name
+    app = create_app()
+    state = AppState(round_root / "ledger.json")
     app.state.app_state = state
     app.dependency_overrides[get_state] = lambda: state
     with TestClient(app) as client:
-            spec = valid_spec()
-            first = _prepare(client, spec, "round-a")
-            client.post("/api/face/verify", json={"passport_id": first["passport_id"]})
-            write_policy(state.ledger_path.parent / "policy.json", 1, [spec["leaderId"]])
-            client.post("/api/engine/start", json={"passport_id": first["passport_id"]})
-            client.post("/api/engine/tick?amount=10", json={"passport_id": first["passport_id"]})
-            client.post("/api/engine/stop", json={"passport_id": first["passport_id"]})
-            first_state = client.get(f"/api/passport/{first['passport_id']}").json()
-
-            second = _prepare(client, spec, "round-b")
-            client.post("/api/face/verify", json={"passport_id": second["passport_id"]})
-            client.post("/api/engine/start", json={"passport_id": second["passport_id"]})
-            write_policy(state.ledger_path.parent / "policy.json", 2, [])
-            second_state = {}
+        passport = _prepare(client, spec, name)
+        client.post("/api/face/verify", json={"passport_id": passport["passport_id"]})
+        write_policy(round_root / "policy.json", 1, [spec["leaderId"]])
+        assert client.post("/api/engine/start", json={"passport_id": passport["passport_id"]}).status_code == 200
+        if policy_revoked:
+            write_policy(round_root / "policy.json", 2, [])
+            record = {}
             for _ in range(50):
-                second_state = client.get(f"/api/passport/{second['passport_id']}").json()
-                if second_state.get("engine_status") == "stopped": break
+                record = client.get(f"/api/passport/{passport['passport_id']}").json()
+                if record.get("engine_status") == "stopped":
+                    break
                 time.sleep(0.02)
-            assert second_state.get("stop_reason") == "POLICY_REVOKED", second_state
-            comparison = {"comparison_id": comparison_id, "source_mode": "offline", "round_a": first_state, "round_b": second_state, "policy_change": {"before": [spec["leaderId"]], "after": [], "version": 2}}
-            (root / "comparison.json").write_text(json.dumps(comparison, indent=2), encoding="utf-8")
-            evidence_dir = state.evidence.dir if state.evidence else None
-            if evidence_dir: (root / "evidence-path.txt").write_text(str(evidence_dir), encoding="utf-8")
-            app.dependency_overrides.clear()
-            return comparison
+            assert record.get("stop_reason") == "POLICY_REVOKED", record
+        else:
+            client.post("/api/engine/tick?amount=10", json={"passport_id": passport["passport_id"]})
+            assert client.post("/api/engine/stop", json={"passport_id": passport["passport_id"]}).status_code == 200
+            record = client.get(f"/api/passport/{passport['passport_id']}").json()
+    app.dependency_overrides.clear()
+    return record, state.evidence.dir if state.evidence else None
+
+
+def run(output: str | Path) -> dict:
+    root = Path(output)
+    root.mkdir(parents=True, exist_ok=True)
+    comparison_id = str(uuid4())
+    spec = valid_spec()
+    first_state, first_evidence = _run_round(root, "round-a", spec, False)
+    second_state, second_evidence = _run_round(root, "round-b", spec, True)
+    assert first_state["run_id"] != second_state["run_id"]
+    assert first_state["spec_hash"] == second_state["spec_hash"]
+    comparison = {
+        "comparison_id": comparison_id,
+        "source_mode": "offline",
+        "round_a": first_state,
+        "round_b": second_state,
+        "policy_change": {"before": [spec["leaderId"]], "after": [], "version": 2},
+    }
+    (root / "comparison.json").write_text(json.dumps(comparison, indent=2), encoding="utf-8")
+    paths = {"round_a": str(first_evidence), "round_b": str(second_evidence)}
+    (root / "evidence-paths.json").write_text(json.dumps(paths, indent=2), encoding="utf-8")
+    if second_evidence:
+        (root / "evidence-path.txt").write_text(str(second_evidence), encoding="utf-8")
+    return comparison
 
 
 if __name__ == "__main__":

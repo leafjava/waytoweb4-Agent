@@ -58,7 +58,8 @@ async def engine_stop(
         from ..errors import conflict
         raise conflict(str(exc))
     state.append_event(make_event(
-        "engine_stop", req.passport_id, {"drawdown_usd": rec.drawdown_usd},
+        "engine_stop", req.passport_id,
+        {"drawdown_usd": rec.drawdown_usd, "reason": rec.stop_reason or "STOP_REQUESTED"},
     ))
     return EngineStopResponse(status=rec.status, drawdown_usd=rec.drawdown_usd)
 

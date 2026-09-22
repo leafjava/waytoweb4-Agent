@@ -12,8 +12,8 @@ python -m pip install -e backend[dev]
 # default: passport backend = mock
 python -m uvicorn backend.app.main:app --port 8000
 
-# Sepolia-shaped adapter (no real chain broadcast; keccak hashes only)
-PASSPORT_BACKEND=sepolia python -m uvicorn backend.app.main:app --port 8000
+# Real public-testnet transport (requires explicit RPC/wallet settings)
+PASSPORT_BACKEND=testnet RPC_URL=https://... CHAIN_ID=11155111 PRIVATE_KEY=0x... python -m uvicorn backend.app.main:app --port 8000
 ```
 
 Open <http://localhost:8000/docs> for the auto-generated OpenAPI UI.
@@ -30,7 +30,7 @@ Open <http://localhost:8000/docs> for the auto-generated OpenAPI UI.
 | POST | `/api/passport/{id}/revoke` | Revoke a passport; returns a second `tx_hash`. |
 | GET  | `/api/passport/{id}` | One passport record. |
 | POST | `/api/engine/start` | Start the deterministic mock engine. |
-| POST | `/api/engine/stop` | Stop the engine (does not revoke). |
+| POST | `/api/engine/stop` | Stop the engine and revoke its authorization. |
 | POST | `/api/engine/tick?amount=N` | Synchronous drawdown advance. |
 | POST | `/api/redline/judge` | Run RedLine; auto-revokes on TRIP. |
 | POST | `/api/redline/inject/hynix` | Inject the canonical Hynix crash pack. |
@@ -43,8 +43,13 @@ Open <http://localhost:8000/docs> for the auto-generated OpenAPI UI.
 
 | Name | Default | Purpose |
 |---|---|---|
-| `PASSPORT_BACKEND` | `mock` | `mock` or `sepolia`. |
-| `KILN_API_KEY` | (unset) | If set, switch to the real Kiln HTTP client. |
+| `PASSPORT_BACKEND` | `mock` | `mock`, `local`, or `testnet`; legacy `sepolia` aliases to `testnet`. |
+| `KILN_MODE` | `offline` | `live` selects the real Kiln HTTP client and requires its key. |
+| `KILN_API_KEY` | (unset) | Required only in Kiln live mode. |
+| `RPC_URL` | (unset) | HTTPS public-testnet JSON-RPC endpoint. |
+| `PRIVATE_KEY` | (unset) | Dedicated funded testnet wallet for the isolated worker. |
+| `CHAIN_ID` | (unset) | Kairos `1001` or Sepolia `11155111`. |
+| `PASSPORT_ADDRESS` | (unset) | Existing v2 contract; omit to deploy during the authorized live run. |
 | `TRIP_SECONDS` | `60` | Seconds for the mock engine drawdown to reach `maxLossUsd`. |
 | `LEDGER_PATH` | `backend/var/passports.json` | Persisted mock passport ledger. |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | CORS allow-origin for the React dev server. |
@@ -54,19 +59,14 @@ Open <http://localhost:8000/docs> for the auto-generated OpenAPI UI.
 ```bash
 PYTHONPATH=. python -m pytest backend/tests -v
 ```
-31 tests cover happy paths, every 4xx error code, the spec
-re-validation guard, and the full end-to-end demo flow.
+The combined suite covers the authorization boundary, worker stops,
+local-EVM receipts/readback, evidence contracts and the end-to-end flow.
 
 ## Honest disclaimer
 
-The `sepolia` backend adapter does NOT broadcast transactions. It
-computes real `keccak256` hashes from the canonical-JSON Spec so
-the output looks like a Sepolia tx, but no RPC call is made. To
-broadcast for real you would need:
-1. A deployed `PassportRegistry` contract on Sepolia.
-2. `SEPOLIA_RPC_URL` + `SEPOLIA_PRIVATE_KEY` env vars.
-3. Replace the `SepoliaPassportBackend.mint/revoke` bodies with
-   `web3.eth.send_transaction(...)` calls.
-
-This is documented honestly in the README's §10 so judges don't
-think we shipped a real on-chain tx in the time budget.
+Mock mode never fabricates transaction hashes, and local mode uses a
+temporary Ganache chain. Testnet mode contains a real transport but does
+nothing until explicitly selected with a valid HTTPS RPC, public-testnet
+chain ID and dedicated wallet. No public-chain transaction is created by
+installation, tests or offline rehearsal; only an authorized live run may
+broadcast one.
