@@ -61,6 +61,8 @@ class AuthorizationService:
             )
             state.passports[pid] = rec
             state.requests[request_id] = {"fingerprint": fp, "passport_id": pid}
+            if state.evidence:
+                state.evidence.write_json("intent.json", {"run_id": state.run_id, "passport_id": pid, "spec": normalized, "canonical_intent": canonical, "spec_hash": digest, "hash_version": HASH_VERSION})
             state._save_locked()
             return rec
 
@@ -148,6 +150,8 @@ class AuthorizationService:
             if rec.stop_requested:
                 rec.authorization_status = "revoke_pending"
                 rec.status = "revoke_pending"
+            if state.evidence:
+                state.evidence.append("chain.jsonl", {"run_id": state.run_id, "action": "mint_confirmed", "passport_id": rec.passport_id, **result})
             state._save_locked()
             return rec
 

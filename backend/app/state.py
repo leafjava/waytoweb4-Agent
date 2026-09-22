@@ -16,12 +16,15 @@ import asyncio
 import json
 import os
 import tempfile
+import os
+from uuid import uuid4
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .audit import AuditEvent, make_event
+from agent.shared.evidence import EvidenceWriter
 
 
 # Statuses a passport can be in. Keep these strings stable; they end
@@ -120,6 +123,11 @@ class AppState:
     passports: dict[str, PassportRecord] = field(default_factory=dict)
     events: list[AuditEvent] = field(default_factory=list)
     requests: dict[str, dict[str, Any]] = field(default_factory=dict)
+    run_id: str = field(default_factory=lambda: str(uuid4()))
+    evidence: EvidenceWriter | None = field(init=False, default=None, repr=False)
+
+    def __post_init__(self):
+        self.evidence = EvidenceWriter(self.ledger_path.parent / "evidence", self.run_id, os.environ.get("KILN_MODE", "offline"))
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock)
 
     # ---- persistence ------------------------------------------------------
@@ -132,6 +140,9 @@ class AppState:
         for pid, p in raw.get("passports", {}).items():
             self.passports[pid] = PassportRecord(**p)
         self.requests = raw.get("requests", {})
+        if raw.get("run_id"):
+            self.run_id = raw["run_id"]
+            self.evidence = EvidenceWriter(self.ledger_path.parent / "evidence", self.run_id, os.environ.get("KILN_MODE", "offline"))
 
     def _save_locked(self) -> None:
         """Write passports to the JSON ledger. Caller must hold the lock."""
@@ -142,6 +153,7 @@ class AppState:
             },
             "saved_at": datetime.now(timezone.utc).isoformat(),
             "requests": self.requests,
+            "run_id": self.run_id,
         }
         content = json.dumps(body, indent=2, ensure_ascii=False)
         fd, tmp_name = tempfile.mkstemp(prefix=self.ledger_path.name, dir=self.ledger_path.parent)
@@ -166,6 +178,8 @@ class AppState:
         # Cap the in-memory log so it doesn't grow unbounded.
         if len(self.events) > 500:
             self.events = self.events[-500:]
+        if self.evidence:
+            self.evidence.append("events.jsonl", {"run_id": self.run_id, **ev.to_dict()})
 
     # ---- snapshot for read endpoints --------------------------------------
 

@@ -68,6 +68,17 @@ Status: complete for offline scope.
 
 Validation: T3 engine/RedLine/integration tests: 11 passed. Full combined suite remains the gate after T4 changes.
 
-### T4–T6
+### T4 — Kiln contract and per-run evidence
+
+Status: complete for code/stub/offline scope; real Kiln remains a field validation item.
+
+- `KILN_MODE=live` now fails closed when the key is missing; it never silently selects mock.
+- HTTP responses are checked for the configured `gpt-oss-120b` model. Usage source is classified as `api`, `estimated` or `unavailable`; all calls retain flow, model, request ID, latency and 180W-derived energy estimate.
+- Added a strict `KilnEventClassifier` under the teammate EventClassifier protocol. Rule-first hard trips still avoid a model call.
+- Added per-run `manifest.json`, `intent.json`, `events.jsonl`, `calls.jsonl`, `chain.jsonl` and a fail-closed evidence verifier. Live verification rejects offline mode, estimated/unavailable usage, malformed hashes and missing stop evidence.
+
+Validation: full combined suite: 118 passed. No real Kiln request was made; no public transaction was broadcast.
+
+### T5–T6
 
 Status: pending.

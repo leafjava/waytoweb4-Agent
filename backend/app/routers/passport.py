@@ -92,6 +92,8 @@ async def revoke_passport(passport_id: str = Path(...), state: AppState = Depend
             rec.authorization_status = "revoked"
             rec.status = "revoked"
             state._save_locked()
+        if state.evidence:
+            state.evidence.append("chain.jsonl", {"run_id": state.run_id, "action": "revoke_confirmed", "passport_id": passport_id, **result})
         state.append_event(make_event("revoke", passport_id, {"tx_hash": rec.tx_revoke_hash, "previous_status": previous}))
     else:
         state.append_event(make_event("revoke_simulated", passport_id, {"previous_status": previous}))

@@ -26,10 +26,12 @@ import json
 import os
 import re
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Protocol
 
 from agent.shared.token_logger import get_default_logger
+from agent.shared.evidence import get_evidence_writer
 
 # ---- Environment configuration ---------------------------------------------
 
@@ -69,6 +71,8 @@ class KilnReply:
     tokens_out: int
     latency_s: float
     model: str
+    usage_source: str = "api"
+    request_id: str | None = None
 
 
 class KilnClient(Protocol):
@@ -145,13 +149,15 @@ class MockKilnClient:
 
         tokens_in = _total_tokens_in(msgs)
         tokens_out = _approx_tokens(reply_text)
-        get_default_logger().record(flow_tag, tokens_in, tokens_out, latency)
+        call_id = str(uuid.uuid4())
+        get_default_logger().record(flow_tag, tokens_in, tokens_out, latency, usage_source="estimated", model=self.model, request_id=call_id)
         return KilnReply(
             text=reply_text,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
             latency_s=latency,
             model=self.model,
+            usage_source="estimated", request_id=call_id,
         )
 
     # -- canned replies -----------------------------------------------------
@@ -237,8 +243,12 @@ class HttpKilnClient:
 
         # Try the OpenAI-style usage block first; fall back to a rough
         # approximation if the provider omits it.
+        response_model = body.get("model")
+        if response_model and response_model != self.model:
+            raise RuntimeError(f"Kiln response model mismatch: expected {self.model!r}, got {response_model!r}")
         usage = body.get("usage") or {}
-        tokens_in = int(usage.get("prompt_tokens") or _total_tokens_in(messages))
+        usage_source = "api" if "prompt_tokens" in usage and "completion_tokens" in usage else "unavailable"
+        tokens_in = int(usage.get("prompt_tokens") or 0)
         tokens_out = int(usage.get("completion_tokens") or 0)
 
         try:
@@ -246,13 +256,15 @@ class HttpKilnClient:
         except (KeyError, IndexError, TypeError) as e:
             raise RuntimeError(f"Unexpected Kiln response shape: {body!r}") from e
 
-        get_default_logger().record(flow_tag, tokens_in, tokens_out, latency)
+        call_id = str(uuid.uuid4())
+        get_default_logger().record(flow_tag, tokens_in, tokens_out, latency, usage_source=usage_source, model=self.model, request_id=call_id)
         return KilnReply(
             text=text,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
             latency_s=latency,
             model=self.model,
+            usage_source=usage_source, request_id=call_id,
         )
 
 
@@ -280,7 +292,10 @@ def build_kiln_client(env: Mapping[str, str] | None = None) -> KilnClient:
     need plumbing.
     """
     src: Mapping[str, str] = env if env is not None else os.environ  # type: ignore[assignment]
+    mode = (src.get("KILN_MODE") or _env("KILN_MODE") or "offline").lower()
     key = src.get(KILN_API_KEY_ENV) or _env(KILN_API_KEY_ENV)
+    if mode == "live" and not key:
+        raise RuntimeError("KILN_MODE=live requires KILN_API_KEY; refusing mock fallback")
     if key:
         base = src.get(KILN_API_BASE_ENV) or _env(KILN_API_BASE_ENV) or DEFAULT_API_BASE
         model = src.get(KILN_MODEL_ENV) or _env(KILN_MODEL_ENV) or DEFAULT_MODEL

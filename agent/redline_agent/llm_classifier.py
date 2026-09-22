@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Iterable, Protocol
+import json
 
 from agent.redline_agent.schema import (
     RedLineAction,
@@ -121,10 +122,38 @@ class HynixMockClassifier:
         )
 
 
+class KilnEventClassifier:
+    """Strict adapter for the real Kiln event-classification call."""
+
+    def __init__(self, client, flow_tag: str = "redline_hold"):
+        self.client = client
+        self.flow_tag = flow_tag
+
+    def classify(self, events: Iterable[MarketEvent]) -> RedLineVerdict:
+        from agent.follow_agent.kiln_client import ChatMessage
+        payload = [
+            {"symbol": e.symbol, "change_pct": e.change_pct, "kind": e.kind, "timestamp": e.timestamp}
+            for e in events
+        ]
+        reply = self.client.chat([
+            ChatMessage("system", "Return JSON only: level HOLD/WATCH/TRIP, reason_codes array, evidence array."),
+            ChatMessage("user", json.dumps(payload, ensure_ascii=False, separators=(",", ":"))),
+        ], flow_tag=self.flow_tag)
+        try:
+            body = json.loads(reply.text)
+            level = RedLineLevel(str(body["level"]).upper())
+            codes = [ReasonCode(str(x)) for x in body.get("reason_codes", [])]
+            evidence = [str(x) for x in body.get("evidence", [])]
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise RuntimeError("Kiln classifier returned invalid verdict JSON") from exc
+        return RedLineVerdict(level=level, reason_codes=codes, evidence=evidence, action=action_for_level(level), model_may_override_hard_limit=False, source="kiln")
+
+
 __all__ = [
     "MarketEvent",
     "EventClassifier",
     "HynixMockClassifier",
     "KEYWORD_RULES",
     "CB_THRESHOLD_PCT",
+    "KilnEventClassifier",
 ]

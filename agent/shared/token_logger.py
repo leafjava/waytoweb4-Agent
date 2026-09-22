@@ -17,6 +17,9 @@ records here.
 from __future__ import annotations
 
 import threading
+import os
+import uuid
+from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from typing import Iterable
 
@@ -60,7 +63,7 @@ class TokenLogger:
     _buckets: dict[str, _FlowBucket] = field(default_factory=dict)
     _lock: threading.RLock = field(default_factory=threading.RLock)
 
-    def record(self, flow: str, tokens_in: int, tokens_out: int, latency_s: float) -> None:
+    def record(self, flow: str, tokens_in: int, tokens_out: int, latency_s: float, *, usage_source: str = "api", model: str = "gpt-oss-120b", request_id: str | None = None) -> None:
         """Append one Kiln call to the named flow bucket."""
         if flow not in ALLOWED_FLOWS:
             raise ValueError(
@@ -75,6 +78,10 @@ class TokenLogger:
             b.tokens_in += tokens_in
             b.tokens_out += tokens_out
             b.latency_s += latency_s
+        from .evidence import get_evidence_writer
+        writer = get_evidence_writer()
+        if writer:
+            writer.append("calls.jsonl", {"run_id": writer.run_id, "call_id": request_id or str(uuid.uuid4()), "flow": flow, "model": model, "tokens_in": tokens_in, "tokens_out": tokens_out, "usage_source": usage_source, "latency_s": latency_s, "energy_Wh_est": estimate_wh(latency_s), "at": datetime.now(timezone.utc).isoformat()})
 
     def flows(self) -> Iterable[str]:
         with self._lock:
