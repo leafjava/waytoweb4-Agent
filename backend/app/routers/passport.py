@@ -50,7 +50,7 @@ async def confirm_passport(req: ConfirmRequest, state: AppState = Depends(get_st
 @router.post("/mint", response_model=MintResponse)
 async def mint_passport(req: MintRequest, state: AppState = Depends(get_state), backend=Depends(get_passport_backend)):
     try:
-        rec = await authorization_service.mint(state, req.passport_id, req.request_id, backend.label)
+        rec = await authorization_service.mint(state, req.passport_id, req.request_id, backend)
     except KeyError:
         raise not_found(f"passport {req.passport_id} not found")
     except AuthorizationError as exc:
@@ -63,7 +63,7 @@ async def mint_passport(req: MintRequest, state: AppState = Depends(get_state), 
 
 
 @router.post("/{passport_id}/revoke", response_model=RevokeResponse)
-async def revoke_passport(passport_id: str = Path(...), state: AppState = Depends(get_state)):
+async def revoke_passport(passport_id: str = Path(...), state: AppState = Depends(get_state), backend=Depends(get_passport_backend)):
     async with state._lock:
         rec = state.passports.get(passport_id)
         if rec is None:
@@ -74,12 +74,28 @@ async def revoke_passport(passport_id: str = Path(...), state: AppState = Depend
         rec.stop_requested = True
         rec.engine_running = False
         rec.engine_status = "stopped"
-        rec.authorization_status = "revoked"
-        rec.status = "revoked"
+        rec.authorization_status = "revoked" if backend.label == "mock" else "revoke_pending"
+        rec.status = rec.authorization_status
         rec.tx_revoke_hash = None
         state._save_locked()
-    state.append_event(make_event("revoke_simulated", passport_id, {"previous_status": previous}))
-    return RevokeResponse(passport_id=passport_id, tx_hash=None, status="revoked", previous_status=previous)
+    if backend.label == "local":
+        try:
+            result = await backend.revoke_record(rec, "STOP_REQUESTED")
+        except Exception as exc:
+            async with state._lock:
+                rec.authorization_status = "uncertain"
+                rec.status = "uncertain"
+                state._save_locked()
+            raise conflict(f"revoke outcome uncertain: {exc}")
+        async with state._lock:
+            rec.tx_revoke_hash = result["tx_hash"]
+            rec.authorization_status = "revoked"
+            rec.status = "revoked"
+            state._save_locked()
+        state.append_event(make_event("revoke", passport_id, {"tx_hash": rec.tx_revoke_hash, "previous_status": previous}))
+    else:
+        state.append_event(make_event("revoke_simulated", passport_id, {"previous_status": previous}))
+    return RevokeResponse(passport_id=passport_id, tx_hash=rec.tx_revoke_hash, status=rec.authorization_status, previous_status=previous)
 
 
 @router.get("/{passport_id}")

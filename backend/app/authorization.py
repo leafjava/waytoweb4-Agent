@@ -87,7 +87,7 @@ class AuthorizationService:
             state._save_locked()
             return rec
 
-    async def mint(self, state: AppState, passport_id: str, request_id: str, backend_label: str) -> PassportRecord:
+    async def mint(self, state: AppState, passport_id: str, request_id: str, backend) -> PassportRecord:
         async with state._lock:
             rec = state.passports.get(passport_id)
             if rec is None:
@@ -105,14 +105,49 @@ class AuthorizationService:
                 raise AuthorizationError("passport must be confirmed before mint")
             if rec.stop_requested or is_expired(rec.expiry):
                 raise AuthorizationError("authorization is stopped or expired")
-            if backend_label != "mock":
-                raise AuthorizationError("live chain bridge is not available in T1")
+            state.requests[request_id] = {"fingerprint": fp, "passport_id": passport_id}
+            if backend.label == "mock":
+                rec.authorization_status = "authorized"
+                rec.status = "authorized"
+                rec.simulation_id = f"sim-{uuid4()}"
+                rec.backend_label = "mock"
+                rec.tx_mint_hash = None
+                state._save_locked()
+                return rec
+            if backend.label != "local":
+                raise AuthorizationError("public-chain transport is not configured")
+            rec.authorization_status = "mint_pending"
+            rec.status = "mint_pending"
+            rec.backend_label = backend.label
+            state._save_locked()
+        try:
+            result = await backend.mint_record(rec)
+        except Exception as exc:
+            async with state._lock:
+                rec.authorization_status = "uncertain"
+                rec.status = "uncertain"
+                state._save_locked()
+            raise AuthorizationError(f"chain mint outcome uncertain: {exc}") from exc
+        async with state._lock:
+            if result.get("status") != "confirmed" or result.get("receipt", {}).get("status") != 1:
+                rec.authorization_status = "uncertain"
+                rec.status = "uncertain"
+                state._save_locked()
+                raise AuthorizationError("chain mint did not return a confirmed successful receipt")
+            chain_state = result["state"]
+            if chain_state["spec_hash"].lower() != rec.spec_hash.lower():
+                rec.authorization_status = "uncertain"
+                state._save_locked()
+                raise AuthorizationError("chain readback hash mismatch")
+            rec.tx_mint_hash = result["tx_hash"]
+            rec.chain_passport_id = result["chain_passport_id"]
+            rec.chain_id = result["chain_id"]
+            rec.contract_address = result["contract_address"]
             rec.authorization_status = "authorized"
             rec.status = "authorized"
-            rec.simulation_id = f"sim-{uuid4()}"
-            rec.backend_label = "mock"
-            rec.tx_mint_hash = None
-            state.requests[request_id] = {"fingerprint": fp, "passport_id": passport_id}
+            if rec.stop_requested:
+                rec.authorization_status = "revoke_pending"
+                rec.status = "revoke_pending"
             state._save_locked()
             return rec
 

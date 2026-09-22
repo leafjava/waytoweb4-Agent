@@ -28,9 +28,9 @@ class Settings:
     @classmethod
     def load(cls) -> "Settings":
         backend = os.environ.get("PASSPORT_BACKEND", "mock").strip().lower()
-        if backend not in {"mock", "sepolia"}:
+        if backend not in {"mock", "local", "sepolia"}:
             raise ValueError(
-                f"PASSPORT_BACKEND must be 'mock' or 'sepolia'; got {backend!r}"
+                f"PASSPORT_BACKEND must be 'mock', 'local' or 'sepolia'; got {backend!r}"
             )
         return cls(
             passport_backend=backend,

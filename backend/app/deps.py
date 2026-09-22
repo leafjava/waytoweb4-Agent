@@ -12,6 +12,8 @@ from fastapi import Request
 from .config import settings
 from .state import AppState
 
+_node_backend = None
+
 
 def get_state(request: Request) -> AppState:
     """Return the process-wide AppState stored on app.state."""
@@ -27,12 +29,25 @@ def get_passport_backend(request: Request):
     if settings.passport_backend == "sepolia":
         from .passport_backends.sepolia import SepoliaPassportBackend
         return SepoliaPassportBackend()
+    if settings.passport_backend == "local":
+        global _node_backend
+        if _node_backend is None:
+            from .passport_backends.node import NodePassportBackend
+            _node_backend = NodePassportBackend()
+        return _node_backend
     from .passport_backends.mock import MockPassportBackend
     return MockPassportBackend()
+
+
+async def close_passport_backend():
+    global _node_backend
+    if _node_backend is not None:
+        await _node_backend.close()
+        _node_backend = None
 
 
 def get_trip_seconds() -> int:
     return settings.trip_seconds
 
 
-__all__ = ["get_state", "get_passport_backend", "get_trip_seconds"]
+__all__ = ["get_state", "get_passport_backend", "get_trip_seconds", "close_passport_backend"]

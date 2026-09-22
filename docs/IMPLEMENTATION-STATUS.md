@@ -42,6 +42,20 @@ Status: complete.
 
 Validation: combined agent/backend suite: 109 passed.
 
-### T2–T6
+### T2 — isolated chain bridge
+
+Status: complete for offline/local-EVM scope.
+
+- Added a Node 22 JSON-lines worker containing only intent verification and passport chain operations.
+- Ported StrategyPassport v2 and exact cents handling; Python and Node independently verify a golden canonical-intent fixture.
+- Added the Python bridge with a minimal environment allowlist, request correlation and timeout/uncertain errors.
+- FastAPI can use the local backend for prepare → confirm → mint/readback → revoke; duplicate mint requests reuse the recorded transaction.
+- Public-chain mode remains intentionally disabled in the worker and no public transaction was broadcast.
+
+Validation: Node chain tests 2 passed; combined Python suite 112 passed, including FastAPI → Node → Ganache integration.
+
+Dependency note: Ganache reports a µWS native-binary fallback on Node 24 and npm reports advisories in its transitive development tree; the tests use the JavaScript fallback successfully.
+
+### T3–T6
 
 Status: pending.

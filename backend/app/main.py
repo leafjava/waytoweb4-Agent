@@ -16,6 +16,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .engine import cancel_all
+from .deps import close_passport_backend
 from .routers import engine, face, health, passport, redline, spec, state as state_router
 from .state import AppState
 
@@ -31,6 +32,7 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         await cancel_all()
+        await close_passport_backend()
 
 
 def create_app() -> FastAPI:
