@@ -10,8 +10,9 @@ Usage:
 
 Environment:
 
-    PASSPORT_BACKEND=mock|sepolia  (default mock)
-    KILN_API_KEY=...                (omit for the offline mock Kiln)
+    PASSPORT_BACKEND=mock|local|testnet  (default mock)
+    KILN_MODE=offline|live              (default offline)
+    KILN_API_KEY=...                    (required only for live Kiln)
     FRONTEND_ORIGIN=http://...      (default http://localhost:5173)
     BACKEND_PORT=8000               (override if needed)
     FRONTEND_PORT=5173              (override if needed)

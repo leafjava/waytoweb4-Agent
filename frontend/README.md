@@ -27,14 +27,15 @@ Then open <http://localhost:5173/>.
 
 ## Layout
 
-Four regions, always visible:
+The demo workspace contains:
 
 - **Header**: title + Kiln mode pill + Passport mode pill + Reset
 - **Chat (left)**: scrollable dialog; type intent, click Send
 - **Spec (top right)**: locked fields + "Lock Spec & Mint" button
-- **Passport (mid right)**: id / status / tx hashes / Face + Engine buttons
+- **Passport (mid right)**: id / status / tx hashes / per-mandate human gate + Engine controls
 - **RedLine (bottom right)**: drawdown gauge + verdict + buttons + recent events
-- **Token report**: bottom strip with the live PRD §9 markdown table
+- **Human gate**: local camera preview, frozen mandate, explicit consent, no image upload
+- **Inference evidence**: per-flow tokens, latency, 180W estimate, usage source and control timeline
 
 ## API
 
@@ -60,6 +61,8 @@ frontend/
         ├── ChatPanel.jsx
         ├── SpecCard.jsx
         ├── PassportCard.jsx
+        ├── HumanGate.jsx
+        ├── InferenceEvidencePanel.jsx
         ├── DrawdownGauge.jsx
         ├── VerdictBadge.jsx
         ├── RedLinePanel.jsx

@@ -28,9 +28,8 @@ node_modules/
 frontend/dist/
 .vite/
 
-# Backend runtime data (mock ledger — recreated by the demo)
-/backend/var/passports.json
-/backend/var/evidence/
+# Backend runtime data (ledger, policy and evidence — recreated by the demo)
+/backend/var/
 /artifacts/
 
 # Coverage / build artifacts
