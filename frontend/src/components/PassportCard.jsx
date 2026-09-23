@@ -69,6 +69,7 @@ export default function PassportCard({ draft, snapshot, onAction }) {
   const status = passport?.status ?? mint?.status ?? 'pending_face'
   const palette = PASS_COLORS[status] ?? PASS_COLORS.pending_face
   const faceVerified = !!passport?.face_verified
+  const gateStatus = passport?.face_gate_status ?? 'pending'
 
   return (
     <div className={`bg-slate-900/40 border ${palette.border} rounded-lg p-4 space-y-2`}>
@@ -107,7 +108,9 @@ export default function PassportCard({ draft, snapshot, onAction }) {
         <div className="flex justify-between text-xs">
           <span className="text-slate-400">{t('pass.face')}</span>
           <span className={faceVerified ? 'text-emerald-300' : 'text-amber-300'}>
-            {faceVerified ? t('pass.face_verified') : t('pass.face_not_verified')}
+            {faceVerified
+              ? gateStatus === 'invalidated' ? t('pass.face_historical') : t('pass.face_verified')
+              : t('pass.face_not_verified')}
           </span>
         </div>
         {passport?.face_verified_at && (
@@ -119,6 +122,12 @@ export default function PassportCard({ draft, snapshot, onAction }) {
               </span>
             </div>
             <div className="flex justify-between gap-4 text-xs">
+              <span className="text-slate-400">{t('pass.gate_status')}</span>
+              <span className={gateStatus === 'invalidated' ? 'text-rose-300' : 'text-cyan-200'}>
+                {t(`pass.gate_${gateStatus}`)}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4 text-xs">
               <span className="text-slate-400">{t('pass.method')}</span>
               <span className="text-slate-200">{passport.face_verification_method}</span>
             </div>
@@ -127,6 +136,17 @@ export default function PassportCard({ draft, snapshot, onAction }) {
               <div className="txhash text-slate-200">{passport.face_verification_session_id}</div>
             </div>
           </>
+        )}
+        {gateStatus === 'invalidated' && (
+          <div className="rounded-xl bg-rose-950/60 p-3 text-xs leading-5 text-rose-200" role="status">
+            <i className="fa fa-ban mr-2" aria-hidden="true"></i>
+            {t('pass.gate_invalidated_help')}
+            {passport?.face_gate_invalidation_reason && (
+              <span className="mt-1 block font-mono text-rose-300">
+                {passport.face_gate_invalidation_reason}
+              </span>
+            )}
+          </div>
         )}
       </div>
 
@@ -140,7 +160,7 @@ export default function PassportCard({ draft, snapshot, onAction }) {
           {faceVerified ? t('pass.face_ok') : t('pass.verify_face')}
         </button>
         <button
-          disabled={!faceVerified || status === 'revoked' || passport?.engine_running || busy === '/api/engine/start'}
+          disabled={!faceVerified || gateStatus !== 'active' || status === 'revoked' || passport?.engine_running || busy === '/api/engine/start'}
           onClick={() => call('/api/engine/start')}
           className="px-2 py-1.5 rounded bg-sky-600 hover:bg-sky-500 disabled:opacity-50 text-xs"
         >

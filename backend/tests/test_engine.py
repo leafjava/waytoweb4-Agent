@@ -35,6 +35,7 @@ def test_engine_start_and_tick(client):
     body = r.json()
     assert body["status"] == "active"
     assert body["drawdown_usd"] == 0.0
+    assert client.get(f"/api/passport/{pid}").json()["face_gate_status"] == "consumed"
 
 
 def test_tick_advances_drawdown(client):
@@ -71,6 +72,12 @@ def test_engine_stop_stops_then_revokes(client):
     assert pr["status"] == "revoked"
     assert pr["tx_revoke_hash"] is None
     assert pr["stop_requested"] is True
+    assert pr["face_verified"] is True
+    assert pr["face_gate_status"] == "invalidated"
+    assert pr["face_gate_invalidated_at"]
+    assert pr["face_gate_invalidation_reason"] == "STOP_REQUESTED"
+    events = client.get("/api/state").json()["events"]
+    assert sum(event["kind"] == "face_gate_invalidated" for event in events) == 1
     assert client.post("/api/engine/start", json={"passport_id": pid}).status_code == 409
 
 
@@ -83,6 +90,8 @@ def test_policy_change_stops_worker_without_button(client, fresh_state):
         if record["engine_status"] == "stopped": break
         time.sleep(0.02)
     assert record["stop_reason"] == "POLICY_REVOKED"
+    assert record["face_gate_status"] == "invalidated"
+    assert record["face_gate_invalidation_reason"] == "POLICY_REVOKED"
 
 
 def test_controller_disconnect_stops_real_worker_process(client):

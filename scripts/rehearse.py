@@ -69,6 +69,10 @@ def run(output: str | Path) -> dict:
     second_state, second_evidence = _run_round(root, "round-b", spec, True)
     assert first_state["run_id"] != second_state["run_id"]
     assert first_state["spec_hash"] == second_state["spec_hash"]
+    assert first_state["passport_id"] != second_state["passport_id"]
+    assert first_state["face_verification_session_id"] != second_state["face_verification_session_id"]
+    assert first_state["face_gate_status"] == "invalidated"
+    assert second_state["face_gate_status"] == "invalidated"
     comparison = {
         "comparison_id": comparison_id,
         "source_mode": "offline",

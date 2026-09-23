@@ -68,11 +68,23 @@ class PassportRecord:
     face_verified_at: str | None = None
     face_verification_method: str | None = None
     face_verification_session_id: str | None = None
+    face_gate_status: str = "pending"
+    face_gate_invalidated_at: str | None = None
+    face_gate_invalidation_reason: str | None = None
     authorization_status: str = "prepared"
     engine_status: str = "idle"
     stop_requested: bool = False
     simulation_id: str | None = None
     stop_reason: str | None = None
+
+    def invalidate_face_gate(self, reason: str) -> bool:
+        """Make this mandate's gate unusable while retaining audit history."""
+        if self.face_gate_status == "invalidated":
+            return False
+        self.face_gate_status = "invalidated"
+        self.face_gate_invalidated_at = datetime.now(timezone.utc).isoformat()
+        self.face_gate_invalidation_reason = reason
+        return True
 
     def to_public_dict(self) -> dict[str, Any]:
         """Shape returned to the frontend. Stable field names so the
@@ -107,6 +119,9 @@ class PassportRecord:
             "face_verified_at": self.face_verified_at,
             "face_verification_method": self.face_verification_method,
             "face_verification_session_id": self.face_verification_session_id,
+            "face_gate_status": self.face_gate_status,
+            "face_gate_invalidated_at": self.face_gate_invalidated_at,
+            "face_gate_invalidation_reason": self.face_gate_invalidation_reason,
             "authorization_status": self.authorization_status,
             "engine_status": self.engine_status,
             "stop_requested": self.stop_requested,
@@ -154,6 +169,7 @@ class AppState:
         async with self._lock:
             changed = False
             reconciled: list[str] = []
+            invalidated: list[str] = []
             for rec in self.passports.values():
                 if not rec.engine_running and rec.engine_status not in {"starting", "running"}:
                     continue
@@ -161,6 +177,8 @@ class AppState:
                 rec.engine_status = "stopped"
                 rec.stop_requested = True
                 rec.stop_reason = "PROCESS_RESTART"
+                if rec.invalidate_face_gate("PROCESS_RESTART"):
+                    invalidated.append(rec.passport_id)
                 if rec.backend_label == "mock":
                     rec.authorization_status = "revoked"
                     rec.status = "revoked"
@@ -176,6 +194,15 @@ class AppState:
                         "restart_reconcile", passport_id,
                         {"stop_reason": "PROCESS_RESTART"},
                     ))
+                    rec = self.passports[passport_id]
+                    if passport_id in invalidated:
+                        self.append_event_unlocked(make_event(
+                            "face_gate_invalidated", passport_id,
+                            {
+                                "invalidated_at": rec.face_gate_invalidated_at,
+                                "reason": "PROCESS_RESTART",
+                            },
+                        ))
 
     def _save_locked(self) -> None:
         """Write passports to the JSON ledger. Caller must hold the lock."""
@@ -289,6 +316,9 @@ def _dataclass_to_jsonable(rec: PassportRecord) -> dict[str, Any]:
         "face_verified_at": rec.face_verified_at,
         "face_verification_method": rec.face_verification_method,
         "face_verification_session_id": rec.face_verification_session_id,
+        "face_gate_status": rec.face_gate_status,
+        "face_gate_invalidated_at": rec.face_gate_invalidated_at,
+        "face_gate_invalidation_reason": rec.face_gate_invalidation_reason,
         "authorization_status": rec.authorization_status,
         "engine_status": rec.engine_status,
         "stop_requested": rec.stop_requested,

@@ -214,3 +214,23 @@ Validation: frontend production build passed; English and Korean key sets both
 contain 158 entries with no missing counterpart. A physical-camera browser run
 remains a field check because no camera device is available in the CLI test
 environment.
+
+### P3 — terminal human-gate invalidation
+
+Status: complete.
+
+- Added the explicit gate lifecycle `pending → active → consumed → invalidated`.
+  Approval becomes consumed only after the isolated worker starts successfully.
+- Central stop/revoke now invalidates the gate for manual stop, RedLine,
+  drawdown, policy, lease and controller failures while retaining the original
+  approval timestamp, method and session as historical evidence.
+- Restart reconciliation also invalidates the gate and emits a dedicated audit
+  event. Repeated revoke calls cannot duplicate that event.
+- The frontend marks the old approval as expired, displays the invalidation
+  reason and tells the user to create and approve a new frozen mandate.
+- Offline rehearsal now asserts distinct passport and gate-session IDs between
+  rounds, even when the frozen intent is the same and only policy changes.
+
+Validation: Python 135 passed; Node chain 4 passed; frontend production build
+passed; both independent offline rehearsal evidence directories passed the
+evidence verifier. English and Korean key sets both contain 165 entries.

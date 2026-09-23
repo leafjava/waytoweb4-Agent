@@ -156,7 +156,7 @@ async def start_engine(passport_id: str, state: AppState, trip_seconds: int, bac
     if rec is None: raise KeyError(passport_id)
     if rec.authorization_status != "authorized" or rec.confirmed_spec_hash != rec.spec_hash:
         raise EngineStartError("PASSPORT_NOT_AUTHORIZED", f"passport {passport_id} is not authorized")
-    if not rec.face_verified:
+    if not rec.face_verified or rec.face_gate_status != "active":
         raise EngineStartError("FACE_GATE_REQUIRED", f"passport {passport_id} has not passed the human gate")
     if rec.stop_requested or is_expired(rec.expiry) or rec.engine_status in {"stopped", "stop_failed"}:
         raise EngineStartError("PASSPORT_STOPPED_OR_EXPIRED", f"passport {passport_id} is stopped or expired")
@@ -167,6 +167,7 @@ async def start_engine(passport_id: str, state: AppState, trip_seconds: int, bac
     _WORKERS[passport_id] = controller
     rec.engine_started_at = datetime.now(timezone.utc).isoformat(); rec.drawdown_usd = 0.0
     rec.engine_running = True; rec.engine_status = "running"; rec.status = "active"; rec.trip_seconds = trip_seconds
+    rec.face_gate_status = "consumed"
     state.upsert_passport(rec)
     return rec
 

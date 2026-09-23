@@ -80,7 +80,10 @@ async def test_restart_reconciliation_fails_closed(client, fresh_state):
     assert recovered.engine_running is False
     assert recovered.authorization_status == "revoked"
     assert recovered.stop_reason == "PROCESS_RESTART"
+    assert recovered.face_gate_status == "invalidated"
+    assert recovered.face_gate_invalidation_reason == "PROCESS_RESTART"
     assert any(event.kind == "restart_reconcile" for event in loaded.events)
+    assert any(event.kind == "face_gate_invalidated" for event in loaded.events)
 
 
 def test_health(client):

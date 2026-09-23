@@ -193,23 +193,41 @@ class AuthorizationService:
             if rec is None:
                 raise KeyError(passport_id)
             previous = rec.authorization_status
-            if previous == "revoked":
-                return rec, previous, None
-            rec.stop_requested = True
-            rec.engine_running = False
-            if rec.engine_status not in {"stopped", "stop_failed"}:
-                rec.engine_status = "stopped"
-            rec.stop_reason = rec.stop_reason or reason_code
-            if backend.label == "mock":
-                rec.authorization_status = "revoked"
-                rec.status = "revoked"
-                state._save_locked()
+            already_revoked = previous == "revoked"
+            gate_invalidated = rec.invalidate_face_gate(reason_code)
+            if already_revoked:
+                if gate_invalidated:
+                    state._save_locked()
             else:
-                if not rec.chain_passport_id or not hasattr(backend, "revoke_record"):
-                    raise AuthorizationError("chain-backed passport cannot be revoked by the configured backend")
-                rec.authorization_status = "revoke_pending"
-                rec.status = "revoke_pending"
-                state._save_locked()
+                rec.stop_requested = True
+                rec.engine_running = False
+                if rec.engine_status not in {"stopped", "stop_failed"}:
+                    rec.engine_status = "stopped"
+                rec.stop_reason = rec.stop_reason or reason_code
+                if backend.label == "mock":
+                    rec.authorization_status = "revoked"
+                    rec.status = "revoked"
+                    state._save_locked()
+                else:
+                    if not rec.chain_passport_id or not hasattr(backend, "revoke_record"):
+                        raise AuthorizationError("chain-backed passport cannot be revoked by the configured backend")
+                    rec.authorization_status = "revoke_pending"
+                    rec.status = "revoke_pending"
+                    state._save_locked()
+
+        if gate_invalidated:
+            state.append_event(make_event(
+                "face_gate_invalidated",
+                passport_id,
+                {
+                    "invalidated_at": rec.face_gate_invalidated_at,
+                    "reason": reason_code,
+                    "session_id": rec.face_verification_session_id,
+                },
+            ))
+
+        if already_revoked:
+            return rec, previous, None
 
         if backend.label == "mock":
             state.append_event(make_event(

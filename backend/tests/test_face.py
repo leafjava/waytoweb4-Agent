@@ -22,6 +22,7 @@ def test_face_verify_flips_flag(client):
     assert pr["face_verified_at"] == r.json()["verified_at"]
     assert pr["face_verification_method"] == "button"
     assert pr["face_verification_session_id"] == str(session_id)
+    assert pr["face_gate_status"] == "active"
 
 
 def test_face_verify_unknown_returns_404(client):

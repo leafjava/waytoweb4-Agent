@@ -55,6 +55,7 @@ AUDIT_KINDS: frozenset[str] = frozenset(
         "revoke_uncertain",
         "mint",
         "face_verify",
+        "face_gate_invalidated",
         "engine_start",
         "engine_stop",
         "engine_tick",

@@ -69,6 +69,7 @@ async def verify_face(
         rec.face_verified_at = ts
         rec.face_verification_method = "button"
         rec.face_verification_session_id = session_id
+        rec.face_gate_status = "active"
         state.requests[session_key] = {
             "fingerprint": fingerprint,
             "passport_id": rec.passport_id,
