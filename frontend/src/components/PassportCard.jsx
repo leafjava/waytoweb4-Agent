@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { apiPost } from '../api'
 import { PASS_COLORS } from '../colors'
 import { useI18n } from '../i18n.jsx'
+import HumanGate from './HumanGate.jsx'
 
 function CopyableHash({ label, value, copyText, copiedText }) {
   const { t } = useI18n()
@@ -35,10 +36,11 @@ function CopyableHash({ label, value, copyText, copiedText }) {
 }
 
 export default function PassportCard({ draft, snapshot, onAction }) {
-  const { t } = useI18n()
+  const { locale, t } = useI18n()
   const passport = draft.passport_id ? snapshot?.passports?.[draft.passport_id] : null
   const mint = draft.mint
   const [busy, setBusy] = useState(null)
+  const [gateOpen, setGateOpen] = useState(false)
 
   async function call(path, body) {
     if (!draft.passport_id) return
@@ -108,12 +110,30 @@ export default function PassportCard({ draft, snapshot, onAction }) {
             {faceVerified ? t('pass.face_verified') : t('pass.face_not_verified')}
           </span>
         </div>
+        {passport?.face_verified_at && (
+          <>
+            <div className="flex justify-between gap-4 text-xs">
+              <span className="text-slate-400">{t('pass.verified_at')}</span>
+              <span className="min-w-0 break-words text-right text-slate-200">
+                {new Intl.DateTimeFormat(locale === 'ko' ? 'ko-KR' : 'en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(passport.face_verified_at))}
+              </span>
+            </div>
+            <div className="flex justify-between gap-4 text-xs">
+              <span className="text-slate-400">{t('pass.method')}</span>
+              <span className="text-slate-200">{passport.face_verification_method}</span>
+            </div>
+            <div className="text-xs">
+              <div className="text-slate-400">{t('pass.session')}</div>
+              <div className="txhash text-slate-200">{passport.face_verification_session_id}</div>
+            </div>
+          </>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-2 pt-2">
         <button
-          disabled={faceVerified || status === 'revoked' || busy === '/api/face/verify'}
-          onClick={() => call('/api/face/verify')}
+          disabled={!passport || faceVerified || status === 'revoked' || busy === '/api/face/verify'}
+          onClick={() => setGateOpen(true)}
           className="px-2 py-1.5 rounded bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-xs"
         >
           <i className="fa fa-user-circle-o mr-1"></i>
@@ -128,6 +148,13 @@ export default function PassportCard({ draft, snapshot, onAction }) {
           {passport?.engine_running ? t('pass.engine_running') : t('pass.start_engine')}
         </button>
       </div>
+      <HumanGate
+        open={gateOpen}
+        passport={passport}
+        spec={draft.locked_spec}
+        onClose={() => setGateOpen(false)}
+        onComplete={() => onAction?.()}
+      />
     </div>
   )
 }

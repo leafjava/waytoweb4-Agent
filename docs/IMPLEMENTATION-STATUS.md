@@ -193,3 +193,24 @@ Status: complete.
 
 Validation: full combined Python suite 135 passed, including persistence,
 session replay and direct API bypass coverage.
+
+### P2 — local camera-preview approval
+
+Status: complete for browser implementation; physical-camera rehearsal pending.
+
+- Added a focused English/Korean human-approval dialog that displays the exact
+  frozen leader, notional, loss limit, expiry and paper-only mode.
+- The dialog requests a local video-only browser stream, sends no image data,
+  stops every media track on close/unmount and blocks approval when permission
+  is denied or the camera API is unavailable.
+- Explicit consent triggers two visible trust-boundary calls: record the gate
+  result first, then start the paper engine. A start failure cannot fabricate
+  or erase the recorded human approval.
+- Added localized permission, loading, privacy and recovery states; improved the
+  demo grid for narrow screens and made coded backend errors readable.
+- The application passport now displays approval time, method and session ID.
+
+Validation: frontend production build passed; English and Korean key sets both
+contain 158 entries with no missing counterpart. A physical-camera browser run
+remains a field check because no camera device is available in the CLI test
+environment.

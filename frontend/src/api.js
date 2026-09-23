@@ -7,13 +7,20 @@ async function call(path, opts = {}) {
   })
   if (!res.ok) {
     let detail = res.statusText
+    let code = null
     try {
       const body = await res.json()
-      if (body && body.detail) detail = body.detail
+      if (body && body.detail) {
+        detail = typeof body.detail === 'object' ? body.detail.message : body.detail
+        code = typeof body.detail === 'object' ? body.detail.code : null
+      }
     } catch (_) {
       // not JSON
     }
-    throw new Error(`${res.status} ${detail}`)
+    const error = new Error(`${res.status} ${detail}`)
+    error.status = res.status
+    error.code = code
+    throw error
   }
   return res.json()
 }

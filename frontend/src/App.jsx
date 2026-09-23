@@ -48,10 +48,10 @@ export default function App() {
           <HomePage snapshot={snapshot} onTryDemo={() => setView('demo')} />
         ) : (
           <div className="grid grid-cols-12 gap-4">
-            <section className="col-span-5 min-h-[70vh]">
+            <section className="col-span-12 min-h-[60vh] lg:col-span-5 lg:min-h-[70vh]">
               <ChatPanel draft={draft} setDraft={setDraft} onSpecLocked={() => {}} />
             </section>
-            <section className="col-span-7 space-y-4">
+            <section className="col-span-12 space-y-4 lg:col-span-7">
               <SpecCard draft={draft} setDraft={setDraft} onMinted={() => {}} />
               <PassportCard draft={draft} snapshot={snapshot} onAction={() => {}} />
               <RedLinePanel draft={draft} snapshot={snapshot} onAction={() => {}} />
