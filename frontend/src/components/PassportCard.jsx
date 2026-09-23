@@ -70,6 +70,7 @@ export default function PassportCard({ draft, snapshot, onAction }) {
   const palette = PASS_COLORS[status] ?? PASS_COLORS.pending_face
   const faceVerified = !!passport?.face_verified
   const gateStatus = passport?.face_gate_status ?? 'pending'
+  const authorizationReady = passport?.authorization_status === 'authorized'
 
   return (
     <div className={`bg-slate-900/40 border ${palette.border} rounded-lg p-4 space-y-2`}>
@@ -152,12 +153,14 @@ export default function PassportCard({ draft, snapshot, onAction }) {
 
       <div className="grid grid-cols-2 gap-2 pt-2">
         <button
-          disabled={!passport || faceVerified || status === 'revoked' || busy === '/api/face/verify'}
+          disabled={!authorizationReady || faceVerified || status === 'revoked' || busy === '/api/face/verify'}
           onClick={() => setGateOpen(true)}
           className="px-2 py-1.5 rounded bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-xs"
         >
           <i className="fa fa-user-circle-o mr-1"></i>
-          {faceVerified ? t('pass.face_ok') : t('pass.verify_face')}
+          {faceVerified
+            ? t('pass.face_ok')
+            : authorizationReady ? t('pass.verify_face') : t('pass.authorize_first')}
         </button>
         <button
           disabled={!faceVerified || gateStatus !== 'active' || status === 'revoked' || passport?.engine_running || busy === '/api/engine/start'}
