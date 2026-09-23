@@ -255,3 +255,21 @@ not claimed.
 Validation: full combined Python suite 136 passed; frontend production build
 passed; English and Korean key sets both contain 185 entries with no missing
 counterpart.
+
+### P5 — official waytoweb4 adapter
+
+Status: pending official teammate documentation.
+
+- The frozen paper-only execution DTO and isolated worker boundary are ready.
+- Endpoint paths, authentication, idempotency and stop/status semantics remain
+  intentionally unmapped rather than guessed.
+
+### P6 — field acceptance
+
+Status: pending authorized credentials and a physical-camera rehearsal.
+
+- No real Kiln request or public-chain transaction was made during this pass.
+- Required live work is limited to a fresh `gpt-oss-120b` run with API usage,
+  a changed-condition rerun with stop evidence, at least one fresh public
+  testnet transaction/receipt/readback, physical camera permission checks, and
+  the final README/video/Deck evidence update.

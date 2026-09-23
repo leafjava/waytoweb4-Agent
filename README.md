@@ -38,7 +38,7 @@ cd frontend && npm install && cd ..
 python scripts/run_demo.py
 ```
 
-Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → mock authorization → face mock → paper worker → automatic stop/revoke. The two-round rehearsal is `python scripts/rehearse.py --mode offline`.
+Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → mock authorization → local camera preview + per-mandate human approval → paper worker → automatic stop/revoke. The preview never leaves the browser. The two-round rehearsal is `python scripts/rehearse.py --mode offline`.
 
 ## What lives where
 
@@ -53,6 +53,7 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 | Mock ledger / Sepolia keccak | Backend | `backend/app/passport_backends/` |
 | Web UI | Frontend | `frontend/src/` |
 | Independent paper engine | Backend + subprocess | `backend/app/engine.py`, `backend/app/paper_worker_process.py` |
+| Human-gate and inference evidence UI | Frontend | `frontend/src/components/{HumanGate,InferenceEvidencePanel}.jsx` |
 
 ## Environment variables
 
@@ -88,8 +89,9 @@ total         ...
 assumption    180W NPU-class, energy = 180 * latency / 3600
 ```
 
-The mock Kiln client emits realistic token counts (CJK ≈ 1 tok,
-ASCII ≈ 1 tok / 4 chars) and 8 ms per call.
+The offline Kiln client emits deterministic estimated token counts (CJK ≈ 1
+tok, ASCII ≈ 1 tok / 4 chars) and labels their usage source as estimated. Only
+API-reported usage from a live run is acceptable as final evidence.
 
 ## On-chain tx hashes
 
@@ -107,10 +109,18 @@ ASCII ≈ 1 tok / 4 chars) and 8 ms per call.
 - **Kiln**: if `KILN_API_KEY` is set we call the real `gpt-oss-120b`
   endpoint. Without it the offline `MockKilnClient` is used. Both
   paths record tokens through the same `TokenLogger`.
-- **Passport**: offline mode never fabricates a tx hash. The local chain worker uses a temporary EVM and the v2 contract; public Sepolia broadcast is deliberately not enabled in this local pass.
+- **Passport**: offline mode never fabricates a tx hash. The local chain worker uses a temporary EVM and the v2 contract. The guarded testnet worker supports Kairos or Sepolia, but no public transaction was broadcast in this local pass.
 - **Engine**: the paper worker is a separate process with drawdown, expiry, policy and lease hard stops. No real waytoweb4 service is called.
 - **waytoweb4 interface**: official endpoint documentation is still pending. The paper worker consumes the provisional internal adapter DTO so a documented HTTP transport can replace it without changing authorization rules.
-- **Face gate**: a button. No real face recognition.
+- **Human gate**: a local camera preview plus an explicit confirmation button. No image is captured, uploaded or stored, and no face recognition or KYC is claimed. Approval time, method and session live in the persisted application passport and audit log; StrategyPassport v2 stores the frozen mandate confirmation but not those three metadata fields on-chain.
+
+## FuriosaAI workload view
+
+The demo panel reports the exact `gpt-oss-120b` model, calls and tokens split by
+flow, wall-clock latency, the required 180W energy estimate, active execution
+sessions and the authorization-to-stop timeline. This is evidence of the
+agentic-finance workload and its controls. It does not claim measured RNGD
+tokens/s, users/kW or TCO; those numbers require a real hardware run.
 
 ## Tests
 
