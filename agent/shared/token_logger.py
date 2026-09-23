@@ -44,6 +44,8 @@ class _FlowBucket:
     tokens_in: int = 0
     tokens_out: int = 0
     latency_s: float = 0.0
+    usage_sources: set[str] = field(default_factory=set)
+    models: set[str] = field(default_factory=set)
 
     @property
     def energy_wh(self) -> float:
@@ -78,6 +80,8 @@ class TokenLogger:
             b.tokens_in += tokens_in
             b.tokens_out += tokens_out
             b.latency_s += latency_s
+            b.usage_sources.add(usage_source)
+            b.models.add(model)
         from .evidence import get_evidence_writer
         writer = get_evidence_writer()
         if writer:
@@ -96,7 +100,40 @@ class TokenLogger:
                 agg.tokens_in += b.tokens_in
                 agg.tokens_out += b.tokens_out
                 agg.latency_s += b.latency_s
+                agg.usage_sources.update(b.usage_sources)
+                agg.models.update(b.models)
             return agg
+
+    def snapshot(self) -> dict:
+        """Return structured, JSON-safe evidence for the live UI."""
+        with self._lock:
+            rows = []
+            for name in ALLOWED_FLOWS:
+                bucket = self._buckets.get(name, _FlowBucket())
+                rows.append(self._snapshot_row(name, bucket))
+            total = self._snapshot_row("total", self.totals())
+        return {"flows": rows, "total": total}
+
+    @staticmethod
+    def _snapshot_row(name: str, bucket: _FlowBucket) -> dict:
+        return {
+            "flow": name,
+            "calls": bucket.calls,
+            "tokens_in": bucket.tokens_in,
+            "tokens_out": bucket.tokens_out,
+            "latency_s": round(bucket.latency_s, 6),
+            "energy_Wh_est": round(bucket.energy_wh, 6),
+            "usage_source": (
+                next(iter(bucket.usage_sources))
+                if len(bucket.usage_sources) == 1
+                else "mixed" if bucket.usage_sources else "none"
+            ),
+            "model": (
+                next(iter(bucket.models))
+                if len(bucket.models) == 1
+                else "mixed" if bucket.models else None
+            ),
+        }
 
     def report(self) -> str:
         """Render the PRD §9 markdown table.

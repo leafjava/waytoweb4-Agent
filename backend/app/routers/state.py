@@ -13,6 +13,8 @@ from ..errors import conflict
 from ..models import DemoResetResponse
 from ..state import AppState
 from ..token_report import render_report
+from agent.shared.energy import NPU_POWER_W
+from agent.shared.token_logger import get_default_logger
 
 
 router = APIRouter(prefix="/api/state", tags=["state"])
@@ -22,6 +24,17 @@ router = APIRouter(prefix="/api/state", tags=["state"])
 def get_state_snapshot(state: AppState = Depends(get_state)):
     snap = state.snapshot()
     snap["token_report"] = render_report()
+    token_summary = get_default_logger().snapshot()
+    snap["token_summary"] = token_summary
+    snap["workload"] = {
+        "run_id": state.run_id,
+        "model": "gpt-oss-120b",
+        "source_mode": os.environ.get("KILN_MODE", "offline").lower(),
+        "power_assumption_w": NPU_POWER_W,
+        "active_sessions": sum(rec.engine_running for rec in state.passports.values()),
+        "passport_count": len(state.passports),
+        "agent_calls": token_summary["total"]["calls"],
+    }
     return snap
 
 

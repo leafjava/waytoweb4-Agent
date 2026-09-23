@@ -19,6 +19,10 @@ def test_state_snapshot_shape(client):
     assert "passports" in body
     assert "events" in body
     assert "token_report" in body
+    assert body["workload"]["model"] == "gpt-oss-120b"
+    assert body["workload"]["power_assumption_w"] == 180
+    assert body["workload"]["active_sessions"] == 0
+    assert body["token_summary"]["total"]["calls"] == 0
 
 
 def test_tokens_endpoint_returns_markdown(client):

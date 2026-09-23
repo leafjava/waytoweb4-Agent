@@ -234,3 +234,24 @@ Status: complete.
 Validation: Python 135 passed; Node chain 4 passed; frontend production build
 passed; both independent offline rehearsal evidence directories passed the
 evidence verifier. English and Korean key sets both contain 165 entries.
+
+### P4 — Furiosa inference and governance evidence
+
+Status: complete for measured application data; RNGD hardware measurements are
+not claimed.
+
+- Added a structured token snapshot alongside the paste-ready markdown report.
+  Each flow exposes calls, input/output tokens, latency, 180W energy estimate,
+  usage source and returned model identity.
+- `/api/state` now reports the exact required model, offline/live mode, power
+  assumption, run ID, active execution sessions, passport count and agent-call
+  count.
+- Replaced the demo's raw token block with an English/Korean workload panel and
+  authorization/control timeline. API usage is visually distinct from
+  offline/estimated evidence.
+- The panel makes the Furiosa relationship concrete without inventing RNGD
+  throughput, users/kW or TCO measurements.
+
+Validation: full combined Python suite 136 passed; frontend production build
+passed; English and Korean key sets both contain 185 entries with no missing
+counterpart.

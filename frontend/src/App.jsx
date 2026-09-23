@@ -7,7 +7,7 @@ import RedLinePanel from './components/RedLinePanel.jsx'
 import HomePage from './components/HomePage.jsx'
 import { apiPost } from './api'
 import { usePoll } from './usePoll'
-import { useI18n } from './i18n.jsx'
+import InferenceEvidencePanel from './components/InferenceEvidencePanel.jsx'
 
 const INITIAL_DRAFT = () => ({
   draft_id: 'draft-' + Math.random().toString(36).slice(2, 8),
@@ -22,7 +22,6 @@ export default function App() {
   const [draft, setDraft] = useState(INITIAL_DRAFT)
   const { data: snapshot } = usePoll('/api/state', 1500)
   const { data: health } = usePoll('/api/health', 5000)
-  const { t } = useI18n()
 
   async function handleReset() {
     try {
@@ -55,12 +54,7 @@ export default function App() {
               <SpecCard draft={draft} setDraft={setDraft} onMinted={() => {}} />
               <PassportCard draft={draft} snapshot={snapshot} onAction={() => {}} />
               <RedLinePanel draft={draft} snapshot={snapshot} onAction={() => {}} />
-              <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-3">
-                <div className="text-xs text-slate-400 mb-1">{t('tokens.title')}</div>
-                <pre className="text-[11px] text-slate-200 whitespace-pre-wrap font-mono">
-{snapshot?.token_report || t('tokens.empty')}
-                </pre>
-              </div>
+              <InferenceEvidencePanel snapshot={snapshot} />
             </section>
           </div>
         )}
