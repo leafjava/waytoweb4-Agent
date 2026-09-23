@@ -1,0 +1,50 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            chain/package-lock.json
+      - name: Install Python packages
+        run: python -m pip install -e "./agent[dev]" -e "./backend[dev]"
+      - name: Install Node packages
+        run: |
+          npm --prefix frontend ci
+          npm --prefix chain ci
+      - name: Python tests
+        run: python -m pytest --import-mode=importlib agent/tests backend/tests -q
+      - name: Offline field tooling
+        run: |
+          python scripts/field_preflight.py
+          python scripts/rehearse.py --mode offline --output artifacts/ci-rehearsal
+          python scripts/export_evidence.py --run "$(cat artifacts/ci-rehearsal/evidence-path.txt)"
+      - name: Chain tests and artifact integrity
+        run: |
+          npm --prefix chain test
+          npm --prefix chain run compile
+          git diff --exit-code -- chain/artifacts/StrategyPassport.json
+      - name: Frontend build
+        run: npm --prefix frontend run build
+      - name: Production dependency audit
+        run: |
+          npm --prefix frontend audit
+          npm --prefix chain audit --omit=dev

@@ -300,3 +300,22 @@ Status: code-level audit complete; live acceptance remains pending.
 Field blockers are unchanged: a fresh live Kiln/gpt-oss-120b trace with API
 usage, a fresh public-testnet receipt/readback, the official waytoweb4 adapter,
 physical-camera rehearsal, and final video/Deck artifacts.
+
+### P8 — field tooling and continuous verification
+
+Status: complete for credential-free scope.
+
+- Added a read-only field preflight that checks tool versions, dependency
+  presence, exact contract artifact hash, loopback ports and live configuration
+  without printing secrets. Its optional network mode performs only RPC chain,
+  balance and bytecode reads and records that no broadcast occurred.
+- Added an evidence exporter that runs the fail-closed verifier first, renders
+  per-flow token/latency/180W energy tables and extracts confirmed transaction
+  receipts. Offline output is permanently labelled `OFFLINE_DEMO_ONLY`; the
+  `--live` path rejects mock or incomplete evidence.
+- Added GitHub Actions coverage for Python tests, chain tests, deterministic
+  contract compilation, frontend build and production dependency audits.
+
+Validation: Python 144 passed; chain 4 passed; frontend production build and
+both production dependency audits passed. Offline preflight and evidence export
+passed; live variants failed closed without credentials, as required.

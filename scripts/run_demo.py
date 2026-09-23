@@ -21,6 +21,7 @@ Environment:
 from __future__ import annotations
 
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -96,6 +97,26 @@ def _start_frontend() -> subprocess.Popen:
     return subprocess.Popen(cmd, cwd=str(FRONTEND_DIR))
 
 
+def _terminate_process_tree(proc: subprocess.Popen) -> None:
+    if proc.poll() is not None:
+        return
+    if sys.platform.startswith("win"):
+        # npm.cmd owns a child node.exe. Terminating only the command wrapper
+        # leaves Vite listening after the launcher exits.
+        taskkill = shutil.which("taskkill")
+        if not taskkill:
+            proc.terminate()
+            return
+        subprocess.run(  # noqa: S603 - fixed OS tool and numeric child PID.
+            [taskkill, "/PID", str(proc.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    else:
+        proc.terminate()
+
+
 def main() -> int:
     occupied = [
         str(port)
@@ -111,12 +132,17 @@ def main() -> int:
         return 2
 
     procs: list[subprocess.Popen] = []
+    exit_code = 0
     try:
         procs.append(_start_backend())
         procs.append(_start_frontend())
 
         backend_ok = _wait_for(f"http://127.0.0.1:{BACKEND_PORT}/api/health", "backend")
         frontend_ok = _wait_for(f"http://127.0.0.1:{FRONTEND_PORT}/", "frontend")
+
+        if not backend_ok or not frontend_ok:
+            exit_code = 1
+            return exit_code
 
         print()
         print("=" * 60)
@@ -130,6 +156,7 @@ def main() -> int:
             time.sleep(0.5)
             if any(p.poll() is not None for p in procs):
                 # Someone died on its own; surface it.
+                exit_code = 1
                 for p in procs:
                     if p.returncode is not None and p.returncode != 0:
                         print(f"[error] child exited rc={p.returncode}: {p.args}")
@@ -139,7 +166,7 @@ def main() -> int:
     finally:
         for p in procs:
             try:
-                p.terminate()
+                _terminate_process_tree(p)
             except Exception:
                 pass
         for p in procs:
@@ -147,10 +174,10 @@ def main() -> int:
                 p.wait(timeout=4)
             except subprocess.TimeoutExpired:
                 try:
-                    p.kill()
+                    _terminate_process_tree(p)
                 except Exception:
                     pass
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

@@ -74,6 +74,22 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 The one-shot launcher binds both services to loopback. The demo API has no
 account authentication and must not be exposed as a shared or public service.
 
+Before the field run, validate local tooling and configuration without making
+an inference request or broadcasting a transaction:
+
+```bash
+python scripts/field_preflight.py
+python scripts/field_preflight.py --live --network  # RPC reads only
+```
+
+After a run, verify and export its report. `--live` fails closed on mock usage,
+local-chain hashes, missing receipts, wrong models or incomplete stop evidence:
+
+```bash
+python scripts/export_evidence.py --run <evidence-directory>
+python scripts/export_evidence.py --run <evidence-directory> --live
+```
+
 ## Token / energy table (PRD §9)
 
 After a demo run, hit `http://localhost:8000/api/state/tokens` and
