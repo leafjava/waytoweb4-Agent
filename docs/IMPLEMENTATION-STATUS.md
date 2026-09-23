@@ -147,3 +147,19 @@ Status: mock contract complete; official endpoint mapping pending teammate docum
 - Added `docs/WAYTOWEB4-INTERFACE-CONTRACT.md` with idempotency, stop, status, evidence and official-document mapping requirements. It deliberately contains no guessed endpoint names or authentication scheme.
 
 Validation: Python 133 passed after adding adapter-boundary and unconfirmed-record tests.
+
+### English/Korean demo baseline and human-gate follow-up
+
+Status: localization implemented locally; human-gate completion planned.
+
+- Local commit `23eb4f3` replaces the prior Chinese locale with Korean and keeps
+  English as the other user-facing locale.
+- A 2026-09-23 product review confirmed that the backend blocks start before
+  `face_verified`, but the A-tier gate still lacks a local camera preview.
+- `verified_at` currently exists only in the audit event; gate method and
+  session ID are not yet persisted on the passport record.
+- Terminal stop/revoke already prevents reuse of the old passport. The next
+  implementation pass will also expose gate invalidation clearly and require a
+  new passport/session for the next run.
+- The execution plan and field acceptance boundary are recorded in
+  `docs/FURIOSA-DEMO-NEXT-PLAN.md`.
