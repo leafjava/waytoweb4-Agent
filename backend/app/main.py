@@ -18,6 +18,7 @@ from .config import settings
 from .engine import cancel_all
 from .routers import engine, face, health, passport, redline, spec, state as state_router
 from .state import AppState
+from . import waytoweb4_mock
 
 
 @asynccontextmanager
@@ -53,6 +54,7 @@ def create_app() -> FastAPI:
     app.include_router(redline.router)
     app.include_router(state_router.router)
     app.include_router(health.router)
+    app.include_router(waytoweb4_mock.router)
     return app
 
 

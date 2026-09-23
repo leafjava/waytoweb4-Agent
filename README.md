@@ -115,10 +115,16 @@ the mint tx and (if revoked) the revoke tx.
   real Sepolia broadcast requires `SEPOLIA_RPC_URL`,
   `SEPOLIA_PRIVATE_KEY`, and a deployed `PassportRegistry` contract
   (out of scope for the 48h hackathon).
-- **Engine**: an in-process asyncio task ticks drawdown linearly over
-  `TRIP_SECONDS`. No real waytoweb4 service is called -- waytoweb4
-  confirmed (PRD §10) the adapter endpoints, so the demo ships the
-  shape of the integration.
+- **Engine**: `backend/app/waytoweb4_mock.py` is the swap point. It
+  currently drives the in-process engine under a clean REST contract
+  (`/v1/leaders`, `/v1/paper/start`, `/v1/paper/{id}/pnl`,
+  `/v1/paper/{id}/stop`). When waytoweb4 ships real docs, this single
+  file is where the swap happens -- everything else stays put.
+- **On-chain target contract**: [`contracts/PassportRegistry.sol`](contracts/PassportRegistry.sol).
+  Not deployed. The event topic layout matches the keccak256 hashes
+  that `backend/app/passport_backends/` already produce, so a
+  deployed instance would accept the existing payloads without
+  re-signing or changing the Python adapter.
 - **Face gate**: a button. No real face recognition.
 
 ## Tests
