@@ -9,7 +9,7 @@
 //   * Status enums (active / pending_face / revoked), verdict levels
 //     (HOLD / WATCH / TRIP), and reason codes (DD_LIMIT / CB_LIKE /
 //     etc.) are NOT translated -- they are code contracts that the
-//     on-chain event log and the agent/ schema share. Localising
+//     application evidence log and the agent/ schema share. Localising
 //     them would break auditability.
 
 import { createContext, useContext, useEffect, useState } from 'react'
@@ -40,13 +40,13 @@ const STRINGS = {
     'prim.follow.body': 'NL → frozen Spec. 1–2 round clarification; JSON-only emit; backend re-validates with Pydantic. Model never sees face or max-loss after lock.',
     'prim.face.title': 'Face Gate',
     'prim.face.tag': 'human-in-the-loop',
-    'prim.face.body': 'Face verification is the ONLY path to flip faceVerified=true. The agent has no API to do this. No LLM ever decides to start.',
+    'prim.face.body': 'Per-mandate human approval is the ONLY path to flip faceVerified=true. The agent has no API to do this. The camera is a local preview, not biometric matching.',
     'prim.passport.title': 'Strategy Passport',
     'prim.passport.tag': 'keccak256 · mock | local | testnet',
-    'prim.passport.body': 'Spec hashes via keccak256. Mint returns a 0x… tx hash; revoke returns a distinct second 0x… tx hash. Backend never lets the agent widen the cap.',
+    'prim.passport.body': 'Spec hashes via keccak256. Public-testnet mint/revoke return transaction hashes; offline simulation leaves those fields empty. Backend never lets the agent widen the cap.',
     'prim.redline.title': 'RedLine Agent',
     'prim.redline.tag': 'independent · no PnL',
-    'prim.redline.body': 'Hard rule gate fires first (DD_LIMIT, no model override). LLM classifier only scores structural impact (Hynix / leverage / gap).',
+    'prim.redline.body': 'Hard rule gate fires first (DD_LIMIT, no model override). The event classifier scores structural impact; offline output is explicitly marked mock.',
 
     // ---- Judge checklist ----------------------------------------------
     'judge.title': 'What the judges will check',
@@ -55,13 +55,13 @@ const STRINGS = {
     'judge.agent_vs_code': 'Agent vs code',
     'judge.agent_vs_code.body': 'Agent: clarify, spec_emit, event classification. Code: schema validation, face gate, start/stop, mint/revoke, hard drawdown gate.',
     'judge.kiln': 'Kiln gpt-oss-120b',
-    'judge.kiln.body': 'Follow multi-round clarify; RedLine event classifier. Mock fallback when KILN_API_KEY is unset (offline-safe).',
+    'judge.kiln.body': 'Follow multi-round clarify; RedLine event classifier. Offline mode is marked mock; live mode requires Kiln and never falls back.',
     'judge.tokens': 'Tokens split per flow',
     'judge.tokens.body': 'clarify / spec_emit / redline_hold / redline_trip / demo_inject — never a single total.',
     'judge.energy': 'Energy estimate',
     'judge.energy.body': '180W NPU-class assumption; energy_Wh = 180 × latency / 3600. Stated in README §9.',
     'judge.ontx': '≥1 on-chain tx',
-    'judge.ontx.body': 'Mint returns keccak256 tx hash; revoke returns a distinct second tx hash. Honest disclaimer: no Sepolia broadcast unless RPC + contract deployed.',
+    'judge.ontx.body': 'Testnet mint/revoke return transaction hashes and verified readback. Honest disclaimer: this build has not yet broadcast its required field transaction.',
     'judge.twice': 'Two controlled runs',
     'judge.twice.body': 'Run 1 (500U/50 loss) → engine trips at limit. Run 2 (smaller notional or Hynix inject) → trips sooner. Both leave a full event log.',
     'judge.overshoot': 'Out-of-scope stops',
@@ -83,7 +83,7 @@ const STRINGS = {
     'sim.outcome.no_events': 'Without any events',
     'sim.outcome.no_events.note': 'engine reaches maxLoss=${maxLoss} in {sec}s; rule gate fires; model never gets a say',
     'sim.outcome.hynix': 'With Hynix event pack injected',
-    'sim.outcome.hynix.note': 'LLM classifier scores structural impact; worst move {pct}%',
+    'sim.outcome.hynix.note': 'Event classifier scores structural impact; worst move {pct}%',
     'sim.outcome.dash': '—',
     'sim.frozen_attr': 'model_may_override = false',
 
@@ -94,7 +94,7 @@ const STRINGS = {
     'sec.2.title': 'Inference',
     'sec.2.body': 'Kiln output is JSON; backend re-validates with Pydantic. No free-text Spec field is forwarded.',
     'sec.3.title': 'Trade',
-    'sec.3.body': 'Paper only (venue="paper"). Hard drawdown gate in code: if drawdown ≥ maxLoss → TRIP unconditionally. RedLine is a separate process.',
+    'sec.3.body': 'Paper only (venue="paper"). Hard drawdown gate in code: if drawdown ≥ maxLoss → TRIP unconditionally. Execution is an isolated subprocess.',
     'sec.4.title': 'Post-trade (audit)',
     'sec.4.body': 'Every RedLine verdict emits structured JSON with reason_codes + evidence + source. Third parties replay from passport + log alone.',
     'sec.5.title': 'What the AI cannot do',
@@ -264,13 +264,13 @@ const STRINGS = {
     'prim.follow.body': '자연어 → 고정된 Spec. 1–2회 명확화 질의; JSON 전용 출력; 백엔드가 Pydantic으로 재검증합니다. 잠긴 후에는 모델이 face나 최대 손실 한도를 볼 수 없습니다.',
     'prim.face.title': '페이스 게이트',
     'prim.face.tag': '사람이 개입',
-    'prim.face.body': 'faceVerified를 true로 바꿀 수 있는 유일한 경로는 페이스 게이트입니다. 에이전트에게는 이를 위한 API가 없습니다. 시작을 LLM이 결정하는 일은 없습니다.',
+    'prim.face.body': '각 위임에 대한 사람의 승인이 faceVerified를 true로 바꾸는 유일한 경로입니다. 카메라는 로컬 미리보기이며 생체 인식 매칭이 아닙니다.',
     'prim.passport.title': '전략 패스포트',
     'prim.passport.tag': 'keccak256 · mock | local | testnet',
-    'prim.passport.body': 'Spec은 keccak256으로 해시됩니다. 민팅은 0x… 트랜잭션 해시를, 철회(revoke)는 별개의 두 번째 해시를 반환합니다. 백엔드는 에이전트가 한도를 넓히지 못하게 막습니다.',
+    'prim.passport.body': 'Spec은 keccak256으로 해시됩니다. 공개 테스트넷 민팅/철회는 트랜잭션 해시를 반환하며, 오프라인 시뮬레이션의 해시 필드는 비어 있습니다.',
     'prim.redline.title': 'RedLine Agent',
-    'prim.redline.tag': '독립 프로세스 · PnL 미사용',
-    'prim.redline.body': '하드 규칙 게이트가 먼저 작동합니다(DD_LIMIT, 모델이 덮어쓸 수 없음). LLM 분류기는 구조적 충격(하이닉스 / 레버리지 / 갭)만 점수화합니다.',
+    'prim.redline.tag': '독립 제어 · PnL 미사용',
+    'prim.redline.body': '하드 규칙 게이트가 먼저 작동합니다. 이벤트 분류기는 구조적 충격을 판정하며 오프라인 출력은 mock으로 명시됩니다.',
 
     // ---- Judge checklist ----------------------------------------------
     'judge.title': '심사위원 체크리스트',
@@ -279,13 +279,13 @@ const STRINGS = {
     'judge.agent_vs_code': 'Agent vs Code',
     'judge.agent_vs_code.body': 'Agent: 명확화, spec_emit, 이벤트 분류. Code: 스키마 검증, 페이스 게이트, 시작/정지, 민팅/철회, 드로다운 하드 게이트.',
     'judge.kiln': 'Kiln gpt-oss-120b',
-    'judge.kiln.body': 'Follow 다중 명확화 + RedLine 이벤트 분류. KILN_API_KEY 미설정 시 오프라인 안전 Mock으로 폴백합니다.',
+    'judge.kiln.body': 'Follow 다중 명확화 + RedLine 이벤트 분류. 오프라인은 mock으로 표시되며 live 모드는 Kiln 없이는 실행되지 않습니다.',
     'judge.tokens': '플로우별 토큰 분리',
     'judge.tokens.body': 'clarify / spec_emit / redline_hold / redline_trip / demo_inject — 총합 하나로만 보고하지 않습니다.',
     'judge.energy': '에너지 추정',
     'judge.energy.body': '180W NPU급 가정; energy_Wh = 180 × latency / 3600. README §9에 명시.',
     'judge.ontx': '온체인 트랜잭션 ≥ 1건',
-    'judge.ontx.body': '민팅은 트랜잭션 해시를, 철회는 별개의 두 번째 해시를 반환합니다. 정직한 고지: Sepolia RPC와 배포된 컨트랙트 없이는 실제 브로드캐스트를 하지 않습니다.',
+    'judge.ontx.body': '테스트넷 민팅/철회는 트랜잭션 해시와 검증된 readback을 반환합니다. 필수 현장 트랜잭션은 아직 브로드캐스트하지 않았습니다.',
     'judge.twice': '두 번의 조건 대조 실행',
     'judge.twice.body': 'Run 1(500U / 손실 50) → 한도에서 정지. Run 2(더 작은 명목 금액 또는 하이닉스 이벤트 주입) → 더 일찍 정지. 두 실행 모두 전체 이벤트 로그를 남깁니다.',
     'judge.overshoot': '권한 밖 실행 즉시 정지',
@@ -307,7 +307,7 @@ const STRINGS = {
     'sim.outcome.no_events': '이벤트 없이 방치하면',
     'sim.outcome.no_events.note': '{sec}초 후 엔진이 maxLoss=${maxLoss} 도달; 하드 규칙 게이트 발동; 모델은 발언권 없음',
     'sim.outcome.hynix': '하이닉스 이벤트 팩 주입 시',
-    'sim.outcome.hynix.note': 'LLM 분류기가 구조적 충격을 점수화; 최악 변동 {pct}%',
+    'sim.outcome.hynix.note': '이벤트 분류기가 구조적 충격을 점수화; 최악 변동 {pct}%',
     'sim.outcome.dash': '—',
     'sim.frozen_attr': 'model_may_override = false',
 
@@ -318,7 +318,7 @@ const STRINGS = {
     'sec.2.title': '추론 중',
     'sec.2.body': 'Kiln 출력은 JSON; 백엔드가 Pydantic으로 재검증합니다. 자유 텍스트 Spec 필드는 어디에도 전달되지 않습니다.',
     'sec.3.title': '거래 중',
-    'sec.3.body': '페이퍼만 실행(venue="paper"). 코드 손실 하드 게이트: drawdown ≥ maxLoss이면 무조건 TRIP. RedLine은 별도 프로세스입니다.',
+    'sec.3.body': '페이퍼만 실행(venue="paper"). 코드 손실 하드 게이트: drawdown ≥ maxLoss이면 무조건 TRIP. 실행 워커는 격리된 서브프로세스입니다.',
     'sec.4.title': '거래 후(감사)',
     'sec.4.body': '모든 RedLine 판정은 reason_codes + evidence + source가 담긴 구조화 JSON을 출력합니다. 제3자는 패스포트 + 로그만으로 재현할 수 있습니다.',
     'sec.5.title': 'AI가 할 수 없는 일',

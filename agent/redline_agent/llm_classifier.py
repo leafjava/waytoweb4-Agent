@@ -15,7 +15,6 @@ from typing import Iterable, Protocol
 import json
 
 from agent.redline_agent.schema import (
-    RedLineAction,
     RedLineLevel,
     RedLineVerdict,
     action_for_level,
@@ -123,7 +122,7 @@ class HynixMockClassifier:
             evidence=[f"worst_change={worst_change}", f"events={len(evs)}"],
             action=action_for_level(level),
             model_may_override_hard_limit=False,
-            source="llm",
+            source="mock",
         )
 
 

@@ -7,7 +7,6 @@ inside AppState is per-instance so tests can swap state cleanly.
 
 from __future__ import annotations
 
-import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -45,7 +44,8 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.frontend_origin, "http://localhost:5173"],
-        allow_credentials=True,
+        # The demo has no cookie-based authentication.
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )

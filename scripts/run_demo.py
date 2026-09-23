@@ -21,7 +21,7 @@ Environment:
 from __future__ import annotations
 
 import os
-import signal
+import socket
 import subprocess
 import sys
 import time
@@ -34,6 +34,15 @@ FRONTEND_DIR = ROOT / "frontend"
 
 BACKEND_PORT = int(os.environ.get("BACKEND_PORT", "8000"))
 FRONTEND_PORT = int(os.environ.get("FRONTEND_PORT", "5173"))
+
+
+def _port_is_free(host: str, port: int) -> bool:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind((host, port))
+        return True
+    except OSError:
+        return False
 
 
 def _http_ok(url: str, timeout: float = 1.0) -> bool:
@@ -76,13 +85,31 @@ def _start_backend() -> subprocess.Popen:
 
 def _start_frontend() -> subprocess.Popen:
     npm_cmd = "npm.cmd" if sys.platform.startswith("win") else "npm"
-    cmd = [npm_cmd, "run", "dev", "--", "--port", str(FRONTEND_PORT), "--host"]
+    # Keep the unauthenticated demo and its backend proxy on loopback. An
+    # argument-less ``--host`` makes Vite listen on every network interface.
+    cmd = [
+        npm_cmd, "run", "dev", "--", "--port", str(FRONTEND_PORT),
+        "--host", "127.0.0.1", "--strictPort",
+    ]
     print(f"[boot] frontend: {' '.join(cmd)} (cwd={FRONTEND_DIR})")
     # Windows shells need shell=False but the .cmd is fine to invoke directly.
     return subprocess.Popen(cmd, cwd=str(FRONTEND_DIR))
 
 
 def main() -> int:
+    occupied = [
+        str(port)
+        for port in (BACKEND_PORT, FRONTEND_PORT)
+        if not _port_is_free("127.0.0.1", port)
+    ]
+    if occupied:
+        print(
+            "[error] required loopback port(s) already in use: "
+            + ", ".join(occupied)
+            + ". Stop the existing demo or set BACKEND_PORT/FRONTEND_PORT."
+        )
+        return 2
+
     procs: list[subprocess.Popen] = []
     try:
         procs.append(_start_backend())

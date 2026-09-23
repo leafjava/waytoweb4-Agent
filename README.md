@@ -71,6 +71,9 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 | `LEDGER_PATH` | `backend/var/passports.json` | Mock passport ledger. |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | CORS origin for the backend. |
 
+The one-shot launcher binds both services to loopback. The demo API has no
+account authentication and must not be exposed as a shared or public service.
+
 ## Token / energy table (PRD §9)
 
 After a demo run, hit `http://localhost:8000/api/state/tokens` and
@@ -128,6 +131,8 @@ tokens/s, users/kW or TCO; those numbers require a real hardware run.
 python -m pytest --import-mode=importlib agent/tests backend/tests
 npm --prefix chain test
 npm --prefix frontend run build
+npm --prefix frontend audit
+npm --prefix chain audit --omit=dev
 python scripts/rehearse.py --mode offline
 python -m backend.app.verify_evidence --run <evidence-dir-from-artifacts/rehearsal/evidence-path.txt>
 ```

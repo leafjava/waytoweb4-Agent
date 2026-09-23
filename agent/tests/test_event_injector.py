@@ -24,6 +24,7 @@ def test_hynix_pack_trips_judge() -> None:
     j = RedLineJudge(classifier=HynixMockClassifier())
     v = j.judge(spec, drawdown_usd=10.0, events=hynix_crash_pack())
     assert v.level == RedLineLevel.TRIP
+    assert v.source == "mock"
 
 
 def test_events_to_json_is_valid_json() -> None:

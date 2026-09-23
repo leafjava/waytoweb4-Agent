@@ -273,3 +273,30 @@ Status: pending authorized credentials and a physical-camera rehearsal.
   a changed-condition rerun with stop evidence, at least one fresh public
   testnet transaction/receipt/readback, physical camera permission checks, and
   the final README/video/Deck evidence update.
+
+### P7 — security and contest-readiness audit
+
+Status: code-level audit complete; live acceptance remains pending.
+
+- Bound the Vite demo server to loopback and disabled credentialed CORS. The
+  unauthenticated demo must not be hosted on a public or shared interface.
+- Upgraded Vite/plugin-react and Ethers; their production audits report zero
+  known vulnerabilities. Python runtime dependencies also report zero known
+  vulnerabilities via `pip-audit`. The live chain worker no longer imports
+  Ganache or solc, and verifies a committed contract artifact against the
+  source hash.
+- Marked offline RedLine classification as `mock` instead of `llm` so mock
+  output cannot be mistaken for Kiln evidence.
+- Removed RPC worker stderr from HTTP-facing errors to avoid leaking a
+  credential-bearing provider URL.
+- Corrected the security document to reflect the actual process boundary,
+  button-based human gate and application evidence log.
+- The launcher now fails clearly when its exact ports are occupied instead of
+  mistaking an older demo instance for the process it just started.
+- Ganache and solc retain nine known advisories in the development-only local
+  test/compile toolchain. Neither is loaded by the live worker; Ganache uses an
+  in-memory provider and never listens on a socket in this project.
+
+Field blockers are unchanged: a fresh live Kiln/gpt-oss-120b trace with API
+usage, a fresh public-testnet receipt/readback, the official waytoweb4 adapter,
+physical-camera rehearsal, and final video/Deck artifacts.

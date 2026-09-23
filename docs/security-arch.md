@@ -13,6 +13,15 @@ loss limit through prompt injection**. The Korean regulatory framing
 (responsibility stays with the human, must be able to cut) drives
 every decision below.
 
+The current build is a single-user, loopback-only hackathon demo. Its API has
+no account authentication, rate limiting or multi-tenant isolation and is not
+approved for public hosting. `scripts/run_demo.py` and Vite both bind to
+`127.0.0.1` so another device on the LAN cannot reach the backend proxy.
+
+The live chain worker dynamically imports only its Ethers path. Ganache and the
+Solidity compiler are development dependencies; contract deployment consumes a
+committed artifact whose source SHA-256 must match the current Solidity source.
+
 ## Five-stage pipeline
 
 ```
@@ -36,15 +45,15 @@ every decision below.
    │     • Paper-only: `venue == "paper"` literal                      │
    │     • Hard drawdown gate: code, not model                         │
    │       if drawdown_usd ≥ spec.maxLossUsd → TRIP unconditionally    │
-   │     • RedLine Agent runs in a separate process and never shares   │
-   │       state with the Follow Agent                                 │
+   │     • Paper execution runs in a credential-free subprocess;       │
+   │       RedLine is a separate module with a non-bypassable gate     │
    ├──────────────────────────────────────────────────────────────────┤
    │  4. Post-trade (audit)                                            │
-   │     • Every RedLine verdict emits a structured JSON with         │
-   │       reason_codes + evidence + source ("rule_gate" or "llm")     │
-   │     • Passport on-chain event log includes the verdict            │
-   │     • Third party can replay "did this trip happen at the right   │
-   │       moment?" from passport + log alone                           │
+   │     • Every RedLine verdict emits structured JSON with            │
+   │       reason_codes + evidence + source                            │
+   │     • The application evidence log records the verdict            │
+   │     • A verifier can replay the stop from passport readback       │
+   │       plus the run-scoped application evidence                    │
    ├──────────────────────────────────────────────────────────────────┤
    │  5. What the AI is not allowed to do                              │
    │     • Change maxLossUsd                                           │
@@ -79,14 +88,16 @@ The Follow Agent's job is to make money. RedLine's job is to stop
 the Follow Agent from making catastrophic losses. They are
 deliberately separate:
 
-* Different processes. They do not share memory.
+* The paper execution worker is a separate process. Follow and RedLine
+  orchestration currently share the backend process, but use separate modules;
+  the RedLine hard gate accepts no bypass from the Follow Agent.
 * RedLine does not receive `notionalUsd * pnl_curve`; it receives
   the current drawdown and a stream of MarketEvents.
 * RedLine cannot be turned off from a Spec, a prompt, or a follow-up
   user message. Turning RedLine off is a separate, audited operation
   the human performs.
-* RedLine's verdict carries a `source` field ("rule_gate" / "llm")
-  in the audit log so a third party can tell who acted.
+* RedLine's verdict carries a `source` field (`rule_gate`, `mock`, or `kiln`)
+  in the application evidence log so a third party can tell which path acted.
 
 ## Prompt injection posture
 
@@ -102,10 +113,11 @@ deliberately separate:
 
 ## On the face gate
 
-The face gate is the human step between the natural-language Spec
-and the engine. The agent has no API to flip `faceVerified = True`;
-that flag is set by the backend after a successful face match. The
-agent has no path around it.
+The face gate is the human step between the natural-language Spec and the
+engine. The agent has no API to flip `faceVerified = True`; that flag is set by
+the backend only after the demo user presses the explicit approval button for
+the current frozen mandate. The camera is a local preview and no biometric
+match or liveness result is claimed. The agent has no path around the approval.
 
 ## On "the model let me widen maxLoss"
 
@@ -116,16 +128,17 @@ the cap or forgive a breach.
 
 ## What an auditor can replay
 
-Given only:
+Given:
 1. the on-chain passport (`specHash`, expiry, leader, notional,
-   feeBps, status), and
-2. the on-chain event log of RedLine verdicts,
+   max loss, human confirmation and status), and
+2. the run-scoped application evidence log containing RedLine verdicts,
 
 a third party can answer:
 
 * "Which leader did this user follow?" — from the passport.
-* "Was face verification performed before start?" — from the
-  passport's `faceVerified` flag plus the `start` event in the log.
+* "Was human approval performed before start?" — from the application
+  passport's `faceVerified`, session and approval timestamp plus the start
+  event. The contract stores only the frozen mandate's `humanConfirmed` bit.
 * "Why did the engine stop?" — from the verdict `reason_codes` and
   `source`.
 * "Could the model have let it run longer?" — no: the source for

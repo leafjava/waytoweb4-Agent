@@ -27,7 +27,7 @@ from agent.shared.evidence import EvidenceWriter
 
 
 # Statuses a passport can be in. Keep these strings stable; they end
-# up in the README and the on-chain event log.
+# up in the README and the application evidence log.
 PASS_PENDING_FACE = "pending_face"
 PASS_ACTIVE = "active"
 PASS_STOPPED = "stopped"

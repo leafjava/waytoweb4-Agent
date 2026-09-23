@@ -51,10 +51,11 @@ class ChainBridge:
             except TimeoutError as exc:
                 raise ChainBridgeError("chain worker response timeout; outcome uncertain") from exc
             if not line:
-                diagnostic = ""
+                # A provider exception can contain a credential-bearing RPC
+                # URL. Never surface worker stderr through the HTTP API.
                 if self.process.stderr:
-                    diagnostic = (await self.process.stderr.read()).decode(errors="replace")[-500:]
-                raise ChainBridgeError(f"chain worker closed protocol stream: {diagnostic}")
+                    await self.process.stderr.read()
+                raise ChainBridgeError("chain worker closed protocol stream")
             response = json.loads(line)
             if response.get("request_id") != request["request_id"]:
                 raise ChainBridgeError("chain worker response id mismatch")
