@@ -9,7 +9,7 @@ from backend.app.chain_bridge import ChainBridge
 from backend.app.deps import get_passport_backend
 from backend.app.intent import canonicalize_intent
 from backend.app.passport_backends.node import NodePassportBackend
-from .helpers import valid_spec
+from .helpers import valid_spec, verify_face
 
 
 def _mint_local_passport(client, backend, prefix: str) -> dict:
@@ -87,7 +87,7 @@ def test_redline_trip_revokes_local_evm_passport(client):
     try:
         minted = _mint_local_passport(client, backend, "redline-local")
         passport_id = minted["passport_id"]
-        client.post("/api/face/verify", json={"passport_id": passport_id})
+        verify_face(client, passport_id)
         assert client.post("/api/engine/start", json={"passport_id": passport_id}).status_code == 200
 
         tripped = client.post("/api/redline/inject/hynix", json={"passport_id": passport_id})
@@ -113,7 +113,7 @@ def test_drawdown_hard_stop_revokes_local_evm_passport(client):
     try:
         minted = _mint_local_passport(client, backend, "drawdown-local")
         passport_id = minted["passport_id"]
-        client.post("/api/face/verify", json={"passport_id": passport_id})
+        verify_face(client, passport_id)
         assert client.post("/api/engine/start", json={"passport_id": passport_id}).status_code == 200
         assert client.post(
             "/api/engine/tick?amount=999", json={"passport_id": passport_id}

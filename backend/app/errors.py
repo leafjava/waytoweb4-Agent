@@ -32,6 +32,13 @@ def conflict(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
 
 
+def coded_conflict(code: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail={"code": code, "message": message},
+    )
+
+
 def map_agent_error(exc: Exception) -> HTTPException:
     """Best-effort mapping for the agent's exception hierarchy."""
     if isinstance(exc, SpecValidationError):
@@ -50,5 +57,6 @@ __all__ = [
     "unauthorized",
     "not_found",
     "conflict",
+    "coded_conflict",
     "map_agent_error",
 ]

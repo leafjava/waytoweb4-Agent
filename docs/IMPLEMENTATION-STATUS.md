@@ -163,3 +163,33 @@ Status: localization implemented locally; human-gate completion planned.
   new passport/session for the next run.
 - The execution plan and field acceptance boundary are recorded in
   `docs/FURIOSA-DEMO-NEXT-PLAN.md`.
+
+### P0 — English/Korean baseline verification
+
+Status: complete.
+
+- Checked the integration branch against teammate `master` at `fdb3c8a`; the
+  branch is not behind the teammate mainline.
+- Confirmed that visible frontend locale data is English/Korean and that the
+  locale choice persists in browser storage.
+
+Validation: Python 133 passed; Node chain 4 passed; frontend production build
+passed.
+
+### P1 — per-mandate human-gate evidence
+
+Status: complete.
+
+- The human-gate endpoint now accepts `method=button` and a caller-generated
+  UUID session ID, and returns the method, session and server timestamp.
+- Persisted `face_verified_at`, `face_verification_method` and
+  `face_verification_session_id` on the application passport and included the
+  same binding in face/start audit events.
+- Gate sessions are idempotent for the same passport and cannot be replayed
+  across mandates. Only an authorized passport with the exact confirmed Spec
+  hash can be approved.
+- Direct engine start without approval now returns stable code
+  `FACE_GATE_REQUIRED`.
+
+Validation: full combined Python suite 135 passed, including persistence,
+session replay and direct API bypass coverage.

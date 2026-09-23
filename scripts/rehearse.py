@@ -36,7 +36,11 @@ def _run_round(root: Path, name: str, spec: dict, policy_revoked: bool):
     app.dependency_overrides[get_state] = lambda: state
     with TestClient(app) as client:
         passport = _prepare(client, spec, name)
-        client.post("/api/face/verify", json={"passport_id": passport["passport_id"]})
+        client.post("/api/face/verify", json={
+            "passport_id": passport["passport_id"],
+            "method": "button",
+            "session_id": str(uuid4()),
+        })
         write_policy(round_root / "policy.json", 1, [spec["leaderId"]])
         assert client.post("/api/engine/start", json={"passport_id": passport["passport_id"]}).status_code == 200
         if policy_revoked:

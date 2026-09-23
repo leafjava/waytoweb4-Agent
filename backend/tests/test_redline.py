@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .helpers import prepare_confirm_mint
+from .helpers import prepare_confirm_mint, verify_face
 from agent.redline_agent import KilnEventClassifier
 from backend.app.deps import get_redline_judge
 
@@ -10,7 +10,7 @@ from backend.app.deps import get_redline_judge
 def _mint_and_face(client) -> str:
     body = prepare_confirm_mint(client)
     pid = body["passport_id"]
-    client.post("/api/face/verify", json={"passport_id": pid})
+    verify_face(client, pid)
     client.post("/api/engine/start", json={"passport_id": pid})
     return pid
 

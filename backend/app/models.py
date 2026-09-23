@@ -13,7 +13,8 @@ without a layer of translation.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -54,12 +55,16 @@ class EmitResponse(BaseModel):
 
 class FaceVerifyRequest(BaseModel):
     passport_id: str
+    method: Literal["button"]
+    session_id: UUID
 
 
 class FaceVerifyResponse(BaseModel):
     ok: bool
     passport_id: str
+    session_id: UUID
     verified_at: str
+    method: Literal["button"]
 
 
 class PrepareRequest(BaseModel):

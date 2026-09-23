@@ -20,6 +20,12 @@ from .state import AppState, PassportRecord
 _WORKERS: dict[str, "PaperWorkerController"] = {}
 
 
+class EngineStartError(ValueError):
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+
+
 class PaperWorkerController:
     def __init__(self, passport_id: str, state: AppState, backend):
         self.passport_id = passport_id
@@ -149,11 +155,11 @@ async def start_engine(passport_id: str, state: AppState, trip_seconds: int, bac
     rec = state.passports.get(passport_id)
     if rec is None: raise KeyError(passport_id)
     if rec.authorization_status != "authorized" or rec.confirmed_spec_hash != rec.spec_hash:
-        raise ValueError(f"passport {passport_id} is not authorized")
+        raise EngineStartError("PASSPORT_NOT_AUTHORIZED", f"passport {passport_id} is not authorized")
     if not rec.face_verified:
-        raise ValueError(f"passport {passport_id} has not passed the face gate")
+        raise EngineStartError("FACE_GATE_REQUIRED", f"passport {passport_id} has not passed the human gate")
     if rec.stop_requested or is_expired(rec.expiry) or rec.engine_status in {"stopped", "stop_failed"}:
-        raise ValueError(f"passport {passport_id} is stopped or expired")
+        raise EngineStartError("PASSPORT_STOPPED_OR_EXPIRED", f"passport {passport_id} is stopped or expired")
     if rec.engine_running: return rec
     controller = PaperWorkerController(passport_id, state, backend)
     rec.engine_status = "starting"; rec.status = "starting"; state.upsert_passport(rec)
@@ -194,4 +200,4 @@ def run_judge(spec: dict[str, Any], drawdown_usd: float, events: list[Any] | Non
     return judge.judge(CopyTradingSpec.model_validate(spec), drawdown_usd, events or [])
 
 
-__all__ = ["start_engine", "stop_engine", "tick_drawdown", "cancel_all", "run_judge", "PaperWorkerController"]
+__all__ = ["start_engine", "stop_engine", "tick_drawdown", "cancel_all", "run_judge", "PaperWorkerController", "EngineStartError"]

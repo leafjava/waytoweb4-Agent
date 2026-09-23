@@ -33,3 +33,11 @@ def prepare_confirm_mint(client, spec=None):
     })
     assert minted.status_code == 200, minted.text
     return minted.json()
+
+
+def verify_face(client, passport_id, session_id=None):
+    return client.post("/api/face/verify", json={
+        "passport_id": passport_id,
+        "method": "button",
+        "session_id": str(session_id or uuid4()),
+    })

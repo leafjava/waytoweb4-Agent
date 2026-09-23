@@ -65,6 +65,9 @@ class PassportRecord:
     confirmed_at: str | None = None
     confirmation_kind: str | None = None
     face_verification_mode: str = "mock"
+    face_verified_at: str | None = None
+    face_verification_method: str | None = None
+    face_verification_session_id: str | None = None
     authorization_status: str = "prepared"
     engine_status: str = "idle"
     stop_requested: bool = False
@@ -101,6 +104,9 @@ class PassportRecord:
             "confirmed_at": self.confirmed_at,
             "confirmation_kind": self.confirmation_kind,
             "face_verification_mode": self.face_verification_mode,
+            "face_verified_at": self.face_verified_at,
+            "face_verification_method": self.face_verification_method,
+            "face_verification_session_id": self.face_verification_session_id,
             "authorization_status": self.authorization_status,
             "engine_status": self.engine_status,
             "stop_requested": self.stop_requested,
@@ -280,6 +286,9 @@ def _dataclass_to_jsonable(rec: PassportRecord) -> dict[str, Any]:
         "confirmed_at": rec.confirmed_at,
         "confirmation_kind": rec.confirmation_kind,
         "face_verification_mode": rec.face_verification_mode,
+        "face_verified_at": rec.face_verified_at,
+        "face_verification_method": rec.face_verification_method,
+        "face_verification_session_id": rec.face_verification_session_id,
         "authorization_status": rec.authorization_status,
         "engine_status": rec.engine_status,
         "stop_requested": rec.stop_requested,

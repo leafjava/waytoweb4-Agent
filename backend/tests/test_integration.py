@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from .helpers import prepare_confirm_mint
+from .helpers import prepare_confirm_mint, verify_face
 
 
 def test_full_happy_path_to_redline_trip(client):
@@ -24,7 +24,7 @@ def test_full_happy_path_to_redline_trip(client):
     assert mint_body["tx_hash"] is None
 
     # 3. face verify
-    r = client.post("/api/face/verify", json={"passport_id": pid})
+    r = verify_face(client, pid)
     assert r.status_code == 200
     assert r.json()["ok"] is True
 

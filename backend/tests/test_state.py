@@ -9,7 +9,7 @@ import pytest
 from backend.app.deps import get_passport_backend
 from backend.app.engine import _WORKERS
 from backend.app.state import AppState
-from .helpers import prepare, prepare_confirm_mint
+from .helpers import prepare, prepare_confirm_mint, verify_face
 
 
 def test_state_snapshot_shape(client):
@@ -40,7 +40,7 @@ def test_reset_wipes_everything(client):
 def test_reset_stops_worker_before_wiping_state(client):
     body = prepare_confirm_mint(client)
     passport_id = body["passport_id"]
-    client.post("/api/face/verify", json={"passport_id": passport_id})
+    verify_face(client, passport_id)
     assert client.post("/api/engine/start", json={"passport_id": passport_id}).status_code == 200
     assert passport_id in _WORKERS
 

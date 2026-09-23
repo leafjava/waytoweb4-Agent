@@ -3,7 +3,7 @@
 from __future__ import annotations
 import time
 
-from .helpers import prepare, prepare_confirm_mint
+from .helpers import prepare, prepare_confirm_mint, verify_face
 from backend.app.engine import _WORKERS
 from backend.app.policy import write_policy
 
@@ -11,7 +11,7 @@ from backend.app.policy import write_policy
 def _mint_and_face(client) -> str:
     body = prepare_confirm_mint(client)
     pid = body["passport_id"]
-    client.post("/api/face/verify", json={"passport_id": pid})
+    verify_face(client, pid)
     return pid
 
 
@@ -25,7 +25,7 @@ def test_engine_start_requires_face_gate_after_authorization(client):
     body = prepare_confirm_mint(client)
     response = client.post("/api/engine/start", json={"passport_id": body["passport_id"]})
     assert response.status_code == 409
-    assert "face gate" in response.json()["detail"]
+    assert response.json()["detail"]["code"] == "FACE_GATE_REQUIRED"
 
 
 def test_engine_start_and_tick(client):

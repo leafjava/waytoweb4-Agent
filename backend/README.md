@@ -25,7 +25,7 @@ Open <http://localhost:8000/docs> for the auto-generated OpenAPI UI.
 | POST | `/api/spec/check` | Heuristic check: which Spec fields are still missing? |
 | POST | `/api/spec/clarify` | One round of clarification (calls Kiln `clarify` flow). |
 | POST | `/api/spec/emit` | Emit the locked Spec (calls Kiln `spec_emit` flow). |
-| POST | `/api/face/verify` | Mock face gate. Requires `passport_id`. |
+| POST | `/api/face/verify` | Human gate. Requires `passport_id`, `method=button`, and a UUID `session_id`. |
 | POST | `/api/passport/mint` | Mint a Strategy Passport; returns `tx_hash`. |
 | POST | `/api/passport/{id}/revoke` | Revoke a passport; returns a second `tx_hash`. |
 | GET  | `/api/passport/{id}` | One passport record. |
