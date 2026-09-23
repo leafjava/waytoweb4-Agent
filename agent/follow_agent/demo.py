@@ -2,7 +2,7 @@
 
 Run with:
 
-    python -m agent.follow_agent.demo "跟这条 leader-demo-001，500 U，亏 50 停"
+    python -m agent.follow_agent.demo "follow leader-demo-001, 500 USD, stop if I lose 50"
 
 The demo walks the user through:
     1. (optional) one round of clarification
@@ -32,8 +32,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "intent",
         nargs="?",
-        default="跟 leader-demo-001，500 U，亏 50 停，48 小时",
-        help="Natural-language intent in Chinese or English.",
+        default="follow leader-demo-001 with 500 USD on paper, stop if I lose 50, valid for 48 hours",
+        help="Natural-language intent in English, Korean or Chinese.",
     )
     parser.add_argument(
         "--emit-only",
@@ -66,7 +66,7 @@ def main(argv: list[str] | None = None) -> int:
         # For the offline demo we synthesize a plausible user answer
         # so the script is non-interactive. The real backend replaces
         # this with the actual user input.
-        synthetic_answer = "leader-demo-001，500 U，亏 50 停，48 小时"
+        synthetic_answer = "leader-demo-001, 500 USD, stop if I lose 50, 48 hours"
         print(f"  (synthetic answer): {synthetic_answer}")
         emitter.add_user(synthetic_answer)
         nxt = clarifier.next_question(synthetic_answer, prior=question)

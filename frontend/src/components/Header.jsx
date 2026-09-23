@@ -27,7 +27,7 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
           title="Switch language"
         >
           <i className="fa fa-globe"></i>
-          <span className="font-mono">{locale === 'en' ? t('header.lang.zh') : t('header.lang.en')}</span>
+          <span className="font-mono">{locale === 'en' ? t('header.lang.ko') : t('header.lang.en')}</span>
         </button>
 
         {view === 'home' ? (

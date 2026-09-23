@@ -44,7 +44,7 @@ needed), so they work offline.
 
 ```bash
 # Follow Agent: clarify + emit a frozen Spec
-python -m agent.follow_agent.demo "跟 leader-demo-001，500 U，亏 50 停，48 小时"
+python -m agent.follow_agent.demo "follow leader-demo-001 with 500 USD, stop if I lose 50, 48h"
 
 # Follow Agent: emit-only (PRD defaults, no clarification)
 python -m agent.follow_agent.demo --emit-only

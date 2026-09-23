@@ -54,12 +54,16 @@ class EventClassifier(Protocol):
 # with semantic understanding; for our purposes we just need a
 # deterministic answer that doesn't make the demo look broken when
 # the real model isn't loaded.
+# Keyword matchers accept EN / KO / ZH event phrasing. The KO entries let
+# Demo Day input in Korean classify correctly; the ZH entries are input
+# parsing (not user-visible copy). Kept in lockstep with
+# frontend/src/predict.js KEYWORD_RULES.
 KEYWORD_RULES: tuple[tuple[tuple[str, ...], ReasonCode], ...] = (
-    (("熔断", "circuit", "halt", "halted"), ReasonCode.CB_LIKE),
-    (("清算", "liq", "cascade"), ReasonCode.LIQ_CASCADE),
-    (("杠杆", "leveraged", "2x", "lev_etf"), ReasonCode.LEV_ETF_AMP),
-    (("盘前", "pre-market", "gap", "薄流动性"), ReasonCode.GAP_ORACLE),
-    (("人工", "human", "override", "kill"), ReasonCode.HUMAN_OVERRIDE),
+    (("熔断", "circuit", "halt", "halted", "서킷브레이커", "거래정지"), ReasonCode.CB_LIKE),
+    (("清算", "liq", "cascade", "청산"), ReasonCode.LIQ_CASCADE),
+    (("杠杆", "leveraged", "2x", "lev_etf", "레버리지"), ReasonCode.LEV_ETF_AMP),
+    (("盘前", "pre-market", "gap", "薄流动性", "갭", "얇은 유동성"), ReasonCode.GAP_ORACLE),
+    (("人工", "human", "override", "kill", "즉시 중지"), ReasonCode.HUMAN_OVERRIDE),
 )
 
 
@@ -75,17 +79,18 @@ def _classify_text(text: str) -> list[ReasonCode]:
 
 # A single -8% or worse move is treated as circuit-breaker-grade even
 # if the event text doesn't mention "circuit". Keeps the demo honest:
-# "海力士 -12%" alone still TRIPs.
+# "Hynix -12%" alone still TRIPs.
 CB_THRESHOLD_PCT: float = -8.0
 
 
 class HynixMockClassifier:
     """A minimal local classifier.
 
-    Recognises a handful of Chinese / English keywords (海力士,
-    circuit-breaker, leveraged, gap, etc.) and emits a verdict with
-    the matching reason code. Used by the demo and by tests so the
-    agent works end-to-end before the LLaMA teammate's model lands.
+    Recognises a handful of English / Korean / Chinese keywords
+    (Hynix, circuit-breaker, leveraged, gap, etc.) and emits a verdict
+    with the matching reason code. Used by the demo and by tests so
+    the agent works end-to-end before the LLaMA teammate's model
+    lands.
 
     The teammate's model must satisfy the same `EventClassifier`
     Protocol and emit a `RedLineVerdict` with the same shape; nothing

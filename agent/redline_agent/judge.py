@@ -5,7 +5,7 @@ The judge combines the hard rule gate with the LLM event classifier:
     1. hard_check(spec, drawdown_usd)  -- if it TRIPs, return immediately
        (we do NOT spend tokens on the LLM when the rule already fired).
     2. otherwise, call classifier.classify(events) to let the LLM
-       judge structural shocks (海力士 / 杠杆 / 清算 / 盘前异常).
+       judge structural shocks (Hynix / leverage / liquidation / pre-market gap).
 
 This module is intentionally tiny. Anyone reading the security story
 should be able to follow the control flow in one screen.

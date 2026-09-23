@@ -3,7 +3,7 @@
 > We built a **copy-trading authorization agent**: natural language produces a locked Spec, a human face-gate starts Paper copy-trading via waytoweb4, the Spec is minted as a revocable on-chain Strategy Passport, and a separate RedLine agent can halt the engine and burn the passport without looking at PnL.
 
 **GWDC 2026 Korea · FuriosaAI × Bricksum · Challenge A** — with
-Challenge B ("可停、可审计") covered by the RedLine kill switch.
+Challenge B ("stoppable, auditable") covered by the RedLine kill switch.
 
 See [`waytoweb4-agent-prd.md`](waytoweb4-agent-prd.md) for the full
 product brief, and [`docs/security-arch.md`](docs/security-arch.md)
@@ -46,7 +46,7 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 |---|---|---|
 | Natural-language → Spec | Follow Agent | `agent/follow_agent/` |
 | Drawdown hard gate | RedLine rule gate | `agent/redline_agent/rule_gate.py` |
-| Event classification (海力士/杠杆/...) | RedLine LLM classifier | `agent/redline_agent/llm_classifier.py` |
+| Event classification (Hynix / leverage / ...) | RedLine LLM classifier | `agent/redline_agent/llm_classifier.py` |
 | Face verification, start/stop | Backend | `backend/app/routers/{face,engine}.py` |
 | Provisional waytoweb4 adapter contract | Backend + docs | `backend/app/execution_contract.py`, `docs/WAYTOWEB4-INTERFACE-CONTRACT.md` |
 | Passport mint / revoke | Backend + isolated Node worker | `backend/app/routers/passport.py`, `chain/` |

@@ -13,7 +13,7 @@ matches the PRD template the README will reproduce.
 
 from __future__ import annotations
 
-# Per PRD §9: "180W 估算即可，禁止真测芯片"
+# Per PRD §9: a 180 W estimate is sufficient; no on-chip power measurement.
 NPU_POWER_W: float = 180.0
 
 

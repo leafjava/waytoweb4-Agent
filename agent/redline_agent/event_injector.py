@@ -1,6 +1,6 @@
 """Hynix-style event injection for the Demo and the eval set.
 
-This is the PRD §8 "一键海力士" button. The event pack is a
+This is the PRD §8 "one-click Hynix" button. The event pack is a
 deterministic sequence of MarketEvents that -- when fed through the
 RedLine judge -- produces a TRIP verdict without any real market data.
 """

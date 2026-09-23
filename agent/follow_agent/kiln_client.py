@@ -110,12 +110,12 @@ class MockKilnClient:
 
     Behaviour depends on the latest user message:
 
-      * if it asks a follow-up question (matches "leader", "额度",
-        "限亏", "expiry", etc.) -> returns a clarifying question
+      * if it asks a follow-up question (matches "leader", "amount",
+        "loss limit", "expiry", etc.) -> returns a clarifying question
       * otherwise -> returns a frozen demo Spec in JSON form
 
     The mock also recognises a small "trigger" language for the
-    redline-as-LLM-classifier path (海力士 / circuit breaker keywords
+    redline-as-LLM-classifier path (Hynix / circuit breaker keywords
     etc.) but the actual redline judgments are exercised in
     redline_agent tests; this mock is only for the follow agent.
     """
@@ -126,9 +126,11 @@ class MockKilnClient:
     # match keyword clusters, not exact strings. Keep these aligned
     # with the heuristic patterns in clarifier._looks_like_answer() so
     # the mock and the real flow agree on what counts as "filled".
+    # Amount/loss matchers accept English, Korean and Chinese phrasing;
+    # the ZH entries are input parsing, not user-visible copy.
     _LEADER_RE = re.compile(r"\bleader[-_a-zA-Z0-9]{1,32}\b")
-    _AMOUNT_RE = re.compile(r"(\d{2,5})\s*(u|usd|美元|元|\$)?", re.IGNORECASE)
-    _LOSS_RE = re.compile(r"(亏|止损|maxloss|stop\s*loss)", re.IGNORECASE)
+    _AMOUNT_RE = re.compile(r"(\d{2,5})\s*(u|usd|美元|元|달러|\$)?", re.IGNORECASE)
+    _LOSS_RE = re.compile(r"(亏|止损|maxloss|stop\s*loss|손실)", re.IGNORECASE)
 
     def chat(self, messages: Iterable[ChatMessage], flow_tag: str) -> KilnReply:
         msgs = list(messages)
@@ -184,12 +186,12 @@ class MockKilnClient:
     @staticmethod
     def _mock_clarify(text: str) -> str:
         if not MockKilnClient._LEADER_RE.search(text):
-            return "你想跟哪个 leader？给我一个 leader id（比如 leader-demo-001）。"
+            return "Which leader should I follow? Give me a leader id (e.g. leader-demo-001)."
         if not MockKilnClient._AMOUNT_RE.search(text):
-            return "跟多少额度（USD）？Demo 默认 500。"
+            return "How much notional (USD)? Demo default is 500."
         if not MockKilnClient._LOSS_RE.search(text):
-            return "限亏多少？Demo 默认 50（不超过本金）。"
-        return "字段都齐了，可以出 Spec。"
+            return "What is your loss limit? Demo default is 50 (cannot exceed notional)."
+        return "All required fields are present — ready to emit the Spec."
 
     @staticmethod
     def _mock_inject_response(text: str) -> str:

@@ -65,7 +65,7 @@ every decision below.
 | Drawing the drawdown threshold | **Code** (`hard_check`) |
 | Calling the engine start/stop | **Code** (backend) |
 | Minting / revoking the passport | **Code** (backend) |
-| Classifying events (海力士 / 杠杆 / etc.) | Agent (LLM teammate's model) |
+| Classifying events (Hynix / leverage / etc.) | Agent (LLM teammate's model) |
 | Deciding TRIP vs WATCH vs HOLD | **Combined**: gate first, model second |
 | Demo flow / video / token table | **Code** (this repo) |
 

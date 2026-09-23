@@ -1,112 +1,112 @@
 # waytoweb4 Agent PRD
 
-**Agent 开通跟单 · 策略护照上链 · RedLine 一票否决**  
+**Agent-activated copy-trading · Strategy Passport on-chain · RedLine one-vote veto**  
 GWDC 2026 Korea · FuriosaAI × Bricksum · Challenge A  
-（RedLine 同时覆盖 Challenge B 的「可停、可审计」加分项）
+(RedLine also covers Challenge B's "stoppable and auditable" bonus criteria)
 
-版本：2026-09-22  
-状态：可开工  
-协作方：waytoweb4（执行层） / 参赛队（开通层、护照、熔断、Demo）
+Version: 2026-09-22  
+Status: ready to build  
+Collaborators: waytoweb4 (execution layer) / the competing team (activation layer, passport, kill switch, Demo)
 
 ---
 
-## 0. README 必须写死的一句话（官方验收）
+## 0. The One Sentence the README Must State Verbatim (Official Acceptance)
 
 > We built a **copy-trading authorization agent**: natural language produces a locked Spec, a human face-gate starts Paper copy-trading via waytoweb4, the Spec is minted as a revocable on-chain Strategy Passport, and a separate RedLine agent can halt the engine and burn the passport without looking at PnL.
 
-评委按你声明的功能打分，不是按功能清单打分。这一句放 README 第一段。
+Judges score against the function you declare, not against a feature checklist. Put this sentence in the first paragraph of the README.
 
 ---
 
-## 1. 一句话产品
+## 1. The Product in One Sentence
 
-用户用自然语言配好并启动跟单（单策略，或两本护照的权重组合）→ 人脸开闸 → Spec 铸成链上策略护照 → 执行走 waytoweb4（不重写策略与下单）→ 收益再高，独立 RedLine 也可以熔断并撤销护照。
+The user configures and launches copy-trading in natural language (a single strategy, or a weighted combination of two passports) → the face gate opens → the Spec is minted as an on-chain Strategy Passport → execution runs through waytoweb4 (strategies and order placement are not rewritten) → no matter how high the returns go, the independent RedLine can still trip the kill switch and revoke the passport.
 
 ---
 
-## 2. 为什么做（对齐官方 Brief + 韩国语境）
+## 2. Why We Build This (Aligned with the Official Brief + Korean Context)
 
-### 2.1 FuriosaAI × Bricksum Challenge A 原文要点
+### 2.1 Key Points of the FuriosaAI × Bricksum Challenge A Brief
 
-官方题目：Build a Financial Service Powered by AI Agents and Blockchain。
+Official prompt: Build a Financial Service Powered by AI Agents and Blockchain.
 
-必须同时做到：
+You must do all of the following at once:
 
-1. **用户需求与工作流**：说清服务谁、解决什么问题；从输入到结果跑通；标明哪一段是 Agent、哪一段是代码。
-2. **Kiln API + 能效**：Agent 必须走 **NPU-based Kiln API，模型 `gpt-oss-120b`**。要有真实 API 调用，且调用结果影响决策。Token **按流程拆开报**，不能只报一个总数。功耗可用测量或**写清假设**（本次用 180W 估算即可，禁止真测芯片）。
-3. **链**：devnet/testnet 端到端至少 **1 笔链上交易**（支付 / 结算 / 写记录），提交 **tx hash + 对应日志**。说清 Agent 读了什么、写了什么、结算了什么。
-4. **声明功能**：README 一句话声明（见第 0 节）。
-5. **条件对照实验**：同样流程跑两遍，改用户条件（额度变小、不允许的 Leader/商户、期限已过）。越权必须停下，并留下记录。
+1. **User need and workflow**: state clearly who the service is for and what problem it solves; demonstrate a working path from input to result; mark which part is the Agent and which part is code.
+2. **Kiln API + energy efficiency**: the Agent must go through the **NPU-based Kiln API with the `gpt-oss-120b` model**. There must be real API calls, and the call results must affect decisions. Tokens must be **reported broken down by flow**, not as one total. Power draw may be measured or the **assumption must be stated clearly** (for this event, estimating at 180W is sufficient; actually measuring the chip is forbidden).
+3. **Chain**: at least **1 on-chain transaction** end-to-end on devnet/testnet (payment / settlement / record write), submitting the **tx hash + corresponding logs**. State clearly what the Agent read, what it wrote, and what it settled.
+4. **Declared function**: the one-sentence README declaration (see Section 0).
+5. **Conditional comparison runs**: run the same flow twice, changing the user conditions (smaller allowance, a disallowed Leader/merchant, expired validity). Out-of-scope actions must be stopped, and a record must be left.
 
-官方 Brief：  
+Official Brief:  
 https://docs.google.com/document/d/13qh7oePGl7Flrl-Zh_A6hfr02L266PvS/edit
 
-### 2.2 为什么跟单能打中 A，RedLine 能顺便打中 B
+### 2.2 Why Copy-Trading Hits Challenge A and RedLine Also Hits Challenge B
 
-- Challenge A 要的是「代办申购/支付/资产管理」的金融 Agent。跟单 = 资产管理委托。
-- 韩国监管叙事：责任在人、必须能切断。原型只能 **Paper、可撤、可熔断**。
-- Challenge B 要的是：边界在哪执行、被推出边界时必须停、第三人只看记录能复原「当时允不允许」。RedLine + 护照就是这件事。
-- 组合用自然语言配权重，比网页配权重轻，适合 3 分钟 Demo。
+- Challenge A wants a financial Agent for "subscription, payment, and asset management on a user's behalf". Copy-trading = delegated asset management.
+- The Korean regulatory narrative: responsibility rests with humans, and there must be a way to cut off. The prototype must be **Paper-only, revocable, and kill-switchable**.
+- Challenge B asks: where is the boundary enforced, does it stop when pushed past the boundary, and can a third party reconstruct "was it allowed at the time" from the records alone. RedLine + the passport is exactly that.
+- Configuring combination weights in natural language is lighter than configuring them on a web page, and fits a 3-minute Demo.
 
-### 2.3 GWDC 现场约束
+### 2.3 On-Site Constraints at GWDC
 
-| 项 | 内容 |
+| Item | Content |
 |---|---|
-| 赛事 | GWDC Hackathon 2026 Korea |
-| 地点 | aT Center, Seoul（Seocho, Gangnam-daero 27） |
+| Event | GWDC Hackathon 2026 Korea |
+| Venue | aT Center, Seoul (Seocho, Gangnam-daero 27) |
 | Kickoff | 9/28 17:00–20:00 KST |
-| 编码 | 9/28 20:00 – 9/30 11:00 KST |
-| 提交截止 | **9/30 12:00 KST** |
-| Demo Day | 9/30 15:00–17:00 KST，Innovation Stage |
-| 提交物 | 公开 GitHub、≤3 分钟 Demo 视频、项目材料、Pitch Deck |
-| 奖池 | 全场 $100K+ USD（生态赛道另计） |
-| 官网 | https://www.gwdc.net / https://wap.gwdc.net/hackathon.html |
+| Coding | 9/28 20:00 – 9/30 11:00 KST |
+| Submission deadline | **9/30 12:00 KST** |
+| Demo Day | 9/30 15:00–17:00 KST, Innovation Stage |
+| Deliverables | Public GitHub, ≤3-minute Demo video, project materials, Pitch Deck |
+| Prize pool | $100K+ USD overall (ecosystem tracks counted separately) |
+| Website | https://www.gwdc.net / https://wap.gwdc.net/hackathon.html |
 | Luma | https://luma.com/be2le0l0 |
 | TG | https://t.me/GWDC_Global |
 
-3 分钟必须看见：**手续办完 + 链上能打开 + Kiln 调用发生过 + token 分流程**。
+In 3 minutes the judges must see: **the paperwork completed + the passport opens on-chain + a Kiln call actually happened + tokens broken down by flow**.
 
 ---
 
-## 3. 系统结构
+## 3. System Architecture
 
 ```
-用户说话
-  → Follow Agent（Kiln / gpt-oss-120b）出 Spec 或权重
-  → 人脸开闸（人，不在模型）
-  → waytoweb4 执行 Paper 跟单（start/stop）
-  → Strategy Passport 上链（specHash, 可撤, 已核验）
-  → RedLine Agent 独立判决 HOLD/WATCH/TRIP
-       TRIP → stop 引擎 + revoke 护照
+The user speaks
+  → Follow Agent (Kiln / gpt-oss-120b) produces a Spec or weights
+  → Face gate opens (a human, not the model)
+  → waytoweb4 executes Paper copy-trading (start/stop)
+  → Strategy Passport goes on-chain (specHash, revocable, verified)
+  → RedLine Agent issues an independent verdict HOLD/WATCH/TRIP
+       TRIP → stop the engine + revoke the passport
 ```
 
-硬规则：
+Hard rules:
 
-- 赚钱 Agent 和停钱 Agent **分开**。
-- RedLine **不看收益率**。
-- 自然语言只能配 Spec，**不能改限亏、不能关 RedLine**。
-- 模型无权启动真/模拟盘；人脸后代码才调 `start`。
+- The money-making Agent and the money-stopping Agent are **separate**.
+- RedLine **never looks at returns**.
+- Natural language can only configure the Spec; it **cannot change the loss limit and cannot turn off RedLine**.
+- The model has no authority to start live/paper trading; only after the face gate does the code call `start`.
 
 ---
 
-## 4. 对象模型
+## 4. Object Model
 
-### 4.1 Spec（跟单意图，锁死）
+### 4.1 Spec (copy-trading intent, locked)
 
-| 字段 | 说明 | Demo 默认 |
+| Field | Description | Demo default |
 |---|---|---|
-| mode | 只允许普通跟单 | `copy` |
-| leaderId | 可跟的 Leader | 现场确认的 waytoweb4 Leader |
-| venue | 只 Paper | `paper` |
-| notionalUsd | 额度 | `500` |
-| maxLossUsd | 限亏 | `50` |
-| expiry | 有效期 | 48h |
-| faceVerified | 人脸已核 | `false`→`true` |
-| paper | 固定 true | `true` |
+| mode | Only plain copy-trading allowed | `copy` |
+| leaderId | Leaders eligible for copying | A waytoweb4 Leader confirmed on site |
+| venue | Paper only | `paper` |
+| notionalUsd | Allowance | `500` |
+| maxLossUsd | Loss limit | `50` |
+| expiry | Validity period | 48h |
+| faceVerified | Face verified | `false`→`true` |
+| paper | Fixed to true | `true` |
 
-禁止：新策略类型、网格自研、回测工厂。
+Forbidden: new strategy types, in-house grid trading, backtest factories.
 
-### 4.2 Strategy Passport（链上授权单元）
+### 4.2 Strategy Passport (on-chain authorization unit)
 
 ```
 passportId
@@ -121,19 +121,19 @@ faceVerified
 status = active | revoked
 ```
 
-链的职责：存授权与状态，不跑行情。
+The chain's job: store authorization and status; it does not run market data.
 
-### 4.3 Basket Passport（有余力再做）
+### 4.3 Basket Passport (only if there is spare capacity)
 
 ```
 [{ passportId, bps }] + basketMaxLossUsd
 ```
 
-拼的是别人的许可，不发明行业因子。组合模板若 waytoweb4 未开放：两路普通跟单 + 链上 Basket。
+What you assemble is other people's permissions; you do not invent industry factors. If waytoweb4 has not opened up combination templates: two plain copy-trading lanes + an on-chain Basket.
 
-### 4.4 RedLine 判决（结构化，训练队友从这里接）
+### 4.4 RedLine Verdict (structured; this is where the model teammate plugs in)
 
-只允许：
+Only the following is allowed:
 
 ```json
 {
@@ -145,119 +145,119 @@ status = active | revoked
 }
 ```
 
-原因码：
+Reason codes:
 
-| code | 含义 |
+| code | Meaning |
 |---|---|
-| DD_LIMIT | 回撤打到 Spec.限亏 → **规则强制 TRIP**，模型无权放行 |
-| CB_LIKE | 熔断级指数/板块冲击（海力士/KOSPI 风格） |
-| LEV_ETF_AMP | 2x/杠杆产品放大 |
-| LIQ_CASCADE | 清算踩踏 |
-| GAP_ORACLE | 薄流动性/盘前异常价 |
-| HUMAN_OVERRIDE | 人脸/人工一票否决 |
+| DD_LIMIT | Drawdown hits the Spec loss limit → **rules force TRIP**; the model has no authority to let it pass |
+| CB_LIKE | Circuit-breaker-level index/sector shock (SK Hynix/KOSPI style) |
+| LEV_ETF_AMP | Amplification by 2x/leveraged products |
+| LIQ_CASCADE | Liquidation cascade |
+| GAP_ORACLE | Thin liquidity / abnormal pre-market prices |
+| HUMAN_OVERRIDE | Face/human one-vote veto |
 
-规则优先：
+Rules take priority:
 
 ```
 if drawdown >= spec.maxLossUsd → TRIP
-else model 只对「是不是结构冲击」打分
+else the model only scores "is this a structural shock"
 if TRIP → waytoweb4.stop + passport.revoke
 ```
 
 ---
 
-## 5. 官方验收映射（按这个做就不会跑偏）
+## 5. Official Acceptance Mapping (follow this and you won't drift off track)
 
-| 官方条款 | 我们怎么交 |
+| Official clause | How we deliver |
 |---|---|
-| User Need | 散户/评委：想用自然语言委托跟单，但怕 Agent 代客后无法切断 |
-| Agent vs Code | Agent：澄清 + 出 Spec + RedLine 分类。Code：校验 Spec、人脸、start/stop、铸/烧护照、限亏硬闸 |
-| Kiln `gpt-oss-120b` | Follow 多轮澄清、RedLine 事件分类，必须打到真 API |
-| Token 分流程 | 见 §9：clarify / spec / redline_hold / redline_trip / demo_inject |
-| 能耗 | `energyWh ≈ tokens × 180W × latencySec / 3600`，假设写进 README |
-| 链上至少 1 tx | mint Passport；TRIP 时再发 revoke tx。提交 hash |
-| 条件对照跑两遍 | Run1：500U / 亏50停。Run2：额度改 100U 或注入海力士熔断包。两次都有日志 |
-| 越权即停 | 限亏击穿、禁止 Leader、过期、RedLine 注入事件 → stop 并记录 |
-| 第三人可审计 | 只凭护照 + 日志能回答：跟谁、额度、是否人脸、为何停 |
+| User Need | Retail users/judges: want to delegate copy-trading in natural language, but fear that once the Agent trades on their behalf it cannot be cut off |
+| Agent vs Code | Agent: clarification + producing the Spec + RedLine classification. Code: validating the Spec, the face gate, start/stop, minting/burning the passport, the hard loss-limit gate |
+| Kiln `gpt-oss-120b` | Follow's multi-turn clarification and RedLine's event classification must hit the real API |
+| Tokens by flow | See §9: clarify / spec / redline_hold / redline_trip / demo_inject |
+| Energy | `energyWh ≈ tokens × 180W × latencySec / 3600`, with the assumption written into the README |
+| At least 1 on-chain tx | Mint the Passport; on TRIP send a revoke tx as well. Submit the hashes |
+| Two conditional comparison runs | Run1: 500U / stop at a 50 loss. Run2: change the allowance to 100U or inject the Hynix circuit-breaker pack. Both runs leave logs |
+| Out-of-scope actions are stopped | Loss-limit breach, disallowed Leader, expiry, RedLine-injected event → stop and record |
+| Third-party auditability | From the passport + logs alone, one can answer: who is copied, the allowance, whether the face gate passed, why it stopped |
 
-Challenge B 加分（不必改赛道，但 Demo 讲出来）：
+Challenge B bonus points (no need to switch tracks, but say it in the Demo):
 
-- 边界写在哪：Spec 硬编码 + 合约 status + RedLine
-- 被推出边界的两次 run
-- 另一人只看记录能复原
-
----
-
-## 6. 48 小时范围
-
-### 必做（没有就不要上台）
-
-- [ ] 对话产出一套合法 Spec
-- [ ] 人脸后才 `start`
-- [ ] 铸 **一本** Strategy Passport，浏览器能打开
-- [ ] waytoweb4 模拟盘运行中
-- [ ] RedLine 能停并 `revoke`
-- [ ] Kiln 真调用 + 分流程 token 表
-- [ ] 两次条件对照 + 日志
-- [ ] README 一句话功能声明 + tx hash
-
-### 有余力
-
-- [ ] 两本护照 + 权重
-- [ ] 第二地址凭护照跟
-- [ ] 确认卡显示本单 token
-- [ ] 「一键海力士」事件注入按钮
-
-### 明确不做
-
-新策略类型、回测工厂、K 线、币安真 KYC、花费总账、真测芯片功耗、战争模型、分账商城、让模型看收益率放行。
+- Where the boundary lives: hardcoded Spec + contract status + RedLine
+- The two runs pushed past the boundary
+- Another person can reconstruct it from the records alone
 
 ---
 
-## 7. Demo 脚本（3 分钟）
+## 6. 48-Hour Scope
 
-1. 「跟这条、500 U、模拟盘、亏 50 停」  
-2. 配置卡（Spec 可视化）  
-3. 人脸 → 状态「运行中」  
-4. 打开护照（tx hash）  
-5. 可选：组合 / 第二地址  
-6. 点 RedLine 或注入海力士包 → 停 + revoked  
-7. 收尾 15 秒：token 分流程表 + 「接口可换 Furiosa / Kiln 卡」+ 180W 估算
+### Must-do (without these, don't take the stage)
 
-对照实验（视频里剪 20 秒）：把额度改成 100 或限亏改成 10，再跑一遍，展示提前停。
+- [ ] A conversation produces a valid Spec
+- [ ] `start` only after the face gate
+- [ ] Mint **one** Strategy Passport that opens in a browser
+- [ ] waytoweb4 paper trading running
+- [ ] RedLine can stop and `revoke`
+- [ ] Real Kiln calls + a per-flow token table
+- [ ] Two controlled comparison runs + logs
+- [ ] The one-sentence README function declaration + tx hash
 
----
+### If there is spare capacity
 
-## 8. 海力士黑天鹅（评委追问稿，不是要做交易策略）
+- [ ] Two passports + weights
+- [ ] A second address copies using the passport
+- [ ] The confirmation card shows this order's tokens
+- [ ] A "one-click Hynix" event injection button
 
-2026 年夏：海力士 + 三星约占 KOSPI 一半，个股 2 倍 ETF 日再平衡放大波动。正股可单日 -10%～-15%，2x ETF 更深，指数约 -8% 触发全市熔断。基本面可以仍强，仓位先爆。
+### Explicitly not doing
 
-评委问：「策略对了也会爆，谁切断？」
-
-答法：
-
-- 策略 Agent 可以继续看多。
-- RedLine 不看赚了多少。
-- 限亏先于强平。
-- 护照可撤、人脸闸、独立熔断。
-- Demo 用模拟事件包，不赌现场真行情。
+New strategy types, backtest factories, candlestick charts, real Binance KYC, a spending ledger, actually measuring chip power draw, war-scenario models, a profit-splitting marketplace, letting the model look at returns to grant an approval.
 
 ---
 
-## 9. Kiln / Token / 功耗（上场必带表）
+## 7. Demo Script (3 minutes)
 
-模型：`gpt-oss-120b` via Kiln。  
-禁止把 Follow 和 RedLine 打成一次超长推理。
+1. "Copy this one, 500 U, paper trading, stop at a 50 loss"  
+2. Configuration card (Spec visualization)  
+3. Face gate → status "running"  
+4. Open the passport (tx hash)  
+5. Optional: combination / second address  
+6. Click RedLine or inject the Hynix pack → stop + revoked  
+7. Final 15 seconds: the per-flow token table + "the interface can be swapped for Furiosa / Kiln cards" + the 180W estimate
 
-| flow | 何时 | 预期 |
+Controlled comparison run (cut 20 seconds into the video): change the allowance to 100 or the loss limit to 10, run it again, and show the earlier stop.
+
+---
+
+## 8. The SK Hynix Black Swan (a script for judge Q&A, not a trading strategy to build)
+
+Summer 2026: SK Hynix + Samsung account for roughly half of the KOSPI; the daily rebalancing of 2x single-stock ETFs amplifies volatility. The underlying stock can drop -10% to -15% in a single day, the 2x ETF falls deeper, and at roughly -8% the index triggers a market-wide circuit breaker. Fundamentals can still be strong while positions blow up first.
+
+A judge asks: "Even with the right strategy it can still blow up — who cuts it off?"
+
+The answer:
+
+- The strategy Agent can keep being bullish.
+- RedLine does not look at how much was made.
+- The loss limit fires before forced liquidation.
+- A revocable passport, a face gate, an independent kill switch.
+- The Demo uses a simulated event pack instead of betting on real market moves on site.
+
+---
+
+## 9. Kiln / Tokens / Power (bring this table on stage)
+
+Model: `gpt-oss-120b` via Kiln.  
+It is forbidden to merge Follow and RedLine into one extra-long inference.
+
+| flow | When | Expectation |
 |---|---|---|
-| `clarify` | 缺 Leader/额度/限亏 | 1–2 轮 |
-| `spec_emit` | 产出 JSON Spec | 1 次 |
-| `redline_hold` | 心跳/常规摘要 | 短 |
-| `redline_trip` | 限亏或事件包 | 短，结构化 JSON |
-| `demo_inject` | 一键海力士 | 1 次 |
+| `clarify` | Missing Leader/allowance/loss limit | 1–2 turns |
+| `spec_emit` | Producing the JSON Spec | once |
+| `redline_hold` | Heartbeat / routine summary | short |
+| `redline_trip` | Loss limit or event pack | short, structured JSON |
+| `demo_inject` | One-click Hynix | once |
 
-README 模板：
+README template:
 
 ```
 flow          tokens_in  tokens_out  latency_s  energy_Wh_est
@@ -268,105 +268,105 @@ total         ...
 assumption    180W NPU-class, energy = 180 * latency / 3600
 ```
 
-省 token：规则先判限亏；模型只看文本事件；Spec 用 schema，禁止自由散文。
+Saving tokens: rules judge the loss limit first; the model only reads text events; the Spec uses a schema — free-form prose is forbidden.
 
 ---
 
-## 10. 接口分工
+## 10. Interface Division of Labor
 
-### 参赛队
+### The competing team
 
-对话、Spec schema、人脸闸、护照 mint/revoke、RedLine、Kiln 封装、Demo、token 表。
+Conversation, Spec schema, face gate, passport mint/revoke, RedLine, the Kiln wrapper, the Demo, the token table.
 
-### waytoweb4（需书面确认）
+### waytoweb4 (written confirmation needed)
 
-- 可跟 Leader 列表  
-- 创建 Paper 跟单  
+- List of Leaders available for copying  
+- Creating a Paper copy-trading run  
 - `start` / `stop`  
-- 组合模板：若无，用两路 copy + 链上 Basket  
+- Combination templates: if unavailable, use two copy lanes + an on-chain Basket  
 
-卡点兜底：评委只要求「授权与记录在链上、执行有 start/stop」。执行失败时用 mock 引擎 + 真实护照交易，README 写清哪些是 waytoweb4、哪些是 mock。不要卡死在对方 API。
+Fallback if blocked: judges only require "authorization and records on-chain, execution with start/stop". If execution fails, use a mock engine + real passport transactions, and state clearly in the README which parts are waytoweb4 and which are mock. Do not get stuck on their API.
 
-### 模型队友（LLaMA 方向，不碰链）
+### The model teammate (LLaMA direction, no chain work)
 
-今日即可：
+Can be done today:
 
-1. `redline_schema.md`（上表 JSON）  
-2. 30–50 条海力士风格评测集  
-3. 规则 + LLM 混合：限亏硬闸，模型只打结构冲击  
-4. 一键事件包 → 必须 TRIP  
+1. `redline_schema.md` (the JSON above)  
+2. A 30–50 case SK Hynix-style eval set  
+3. A rules + LLM hybrid: the loss limit is a hard gate; the model only scores structural shocks  
+4. A one-click event pack → must TRIP  
 
-不要让他做护照、钱包、回测。
+Do not have them work on the passport, wallets, or backtesting.
 
 ---
 
-## 11. 建议仓库结构
+## 11. Suggested Repository Structure
 
 ```
-README.md                 # 一句话功能 + tx hash + token 表 + 180W 假设
-prd.md                    # 本文件
-apps/web/                 # 对话、配置卡、人脸、护照链接、RedLine 按钮
+README.md                 # one-sentence function + tx hash + token table + 180W assumption
+prd.md                    # this file
+apps/web/                 # conversation, configuration card, face gate, passport link, RedLine button
 apps/follow-agent/        # Kiln clarify + spec_emit
-apps/redline-agent/       # schema + 规则闸 + 事件注入
+apps/redline-agent/       # schema + rules gate + event injection
 apps/passport/            # mint / revoke / specHash
 apps/waytoweb4-adapter/   # start/stop/paper
-docs/security-arch.md     # 产品架构 + 安全性架构（评委/合作方会要）
+docs/security-arch.md     # product architecture + security architecture (judges/partners will ask for it)
 docs/eval/hynix-cases.json
 ```
 
-链选 **便宜 testnet**（与 Kiln/现场网无关）。目标是稳定出 hash，不是选对的主网叙事。
+Choose a **cheap testnet** for the chain (independent of Kiln/the on-site network). The goal is reliably producing hashes, not picking the right mainnet narrative.
 
 ---
 
-## 12. 安全性架构（最小可讲）
+## 12. Security Architecture (the minimum you can present)
 
-1. **交易前**：无人脸不得 start；Spec 字段白名单。  
-2. **调用中**：Kiln 只出 JSON，后端校验；无校验不调 waytoweb4。  
-3. **交易中**：Paper only；限亏代码硬闸；RedLine 独立进程。  
-4. **事后**：护照 + 日志可被第三人复原。  
-5. **AI 不能做的事**：改 maxLoss、关 RedLine、自己开闸、看 PnL 豁免。
-
----
-
-## 13. 路线（对 Furiosa 评委说的三句）
-
-- 短期芯片（本次）：金融 Agent 负载 + 护照；180W 估算。  
-- 中期能源：多用户 24/7，比 users/kW。  
-- 长期存储：护照成为配置/授权/成绩哈希单元；分账上架不做。
+1. **Before the trade**: no start without the face gate; Spec fields are whitelisted.  
+2. **During the call**: Kiln only outputs JSON and the backend validates; no waytoweb4 call without validation.  
+3. **During the trade**: Paper only; the loss limit is a hardcoded gate; RedLine runs as an independent process.  
+4. **After the fact**: the passport + logs let a third party reconstruct what happened.  
+5. **What AI cannot do**: change maxLoss, turn off RedLine, open the gate by itself, or get an exemption by looking at PnL.
 
 ---
 
-## 14. 开工顺序（今天就按这个排）
+## 13. Roadmap (three lines for the Furiosa judges)
 
-1. Spec JSON schema + 校验器  
-2. Kiln Hello：`gpt-oss-120b` 产出合法 Spec  
-3. 人脸开关（可先 mock 通过）+ start/stop  
-4. Passport mint，记下 hash  
-5. 限亏硬闸  
-6. RedLine JSON + 海力士注入 → revoke  
-7. 两次对照日志  
-8. token 表写进 README  
-9. 3 分钟录屏  
-
-先闭环再加 Basket。
+- Short term — the chip (this event): financial Agent workloads + the passport; 180W estimate.  
+- Mid term — energy: multi-user 24/7, benchmarked as users/kW.  
+- Long term — storage: the passport becomes the hash unit for configuration/authorization/track record; a profit-splitting marketplace listing is out of scope.
 
 ---
 
-## 15. 注意事项（避免现场被刷）
+## 14. Build Order (schedule by this starting today)
 
-1. 不接 Kiln / 不用 `gpt-oss-120b` = Challenge A 硬伤。  
-2. 只有 PPT 没有 tx hash = 链条款失败。  
-3. token 只报一个总数 = 能效条款失败。  
-4. 改条件后 Agent 仍下单 = 控制条款失败。  
-5. Demo 超时：删组合、删第二地址，保「配 → 闸 → 护照 → 烧」。  
-6. 真盘、真 KYC、真功耗测试一律不做。  
-7. 提交截止 **9/30 12:00 KST**，Demo 15:00 开始，预留上传和网。  
-8. 官方 Q&A：https://t.me/GWDC_Global/392/742  
+1. Spec JSON schema + validator  
+2. Kiln Hello: `gpt-oss-120b` produces a valid Spec  
+3. Face-gate switch (a mock pass is fine at first) + start/stop  
+4. Passport mint; record the hash  
+5. The loss-limit hard gate  
+6. RedLine JSON + Hynix injection → revoke  
+7. Logs from the two comparison runs  
+8. Write the token table into the README  
+9. The 3-minute screen recording  
+
+Close the loop first, then add the Basket.
 
 ---
 
-## 16. 协作方 / 导师一页纸
+## 15. Cautions (avoid getting eliminated on site)
 
-策略可以错，黑天鹅可以来。  
-评委要看的是：自然语言能配完、人脸才能开、链上能打开授权、RedLine 能停并能烧护照。  
-执行外包 waytoweb4，责任留在人和规则，不留在模型。
+1. Not integrating Kiln / not using `gpt-oss-120b` = a fatal flaw for Challenge A.  
+2. Only slides and no tx hash = failure of the chain clause.  
+3. Reporting only a single token total = failure of the energy-efficiency clause.  
+4. The Agent still placing orders after the conditions change = failure of the control clause.  
+5. If the Demo runs long: cut the combination and the second address, and keep "configure → gate → passport → burn".  
+6. No live trading, no real KYC, no real power-draw testing — none of it.  
+7. The submission deadline is **9/30 12:00 KST** and the Demo starts at 15:00; leave buffer for uploading and the network.  
+8. Official Q&A: https://t.me/GWDC_Global/392/742  
+
+---
+
+## 16. One-Pager for Collaborators / Mentors
+
+The strategy can be wrong; the black swan can come.  
+What the judges want to see: configuration completes in natural language, only a face opens the gate, the authorization opens on-chain, and RedLine can stop the engine and burn the passport.  
+Execution is outsourced to waytoweb4; responsibility stays with humans and rules, not with the model.
