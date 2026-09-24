@@ -31,6 +31,7 @@ frontend/dist/
 # Backend runtime data (ledger, policy and evidence — recreated by the demo)
 /backend/var/
 /artifacts/
+/frontend/public/runs/*.json
 
 # Coverage / build artifacts
 .coverage

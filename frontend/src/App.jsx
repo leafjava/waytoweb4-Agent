@@ -18,20 +18,11 @@ const INITIAL_DRAFT = () => ({
   mint: null,
 })
 
-// Find the most recent runs/two_runs_*.json written by scripts/two_runs_demo.py.
-// Vite serves frontend/public/ at the URL root, so we list via fetch.
 async function fetchLatestTwoRuns() {
   try {
-    const res = await fetch('/runs/')
+    const res = await fetch('/runs/latest.json', { cache: 'no-store' })
     if (!res.ok) return null
-    const text = await res.text()
-    // Vite returns a directory listing as HTML <a href="...">file.json</a>.
-    const matches = [...text.matchAll(/href="(two_runs_[^"]+\.json)"/g)]
-    if (matches.length === 0) return null
-    const last = matches[matches.length - 1][1]
-    const fileRes = await fetch(`/runs/${last}`)
-    if (!fileRes.ok) return null
-    return await fileRes.json()
+    return await res.json()
   } catch {
     return null
   }
