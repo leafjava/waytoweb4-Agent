@@ -193,6 +193,10 @@ class AuthorizationService:
             if rec is None:
                 raise KeyError(passport_id)
             previous = rec.authorization_status
+            if previous in {"prepared", "confirmed"}:
+                # A never-authorized mandate has nothing to revoke; marking it
+                # revoked would fabricate a lifecycle that never existed.
+                raise AuthorizationError("passport is not authorized; nothing to stop or revoke")
             already_revoked = previous == "revoked"
             gate_invalidated = rec.invalidate_face_gate(reason_code)
             if already_revoked:

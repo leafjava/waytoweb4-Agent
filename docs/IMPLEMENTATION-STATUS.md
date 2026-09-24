@@ -463,3 +463,27 @@ Transactions:
 - deploy: `0xa61aafa30896d6abc9c4d16f1c5e87c2519d4fd043584df68074d9957fb4adea`
 - mint: `0xf482be1f0ee4bf233ed7ad48ef30020ff86713f296b661b5f3931a0b254e4839`
 - revoke: `0x77bb51bab499e98ff5d71cc2f13f4c5359f017d23fa7f4864380a5a1afecb64f`
+
+
+## Security hardening — 2026-09-24 (vulnerability scan follow-up)
+
+A full code-level vulnerability scan (static review of all security-relevant
+modules plus dynamic probes against a live offline backend) found and fixed:
+
+1. `routers/redline.py` — the async judge route called the synchronous Kiln
+   client directly, so one slow live classification (30 s timeout) would stall
+   the whole event loop, including `/api/engine/stop` and the worker
+   heartbeat. The call now runs via `asyncio.to_thread`.
+2. `engine.py` — `start_engine` gate checks ran before the awaits that spawn
+   the worker, so concurrent first-starts could both pass and orphan a
+   controller (reproduced live: two 200s out of three concurrent calls).
+   Starts are now serialized through a per-passport asyncio lock.
+3. `authorization.py` — stopping a never-authorized (prepared/confirmed)
+   passport used to mark it revoked; it now raises a 409 with an explicit
+   reason. A refused stop still records `stop_requested` (fail-safe intent
+   flag), which blocks a later confirm — verified as intended behavior.
+
+Verification: full Python suite 163 passed; `scripts/probe_v1v2.py` (kept for
+regression) re-proved both fixes against a live backend with an isolated
+ledger — 5 concurrent first-starts yield exactly one 200 and one running
+engine; unauthorized stop is refused.

@@ -18,6 +18,10 @@ from .policy import write_policy
 from .state import AppState, PassportRecord
 
 _WORKERS: dict[str, "PaperWorkerController"] = {}
+# Serializes start_engine per passport: the gate checks run before the awaits
+# that spawn the worker, so two concurrent first-starts would otherwise both
+# pass and orphan a controller (found by the 2026-09-24 vulnerability scan).
+_START_LOCKS: dict[str, asyncio.Lock] = {}
 
 
 class EngineStartError(ValueError):
@@ -176,6 +180,14 @@ class PaperWorkerController:
 
 
 async def start_engine(passport_id: str, state: AppState, trip_seconds: int, backend, execution_adapter=None) -> PassportRecord:
+    rec = state.passports.get(passport_id)
+    if rec is None: raise KeyError(passport_id)
+    lock = _START_LOCKS.setdefault(passport_id, asyncio.Lock())
+    async with lock:
+        return await _start_engine_locked(passport_id, state, trip_seconds, backend, execution_adapter)
+
+
+async def _start_engine_locked(passport_id: str, state: AppState, trip_seconds: int, backend, execution_adapter=None) -> PassportRecord:
     rec = state.passports.get(passport_id)
     if rec is None: raise KeyError(passport_id)
     if rec.authorization_status != "authorized" or rec.confirmed_spec_hash != rec.spec_hash:

@@ -7,6 +7,8 @@ frontend can show the second tx hash.
 
 from __future__ import annotations
 
+import asyncio
+
 from agent.redline_agent import (
     HynixMockClassifier,
     MarketEvent,
@@ -65,7 +67,12 @@ async def judge(
 
     events = [MarketEvent(**e) for e in (req.events or [])] if req.events else None
     with use_evidence_writer(state.evidence):
-        verdict = run_judge(rec.spec, rec.drawdown_usd, events, redline_judge)
+        # Live Kiln calls are synchronous (httpx); offload so a slow
+        # classification can never stall the event loop that owns /engine/stop
+        # and the worker heartbeat.
+        verdict = await asyncio.to_thread(
+            run_judge, rec.spec, rec.drawdown_usd, events, redline_judge
+        )
 
     flow = "redline_trip" if verdict.level == RedLineLevel.TRIP else "redline_hold"
     side_effects: dict | None = None
