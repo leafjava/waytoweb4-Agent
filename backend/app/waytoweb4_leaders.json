@@ -1,0 +1,25 @@
+{
+  "leaders": [
+    {
+      "leader_id": "leader-demo-001",
+      "display_name": "Korea Tech Equity",
+      "asset_class": "equity",
+      "status": "active",
+      "track_record_note": "Sample paper-copy leader for the GWDC demo."
+    },
+    {
+      "leader_id": "leader-demo-002",
+      "display_name": "KOSPI 200 Index",
+      "asset_class": "index",
+      "status": "active",
+      "track_record_note": "Tracks KOSPI 200 futures; for paper copy only."
+    },
+    {
+      "leader_id": "leader-demo-003",
+      "display_name": "KOSDAQ Growth",
+      "asset_class": "equity",
+      "status": "active",
+      "track_record_note": "Growth basket of KOSDAQ names."
+    }
+  ]
+}

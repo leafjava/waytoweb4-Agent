@@ -37,6 +37,9 @@ cd frontend && npm install && cd ..
 # 3. one-shot launch (backend :8000 + frontend :5173)
 python scripts/run_demo.py
 ```
+启动前端：npm run dev
+启动后端：python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+
 
 Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → mock authorization → local camera preview + per-mandate human approval → paper worker → automatic stop/revoke. The preview never leaves the browser. The two-round rehearsal is `python scripts/rehearse.py --mode offline`.
 
@@ -136,6 +139,8 @@ API-reported usage from a live run is acceptable as final evidence.
 - **Engine**: the paper worker is a separate process with drawdown, expiry, policy and lease hard stops. It remains the default execution path.
 - **AlphaFox transport**: the optional adapter uses the official AlphaFox CLI and its eight catalog operations. Read-only account discovery and a create dry-run have succeeded; this integration pass did not create, start or stop a live account trader. OAuth credentials stay in the OS keychain.
 - **Human gate**: a local camera preview plus an explicit confirmation button. No image is captured, uploaded or stored, and no face recognition or KYC is claimed. Approval time, method and session live in the persisted application passport and audit log; StrategyPassport v2 stores the frozen mandate confirmation but not those three metadata fields on-chain.
+- **WayToWeb4 mock transport**: `backend/app/waytoweb4_mock.py` exposes the teammate's clean REST swap point (`/v1/leaders`, `/v1/paper/start`, `/v1/paper/{id}/pnl`, `/v1/paper/{id}/stop`) for the production integration described in `docs/reproduce.md`.
+- **Reference contract**: [`contracts/PassportRegistry.sol`](contracts/PassportRegistry.sol) is not deployed; the isolated v2 chain worker remains the executable local/testnet path.
 
 ## FuriosaAI workload view
 

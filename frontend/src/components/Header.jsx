@@ -31,7 +31,12 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
           title="Switch language"
         >
           <i className="fa fa-globe"></i>
-          <span className="font-mono">{locale === 'en' ? t('header.lang.ko') : t('header.lang.en')}</span>
+          <span className="font-mono">{
+            // Show the label of the NEXT locale so users see what they will get.
+            locale === 'en' ? t('header.lang.zh')
+              : locale === 'zh' ? t('header.lang.ko')
+              : t('header.lang.en')
+          }</span>
         </button>
 
         {view === 'home' ? (

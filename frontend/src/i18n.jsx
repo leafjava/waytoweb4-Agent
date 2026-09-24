@@ -258,6 +258,10 @@ const STRINGS = {
     // ---- Demo: token strip -------------------------------------------
     'tokens.title': 'token / energy report',
     'tokens.empty': '—',
+
+    // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
+    'demo.cond.title': 'Controlled runs (PRD §5)',
+    'demo.cond.empty': 'No two-runs report yet. Run `python scripts/two_runs_demo.py` from the project root to populate this panel.',
   },
 
   ko: {
@@ -501,6 +505,165 @@ const STRINGS = {
     // ---- Demo: token strip -------------------------------------------
     'tokens.title': '토큰 / 에너지 리포트',
     'tokens.empty': '—',
+
+    // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
+    'demo.cond.title': '控制对照运行 (PRD §5)',
+    'demo.cond.empty': '暂无两轮对照报告。在项目根目录运行 `python scripts/two_runs_demo.py` 以填充此面板。',
+  },
+  ko: {
+    // ---- Header -------------------------------------------------------
+    // ---- Header -------------------------------------------------------
+    'header.try_demo': '데모 시작',
+    'header.back_home': '← 홈으로',
+    'header.reset': '초기화',
+    'header.lang.zh': '中文',
+    'header.lang.en': 'EN',
+    // ---- Hero ---------------------------------------------------------
+    'hero.eyebrow': 'GWDC 2026 코리아 · FuriosaAI × Bricksum · Challenge A + B',
+    'hero.title.line1': '카피 트레이딩, AI가 잠그고,',
+    'hero.title.line2': '당신이 문을 엽니다.',
+    'hero.product': '자연어 → Spec → 얼굴 인증 → 모의 트레이딩 → 온체인 패스포트 → RedLine 킬 스위치.',
+    'hero.cta': '데모 시작',
+    'hero.prd': 'PRD / 과제서',
+    'primitives.title': '네 가지 핵심 요소',
+    // ---- Primitives grid ---------------------------------------------
+    'prim.follow.title': 'Follow Agent',
+    'prim.follow.tag': 'Kiln · gpt-oss-120b',
+    'prim.follow.body': '자연어를 잠긴 Spec으로. 1-2회 명확화; JSON 전용 출력; 백엔드는 Pydantic으로 재검증. 잠근 후 모델은 얼굴·손실한도를 보지 못함.',
+    'prim.face.title': '얼굴 게이트',
+    'prim.face.tag': '인간 개입',
+    'prim.face.body': '얼굴 인증은 faceVerified=true로 뒤집는 유일한 경로. Agent는 변경 API 없음. 모델이 시작을 결정하는 일 없음.',
+    'prim.passport.title': '전략 패스포트',
+    'prim.passport.tag': 'keccak256 · mock | sepolia',
+    'prim.passport.body': 'Spec을 keccak256 해시. Mint는 0x... 트랜잭션 해시 반환; Revoke는 두 번째 다른 0x... 해시 반환. 백엔드는 모델이 손실한도를 풀지 못하게 함.',
+    'prim.redline.title': 'RedLine Agent',
+    'prim.redline.tag': '독립 프로세스 · 수익 무시',
+    'prim.redline.body': '하드 게이트 우선 (DD_LIMIT, 모델 우회 불가). LLM 분류기는 구조적 충격만 평가 (하이닉스 / 레버리지 / 갭).',
+    // ---- Judge checklist ---------------------------------------------
+    'judge.title': '심사위원 검증 체크리스트',
+    'judge.user_need': '사용자 요구',
+    'judge.user_need.body': '개인 투자자 / 심사위원은 자연어로 카피 트레이딩을 위임하고 싶지만 Agent가 손실한도를 임의로 풀지 못할까 우려함.',
+    'judge.agent_vs_code': 'Agent vs Code',
+    'judge.agent_vs_code.body': 'Agent 담당: 명확화, Spec 산출, 이벤트 분류. Code 담당: 필드 검증, 얼굴 게이트, 시작/정지, 패스포트 발행/소각, 손실한도 하드 게이트.',
+    'judge.kiln': 'Kiln gpt-oss-120b',
+    'judge.kiln.body': 'Follow 다회 명확화 + RedLine 이벤트 분류. KILN_API_KEY 미설정 시 오프라인 Mock으로 자동 fallback.',
+    'judge.tokens': 'Token 단계별 분할',
+    'judge.tokens.body': 'clarify / spec_emit / redline_hold / redline_trip / demo_inject — 절대 합계만 보고하지 않음.',
+    'judge.energy': '에너지 추정',
+    'judge.energy.body': '180W NPU 가정; energy_Wh = 180 × latency / 3600. README §9 명시.',
+    'judge.ontx': '온체인 tx ≥1건',
+    'judge.ontx.body': 'Mint는 keccak256 트랜잭션 해시 반환; Revoke는 두 번째 다른 해시 반환. 정직한 고지: Sepolia RPC 및 컨트랙트 배포 전 실제 트랜잭션 미발행.',
+    'judge.twice': '두 번의 통제 비교 실행',
+    'judge.twice.body': 'Run 1 (500U / 50 손실) → 엔진 한도 도달 시 정지. Run 2 (작은 금액 또는 하이닉스 주입) → 더 일찍 정지. 두 번 모두 전체 이벤트 로그 보관.',
+    'judge.overshoot': '권한 초과 시 즉시 정지',
+    'judge.overshoot.body': 'mode=grid_bot, paper=False, maxLoss>notional, 만료, 금지 Leader — 모두 검증 단계에서 거부, 엔진 호출 없음.',
+    'judge.audit': '제3자 감사 가능',
+    'judge.audit.body': '패스포트 + 로그만으로 제3자가 답��� 가능: 누구를, 얼마만큼, 얼굴 인증 여부, 왜 정지했는가. 모든 판결에 reason_codes + source 포함.',
+    // ---- Spec simulator ---------------------------------------------
+    'sim.title': 'Spec 시뮬레이터',
+    'sim.notional': '원금 (USD)',
+    'sim.maxloss': '최대 손실 (USD)',
+    'sim.expiry': '만료',
+    'sim.venue': '장소',
+    'sim.mode': '유형',
+    'sim.expiry_val': '+{hours}시간',
+    'sim.venue_val': '모의',
+    'sim.mode_val': '카피',
+    'sim.invalid': '최대 손실은 원금을 초과할 수 없음 — 백엔드가 이 Spec을 거부함.',
+    'sim.outcome.no_events': '이벤트 없음',
+    'sim.outcome.no_events.note': '{sec}초 후 엔진이 maxLoss=${maxLoss}에 도달; 하드 게이트 발동; 모델 개입 없음',
+    'sim.outcome.hynix': '하이닉스 이벤트 팩 주입',
+    'sim.outcome.hynix.note': 'LLM 분류기가 구조적 충격 평가; 최악 단일 변동 {pct}%',
+    'sim.outcome.dash': '—',
+    'sim.frozen_attr': 'model_may_override = false',
+    // ---- Security strip ---------------------------------------------
+    'sec.title': '보안 아키텍처',
+    'sec.1.title': '거래 전',
+    'sec.1.body': '얼굴 인증 없으면 시작 불가. Spec 필드 화이트리스트 (extra="forbid"). 원금 ≤ 10k. maxLoss ≤ 원금. 만료 > 현재.',
+    'sec.2.title': '추론 중',
+    'sec.2.body': 'Kiln 출력은 JSON; 백엔드가 Pydantic으로 재검증. 자유 텍스트 필드는 하류로 전달되지 않음.',
+    'sec.3.title': '거래 중',
+    'sec.3.body': '모의 거래만 (venue="paper"). 코드 하드 게이트: drawdown ≥ maxLoss이면 무조건 TRIP. RedLine은 독립 프로세스.',
+    'sec.4.title': '거래 후 (감사)',
+    'sec.4.body': '모든 RedLine 판결은 구조화된 JSON 출력, reason_codes + evidence + source 포함. 제3자는 패스포트 + 로그만으로 재구성 가능.',
+    'sec.5.title': 'AI가 할 수 없는 것',
+    'sec.5.body': 'maxLoss 변경. RedLine 비활성화. 얼굴 게이트 자체 열기. PnL을 보고 TRIP "면제". 스키마 금지 필드 주입.',
+    // ---- Live data panel ---------------------------------------------
+    'live.title': '실시간 증거',
+    'live.polled': '다음에서 폴링',
+    'live.polled.every': '1.5초마다',
+    'live.latest': '최신 패스포트',
+    'live.no_passport': '아직 발행된 패스포트 없음. 데모를 열고 Spec을 잠그면 발행됨.',
+    'live.id': 'ID',
+    'live.spec_hash': 'Spec 해시',
+    'live.mint_tx': 'Mint 트랜잭션',
+    'live.revoke_tx': 'Revoke 트랜잭션',
+    'live.status': '상태',
+    'live.token_table': 'Token / 에너지 표',
+    'live.empty_table': '(아직 Kiln 호출 없음 — 데모를 열고 Spec을 실행하면 채워짐)',
+    'live.audit_count': '지금까지 감사 이벤트:',
+    'live.footer_note': '동일 내용이 다음에서도 제공됨',
+    'live.footer_note.tail': '. 제출 전 README §9에 붙여넣기.',
+    // ---- Home page CTA -----------------------------------------------
+    'home.cta': '데모 시작',
+    'home.cta_sub': '3분 둘러보기 · PRD §7',
+    // ---- Demo view: ChatPanel ----------------------------------------
+    'chat.empty': '카피 트레이딩 의도를 한 문장으로 설명. 예: "leader-demo-001, 500 USD, 손실 50까지, 48시간".',
+    'chat.user_prefix': '사용자>',
+    'chat.agent_prefix': 'Agent>',
+    'chat.placeholder': '카피 트레이딩 의도 입력...',
+    'chat.send': '전송',
+    'chat.locked_note': 'Spec 잠김.',
+    // ---- Demo view: SpecCard -----------------------------------------
+    'spec.title': 'Spec',
+    'spec.locked': '잠김',
+    'spec.empty': '아직 Spec 없음. 채팅에서 메시지를 보내 필드를 채움.',
+    'spec.leader': 'leader',
+    'spec.notional': '원금',
+    'spec.maxloss': '최대 손실',
+    'spec.expiry': '만료',
+    'spec.venue': '장소',
+    'spec.paper': 'paper',
+    'spec.lock_btn': 'Spec 잠그고 패스포트 발행',
+    'spec.locked_btn': 'Spec이 패스포트에 잠김',
+    // ---- Demo view: PassportCard -------------------------------------
+    'pass.title': '패스포트',
+    'pass.empty': '아직 패스포트 없음. 먼저 Spec을 잠그기.',
+    'pass.id': 'ID',
+    'pass.spec_hash': 'Spec 해시',
+    'pass.mint_tx': 'Mint 트랜잭션',
+    'pass.revoke_tx': 'Revoke 트랜잭션',
+    'pass.face': '얼굴',
+    'pass.face_verified': '인증됨',
+    'pass.face_not_verified': '미인증',
+    'pass.verify_face': '얼굴 인증',
+    'pass.face_ok': '얼굴 통과',
+    'pass.start_engine': '엔진 시작',
+    'pass.engine_running': '엔진 실행 중',
+    'pass.copy': '복사',
+    'pass.copied': '복사됨',
+    // ---- Demo view: RedLinePanel -------------------------------------
+    'red.title': 'RedLine',
+    'red.running': '실행 중',
+    'red.drawdown': '드로다운',
+    'red.verdict': '판결',
+    'red.inject_hynix': '하이닉스 주입',
+    'red.trigger': 'RedLine 트리거',
+    // ---- VerdictBadge ------------------------------------------------
+    'verdict.no_verdict': '아직 판결 없음',
+    'verdict.via': '출처',
+    // ---- EventLog ----------------------------------------------------
+    'events.title': '최근 이벤트',
+    'events.empty': '이벤트 없음',
+    // ---- DrawdownGauge -----------------------------------------------
+    'gauge.drawdown': '드로다운',
+    // ---- Demo: token strip -------------------------------------------
+    'tokens.title': 'Token / 에너지 보고서',
+    'tokens.empty': '—',
+
+    // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
+    'demo.cond.title': '통제 비교 실행 (PRD §5)',
+    'demo.cond.empty': '두 라운드 보고서 없음. 프로젝트 루트에서 `python scripts/two_runs_demo.py` 실행하여 이 패널 채우기.',
   },
 }
 
@@ -530,11 +693,13 @@ export function I18nProvider({ children }) {
   }, [locale])
 
   function setLocale(next) {
-    if (next !== 'en' && next !== 'ko') return
+    if (next !== 'en' && next !== 'zh' && next !== 'ko') return
     setLocaleState(next)
   }
   function toggle() {
-    setLocaleState((cur) => (cur === 'en' ? 'ko' : 'en'))
+    // Cycle: en -> zh -> ko -> en. Show the next locale's name in the
+    // switcher (handled by Header.jsx) so users see what they will get.
+    setLocaleState((cur) => (cur === 'en' ? 'zh' : cur === 'zh' ? 'ko' : 'en'))
   }
   function t(key) {
     return STRINGS[locale]?.[key] ?? STRINGS.en?.[key] ?? key
@@ -553,5 +718,6 @@ export function useI18n() {
 
 export const LOCALES = [
   { code: 'en', label: 'English' },
+  { code: 'zh', label: '中文' },
   { code: 'ko', label: '한국어' },
 ]

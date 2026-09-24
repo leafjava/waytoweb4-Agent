@@ -347,6 +347,25 @@ Status: complete.
 - Verified a 390 CSS-pixel viewport through browser device emulation: document
   and body scroll widths both remain 390, with no horizontal overflow.
 
-Validation: combined Python suite 151 passed; chain 4 passed; frontend
+Validation: combined Python suite 162 passed; chain 4 passed; frontend
 production build and both production dependency audits passed; `git diff
 --check` passed.
+
+### P10 — teammate mainline reconciliation
+
+Status: complete.
+
+- Merged the teammate's judges-ready metrics, three-locale UI, controlled
+  two-run evidence panel, reproduction scripts and WayToWeb4 REST-shaped mock.
+- Kept the responsive demo layout and structured inference evidence panel when
+  resolving the overlapping frontend changes.
+- Updated the WayToWeb4 start adapter to require an existing hash-authorized,
+  minted and human-approved passport, compare the request against its frozen
+  execution fields, and route every stop through the central revocation path.
+  The adapter cannot mint or self-approve a mandate, and mock revocation does
+  not fabricate a transaction hash.
+- Removed a tracked Python bytecode artifact already covered by `.gitignore`.
+
+Validation: combined Python suite 162 passed, including the new human-gate
+bypass regression; chain 4 passed; frontend production build and both
+production dependency audits passed.

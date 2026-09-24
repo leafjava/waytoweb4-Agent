@@ -4,6 +4,8 @@ import JudgeChecklist from './JudgeChecklist.jsx'
 import SecurityStrip from './SecurityStrip.jsx'
 import SpecSimulator from './SpecSimulator.jsx'
 import LiveDataPanel from './LiveDataPanel.jsx'
+import StatTicker from './StatTicker.jsx'
+import AcceptanceBar from './AcceptanceBar.jsx'
 import { useI18n } from '../i18n.jsx'
 
 export default function HomePage({ snapshot, onTryDemo }) {
@@ -12,6 +14,8 @@ export default function HomePage({ snapshot, onTryDemo }) {
   return (
     <div className="space-y-10 pb-12">
       <Hero onTryDemo={onTryDemo} />
+      <StatTicker snapshot={snapshot} />
+      <AcceptanceBar />
       <PrimitivesGrid />
       <JudgeChecklist />
       <SpecSimulator />
