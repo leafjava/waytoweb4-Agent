@@ -65,7 +65,7 @@ async def judge(
     if rec is None:
         raise not_found(f"passport {req.passport_id} not found")
 
-    events = [MarketEvent(**e) for e in (req.events or [])] if req.events else None
+    events = [MarketEvent(**e.model_dump()) for e in (req.events or [])] if req.events else None
     with use_evidence_writer(state.evidence):
         # Live Kiln calls are synchronous (httpx); offload so a slow
         # classification can never stall the event loop that owns /engine/stop
@@ -108,7 +108,9 @@ async def inject_hynix(
 
     events = hynix_crash_pack()
     with use_evidence_writer(state.evidence):
-        verdict = run_judge(rec.spec, rec.drawdown_usd, events, redline_judge)
+        verdict = await asyncio.to_thread(
+            run_judge, rec.spec, rec.drawdown_usd, events, redline_judge
+        )
 
     side_effects: dict | None = None
     if verdict.action == RedLineAction.STOP_AND_REVOKE:

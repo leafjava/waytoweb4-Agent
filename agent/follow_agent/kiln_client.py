@@ -29,6 +29,7 @@ import time
 import uuid
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Protocol
+from urllib.parse import urlsplit
 
 from agent.shared.token_logger import get_default_logger
 from agent.shared.evidence import get_evidence_writer
@@ -41,6 +42,29 @@ KILN_MODEL_ENV = "KILN_MODEL"
 
 DEFAULT_API_BASE = "https://api.kiln.ai/v1"
 DEFAULT_MODEL = "gpt-oss-120b"
+
+
+def _validate_api_base(value: str) -> str:
+    """Reject endpoints that could disclose the bearer key in cleartext.
+
+    The endpoint remains configurable for the event's Kiln-compatible
+    gateway, but live mode must never send credentials over HTTP or accept
+    URL components that can obscure the actual destination.
+    """
+    candidate = value.strip().rstrip("/")
+    parsed = urlsplit(candidate)
+    if (
+        parsed.scheme.lower() != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise RuntimeError(
+            "KILN_API_BASE must be an HTTPS URL without credentials, query, or fragment"
+        )
+    return candidate
 
 
 # ---- Public types -----------------------------------------------------------
@@ -305,7 +329,9 @@ def build_kiln_client(env: Mapping[str, str] | None = None) -> KilnClient:
         model = src.get(KILN_MODEL_ENV) or _env(KILN_MODEL_ENV) or DEFAULT_MODEL
         if model != DEFAULT_MODEL:
             raise RuntimeError(f"Challenge A requires KILN_MODEL={DEFAULT_MODEL}; got {model!r}")
-        return HttpKilnClient(api_base=base, api_key=key, model=DEFAULT_MODEL)
+        return HttpKilnClient(
+            api_base=_validate_api_base(base), api_key=key, model=DEFAULT_MODEL
+        )
     return MockKilnClient()
 
 

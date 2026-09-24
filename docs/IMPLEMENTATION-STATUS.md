@@ -487,3 +487,26 @@ Verification: full Python suite 163 passed; `scripts/probe_v1v2.py` (kept for
 regression) re-proved both fixes against a live backend with an isolated
 ledger — 5 concurrent first-starts yield exactly one 200 and one running
 engine; unauthorized stop is refused.
+
+### P15 — full security audit and runtime hardening
+
+Status: complete for the hackathon Demo threat model.
+
+- Audited API trust boundaries, Spec/RedLine validation, human approval,
+  local and AlphaFox worker lifecycle, chain signing, evidence integrity,
+  browser assets, secret handling and dependencies.
+- Fixed the start-versus-stop race across both local and AlphaFox startup. A
+  stop request is now a fail-safe latch and a remotely-created trader is
+  compensated exactly once before the start is refused.
+- Enforced safe HTTPS Kiln base URLs, bounded prompt/event inputs, moved the
+  remaining live classifier call off the event loop, locked state snapshots,
+  removed raw 500-detail reflection and replaced the runtime Font Awesome CDN
+  with a local exact dependency.
+- Added `docs/SECURITY-AUDIT-2026-09-25.md` with findings, control evidence,
+  residual risks and the operating rule: loopback Paper/testnet Demo only;
+  no public exposure, real-money execution or production claim.
+
+Validation: Python 170 passed; chain 4 passed; frontend production build
+passed; Python and production Node dependency audits found zero known
+vulnerabilities. Full chain development audit still reports advisories inside
+Ganache/Solc and is documented as an isolated local-development risk.

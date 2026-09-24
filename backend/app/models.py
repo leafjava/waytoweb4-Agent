@@ -20,8 +20,8 @@ from pydantic import BaseModel, Field
 
 
 class ClarifyRequest(BaseModel):
-    user_text: str
-    draft_id: str | None = None
+    user_text: str = Field(min_length=1, max_length=4096)
+    draft_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class ClarifyResponse(BaseModel):
@@ -34,7 +34,7 @@ class ClarifyResponse(BaseModel):
 
 
 class CheckRequest(BaseModel):
-    user_text: str
+    user_text: str = Field(min_length=1, max_length=4096)
 
 
 class CheckResponse(BaseModel):
@@ -43,8 +43,8 @@ class CheckResponse(BaseModel):
 
 
 class EmitRequest(BaseModel):
-    user_text: str
-    draft_id: str | None = None
+    user_text: str = Field(min_length=1, max_length=4096)
+    draft_id: str | None = Field(default=None, min_length=1, max_length=128)
 
 
 class EmitResponse(BaseModel):
@@ -54,7 +54,7 @@ class EmitResponse(BaseModel):
 
 
 class FaceVerifyRequest(BaseModel):
-    passport_id: str
+    passport_id: str = Field(min_length=1, max_length=128)
     method: Literal["button"]
     session_id: UUID
 
@@ -103,7 +103,7 @@ class RevokeResponse(BaseModel):
 
 
 class EngineStartRequest(BaseModel):
-    passport_id: str
+    passport_id: str = Field(min_length=1, max_length=128)
 
 
 class EngineStartResponse(BaseModel):
@@ -123,9 +123,16 @@ class EngineTickResponse(BaseModel):
     max_loss_usd: float
 
 
+class MarketEventPayload(BaseModel):
+    symbol: str = Field(min_length=1, max_length=64)
+    change_pct: float = Field(ge=-100_000, le=100_000, allow_inf_nan=False)
+    kind: str = Field(default="tick", min_length=1, max_length=32)
+    timestamp: str = Field(default="", max_length=64)
+
+
 class RedLineJudgeRequest(BaseModel):
-    passport_id: str
-    events: list[dict[str, Any]] | None = None
+    passport_id: str = Field(min_length=1, max_length=128)
+    events: list[MarketEventPayload] | None = Field(default=None, max_length=100)
 
 
 class RedLineJudgeResponse(BaseModel):

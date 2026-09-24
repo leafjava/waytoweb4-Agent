@@ -21,8 +21,11 @@ router = APIRouter(prefix="/api/state", tags=["state"])
 
 
 @router.get("")
-def get_state_snapshot(state: AppState = Depends(get_state)):
-    snap = state.snapshot()
+async def get_state_snapshot(state: AppState = Depends(get_state)):
+    async with state._lock:
+        snap = state.snapshot()
+        active_sessions = sum(rec.engine_running for rec in state.passports.values())
+        passport_count = len(state.passports)
     snap["token_report"] = render_report()
     token_summary = get_default_logger().snapshot()
     snap["token_summary"] = token_summary
@@ -31,8 +34,8 @@ def get_state_snapshot(state: AppState = Depends(get_state)):
         "model": "gpt-oss-120b",
         "source_mode": os.environ.get("KILN_MODE", "offline").lower(),
         "power_assumption_w": NPU_POWER_W,
-        "active_sessions": sum(rec.engine_running for rec in state.passports.values()),
-        "passport_count": len(state.passports),
+        "active_sessions": active_sessions,
+        "passport_count": passport_count,
         "agent_calls": token_summary["total"]["calls"],
     }
     return snap

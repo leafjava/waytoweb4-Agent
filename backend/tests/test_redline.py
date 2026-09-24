@@ -45,6 +45,15 @@ def test_redline_judge_unknown_returns_404(client):
     assert r.status_code == 404
 
 
+def test_redline_rejects_unbounded_event_batch(client):
+    pid = _mint_and_face(client)
+    events = [{"symbol": "KS200", "change_pct": -1}] * 101
+    response = client.post(
+        "/api/redline/judge", json={"passport_id": pid, "events": events}
+    )
+    assert response.status_code == 422
+
+
 def test_live_mode_wires_kiln_classifier(monkeypatch):
     monkeypatch.setenv("KILN_MODE", "live")
     monkeypatch.setenv("KILN_API_KEY", "test-key")

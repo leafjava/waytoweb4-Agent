@@ -49,7 +49,12 @@ def map_agent_error(exc: Exception) -> HTTPException:
         return unauthorized(str(exc))
     if isinstance(exc, KilnUnavailableError):
         return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    # Do not reflect provider response bodies, filesystem paths, or other
+    # implementation details to an unauthenticated client.
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="internal agent error",
+    )
 
 
 __all__ = [

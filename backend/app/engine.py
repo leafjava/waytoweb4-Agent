@@ -18,9 +18,10 @@ from .policy import write_policy
 from .state import AppState, PassportRecord
 
 _WORKERS: dict[str, "PaperWorkerController"] = {}
-# Serializes start_engine per passport: the gate checks run before the awaits
-# that spawn the worker, so two concurrent first-starts would otherwise both
-# pass and orphan a controller (found by the 2026-09-24 vulnerability scan).
+# Serializes the whole start/stop transition per passport. A stop request sets
+# its fail-safe flag before waiting for this lock, so an in-flight start sees
+# the request at its next await boundary and can never overwrite it with a
+# later "running" state.
 _START_LOCKS: dict[str, asyncio.Lock] = {}
 
 
@@ -200,16 +201,36 @@ async def _start_engine_locked(passport_id: str, state: AppState, trip_seconds: 
     controller = PaperWorkerController(passport_id, state, backend, execution_adapter)
     rec.engine_status = "starting"; rec.status = "starting"; state.upsert_passport(rec)
     await controller.start(rec)
+    rec = state.passports[passport_id]
+    if rec.stop_requested or rec.authorization_status != "authorized":
+        await controller.stop("STOP_DURING_START")
+        raise EngineStartError(
+            "PASSPORT_STOPPED_OR_EXPIRED",
+            f"passport {passport_id} was stopped during startup",
+        )
     if execution_adapter:
         command = build_start_command(rec, str(state.ledger_path.parent / "policy.json"))
         try:
             rec.external_execution_id = await execution_adapter.start(command)
             rec.external_execution_provider = execution_adapter.provider
             rec.external_execution_status = "running"
-            if controller.stopped.is_set() or rec.authorization_status != "authorized":
+            if (
+                controller.stopped.is_set()
+                or rec.stop_requested
+                or rec.authorization_status != "authorized"
+            ):
+                controller.external_stop_attempted = True
                 await execution_adapter.stop(rec.external_execution_id)
+                controller.external_stop_succeeded = True
                 rec.external_execution_status = "stopped"
-                raise RuntimeError("local safety controller stopped during external start")
+                await controller.stop("STOP_DURING_START")
+                raise EngineStartError(
+                    "PASSPORT_STOPPED_OR_EXPIRED",
+                    f"passport {passport_id} was stopped during external startup",
+                )
+        except EngineStartError:
+            state.upsert_passport(rec)
+            raise
         except Exception as exc:  # noqa: BLE001 - do not retry an uncertain mutation.
             await controller.force_terminate()
             external_stopped = rec.external_execution_status == "stopped"
@@ -237,7 +258,19 @@ async def _start_engine_locked(passport_id: str, state: AppState, trip_seconds: 
 async def stop_engine(passport_id: str, state: AppState, backend, reason: str = "STOP_REQUESTED", execution_adapter=None) -> PassportRecord:
     rec = state.passports.get(passport_id)
     if rec is None: raise KeyError(passport_id)
+    # Publish the fail-safe intent immediately. If start_engine currently owns
+    # the transition lock it will observe this flag after its pending await.
     rec.stop_requested = True; state.upsert_passport(rec)
+    lock = _START_LOCKS.setdefault(passport_id, asyncio.Lock())
+    async with lock:
+        return await _stop_engine_locked(
+            passport_id, state, backend, reason, execution_adapter
+        )
+
+
+async def _stop_engine_locked(passport_id: str, state: AppState, backend, reason: str, execution_adapter=None) -> PassportRecord:
+    rec = state.passports.get(passport_id)
+    if rec is None: raise KeyError(passport_id)
     controller = _WORKERS.pop(passport_id, None)
     if controller:
         await controller.stop(reason)

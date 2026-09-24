@@ -12,6 +12,19 @@ def test_live_mode_without_key_refuses_mock():
         build_kiln_client(env={"KILN_MODE": "live"})
 
 
+@pytest.mark.parametrize("base", [
+    "http://api.kiln.ai/v1",
+    "https://user:password@api.kiln.ai/v1",
+    "https://api.kiln.ai/v1?redirect=evil",
+    "https://api.kiln.ai/v1#fragment",
+])
+def test_live_mode_rejects_unsafe_api_base(base):
+    with pytest.raises(RuntimeError, match="must be an HTTPS URL"):
+        build_kiln_client(env={
+            "KILN_MODE": "live", "KILN_API_KEY": "test-key", "KILN_API_BASE": base,
+        })
+
+
 class StubClient:
     def chat(self, messages, flow_tag):
         assert flow_tag == "redline_hold"
