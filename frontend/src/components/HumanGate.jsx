@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { apiPost } from '../api'
 import { useI18n } from '../i18n.jsx'
 
@@ -106,17 +107,17 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
     timeStyle: 'short',
   }).format(new Date(spec.expiry)) : '—'
 
-  return (
+  const modal = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-xl p-4"
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/25 p-3 backdrop-blur-xl sm:p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="human-gate-title"
     >
-      <div className="max-h-[calc(100vh-2rem)] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl shadow-black/50">
+      <div className="max-h-[calc(100dvh-1.5rem)] w-full max-w-4xl overscroll-contain overflow-y-auto rounded-2xl bg-white shadow-2xl shadow-black/50 sm:max-h-[calc(100dvh-2rem)]">
         <div className="flex items-start justify-between gap-6 border-b border-black/10 px-5 py-4 md:px-7">
           <div>
-            <h2 id="human-gate-title" className="text-xl font-semibold text-white md:text-2xl">
+            <h2 id="human-gate-title" className="text-xl font-semibold text-[#1d1d1f] md:text-2xl">
               {t('gate.title')}
             </h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-700">{t('gate.subtitle')}</p>
@@ -165,7 +166,7 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
           </section>
 
           <section className="flex flex-col p-5 md:p-6">
-            <h3 className="text-sm font-semibold text-white">{t('gate.mandate')}</h3>
+            <h3 className="text-sm font-semibold text-[#1d1d1f]">{t('gate.mandate')}</h3>
             <dl className="mt-4 space-y-3 text-sm">
               <GateRow label={t('spec.leader')} value={spec?.leaderId || '—'} />
               <GateRow label={t('spec.notional')} value={`${spec?.notionalUsd ?? '—'} USD`} />
@@ -195,7 +196,7 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
               type="button"
               onClick={approveAndStart}
               disabled={cameraState !== 'ready' || !consented || busy}
-              className="mt-5 w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+              className="mt-5 w-full rounded-xl bg-[#0071e3] px-4 py-3 text-sm font-semibold text-white hover:bg-[#0077ed] focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
             >
               <i className={`fa ${busy ? 'fa-circle-o-notch fa-spin' : 'fa-check-circle'} mr-2`} aria-hidden="true"></i>
               {busy ? t('gate.approving') : t('gate.approve_start')}
@@ -205,6 +206,8 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
       </div>
     </div>
   )
+
+  return createPortal(modal, document.body)
 }
 
 function GateRow({ label, value }) {
