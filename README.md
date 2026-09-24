@@ -41,6 +41,9 @@ cd frontend && npm install && cd ..
 # 3. one-shot launch (backend :8000 + frontend :5173)
 python scripts/run_demo.py
 ```
+启动前端：npm run dev 
+启动后端：python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+
 
 Open <http://localhost:5173/>. Click through PRD §7 in order:
 chat → lock spec → verify face → start engine → inject hynix →

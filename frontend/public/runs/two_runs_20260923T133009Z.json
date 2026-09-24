@@ -1,0 +1,68 @@
+{
+  "ts": "20260923T133009Z",
+  "runs": [
+    {
+      "label": "Run 1 (500U / 50 loss)",
+      "spec": {
+        "mode": "copy",
+        "leaderId": "leader-demo-001",
+        "venue": "paper",
+        "notionalUsd": 500.0,
+        "maxLossUsd": 50.0,
+        "expiry": "2026-09-25T13:30:07Z",
+        "faceVerified": false,
+        "paper": true
+      },
+      "passport_id": "0xcdbeb09098780ad2",
+      "mint_tx_hash": "0xec197bfa178ffab654034df3728786858381e9e07e39912cedd87a05707c26be",
+      "drawdown_usd": 50.0,
+      "max_loss_usd": 50.0,
+      "status": "revoked",
+      "verdict_level": "TRIP",
+      "verdict_codes": [
+        "DD_LIMIT"
+      ],
+      "verdict_source": "rule_gate",
+      "revoke_tx_hash": "0xa03b6a4344456c211e29d34faf69901504294717d05ef2565e4fd7a6aeaaacfe",
+      "side_effects": {
+        "stopped": true,
+        "revoked": true,
+        "revoke_tx_hash": "0xa03b6a4344456c211e29d34faf69901504294717d05ef2565e4fd7a6aeaaacfe"
+      }
+    },
+    {
+      "label": "Run 2 (100U / 10 loss)",
+      "spec": {
+        "mode": "copy",
+        "leaderId": "leader-demo-001",
+        "venue": "paper",
+        "notionalUsd": 100.0,
+        "maxLossUsd": 10.0,
+        "expiry": "2026-09-25T13:30:08Z",
+        "faceVerified": false,
+        "paper": true
+      },
+      "passport_id": "0xef4b601676d79a53",
+      "mint_tx_hash": "0x9d771b0286edab902231c3da7c3e83db2b2924de13c7bae6875a43b0e652a065",
+      "drawdown_usd": 10.0,
+      "max_loss_usd": 10.0,
+      "status": "revoked",
+      "verdict_level": "TRIP",
+      "verdict_codes": [
+        "DD_LIMIT"
+      ],
+      "verdict_source": "rule_gate",
+      "revoke_tx_hash": "0x7790f7070a81c154b3656187b924c7d4082ee7d170184270df166d283aba76c9",
+      "side_effects": {
+        "stopped": true,
+        "revoked": true,
+        "revoke_tx_hash": "0x7790f7070a81c154b3656187b924c7d4082ee7d170184270df166d283aba76c9"
+      }
+    }
+  ],
+  "summary": {
+    "both_tripped": true,
+    "both_revoked": true,
+    "rule_gate_only": true
+  }
+}
