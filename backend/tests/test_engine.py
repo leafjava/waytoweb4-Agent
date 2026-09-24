@@ -136,6 +136,9 @@ def test_alphafox_adapter_runs_only_after_human_gate(app_and_state):
         assert adapter.calls[0][0] == "start"
         assert local_client.post("/api/engine/stop", json={"passport_id": pid}).status_code == 200
         assert adapter.calls[-1] == ("stop", "trader-demo-1")
+        stopped = local_client.get(f"/api/passport/{pid}").json()
+        assert stopped["external_execution_status"] == "stopped"
+        assert stopped["face_gate_invalidation_reason"] == "STOP_REQUESTED"
 
 
 def test_alphafox_uncertain_start_invalidates_mandate(app_and_state):

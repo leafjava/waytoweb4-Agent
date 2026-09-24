@@ -308,10 +308,9 @@ Status: code-level audit complete; live acceptance remains pending.
   test/compile toolchain. Neither is loaded by the live worker; Ganache uses an
   in-memory provider and never listens on a socket in this project.
 
-Field blockers: a final reviewed AlphaFox parameter set and Paper create/stop
-rehearsal, a fresh live Kiln/gpt-oss-120b trace with API usage, a fresh
+Field blockers: a fresh live Kiln/gpt-oss-120b trace with API usage, a fresh
 public-testnet receipt/readback, physical-camera rehearsal, and final video/Deck
-artifacts.
+artifacts. The reviewed AlphaFox Paper lifecycle is complete.
 
 ### P8 — field tooling and continuous verification
 
@@ -398,19 +397,41 @@ mock transaction hashes.
 
 ### P12 — AlphaFox eight-operation catalog verification
 
-Status: complete for non-mutating production verification; isolated Paper
-mutation awaits an unoccupied connector and final parameter confirmation.
+Status: complete; the non-mutating verification was followed by the isolated
+Paper lifecycle recorded in P13.
 
 - Reverified the production OAuth session, CLI/catalog compatibility and all
   eight Demo operation contracts against the live AlphaFox catalog.
 - Live reads returned 394 signal sources, 21 active strategy definitions and
   two existing Paper traders. `simple_copy_trading` schema v4 was fetched and
   the Demo configuration passed live server validation.
-- Official create, start and stop commands all passed CLI `--dry-run`. No
-  existing trader was changed and no high-risk write was sent.
-- Refreshed connector setup data: both available Paper connectors are occupied,
-  so a new isolated trader cannot yet be created without adding a dedicated
-  Paper connector. This is recorded as a field dependency rather than silently
-  reusing a teammate's trader.
+- Official create, start and stop commands all passed CLI `--dry-run` before
+  the isolated Paper lifecycle was authorized.
+- Refreshed connector setup data and established that both pre-existing Paper
+  connectors were occupied, which led to the dedicated connector used in P13.
 - Added `docs/ALPHAFOX-CATALOG-VERIFICATION.md` with the eight results, complete
-  proposed configuration and the remaining mutation gate.
+  proposed configuration and mutation gate.
+
+### P13 — AlphaFox Paper field rehearsal
+
+Status: complete.
+
+- Created a dedicated internal Paper connector without changing either
+  teammate-owned trader or connector.
+- Added an explicit field script that executes the real application lifecycle:
+  freeze and authorize the Spec, prove an unapproved start returns
+  `FACE_GATE_REQUIRED`, grant a one-use human approval, create/auto-start the
+  AlphaFox trader, then stop it with `closePositions: true`.
+- The final trader `01a0d35b-d3ab-7a1c-adb0-1dc34c393cac` read back from
+  AlphaFox as disabled and stopped. The local Passport ended revoked with
+  `external_execution_status: stopped`.
+- Found and fixed a stop-state persistence race between the worker reader,
+  heartbeat and API request. Intentional shutdown can no longer be mislabeled
+  `CONTROLLER_HEARTBEAT_FAILED`, and a successful external stop now wins over a
+  stale running snapshot. Remote stop uncertainty still fails closed.
+- The rehearsal used the mock Passport backend, so transaction hashes are
+  correctly null and no public-chain transaction was broadcast.
+
+Validation: Python 163 passed; chain 4 passed; frontend production build and
+both production dependency audits passed; `git diff --check` passed. CI is
+recorded with the implementing commit.

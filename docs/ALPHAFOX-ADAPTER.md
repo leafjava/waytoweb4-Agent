@@ -1,6 +1,6 @@
 # AlphaFox Paper execution adapter
 
-Status: **official catalog verified on 2026-09-24; live mutations disabled by default**.
+Status: **official catalog and isolated Paper lifecycle verified on 2026-09-24; mutations remain disabled by default**.
 
 The adapter uses AlphaFox CLI `0.3.24`, contract `2026-08-31`, and OAuth
 credentials held by the operating-system keychain. Tokens, browser cookies and
@@ -40,6 +40,17 @@ alphafox auth status --verify --format json --no-input
 ```
 
 Do not commit these values. Before a live demo, select an allowed signal source
-from the catalog, review every effective strategy parameter, then run the
-field preflight. A live create/start/stop still needs the operator's final
-parameter approval.
+from the catalog and review every effective strategy parameter.
+
+The complete application-level rehearsal is available as:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\alphafox_paper_rehearsal.py --execute `
+  --connector-id '<dedicated-paper-connector-id>' `
+  --signal-source-id '<catalog-signal-source-id>'
+```
+
+On 2026-09-24 this path proved the pre-gate refusal, one-use human approval,
+Paper create/auto-start, stop with `closePositions: true`, and server readback
+as stopped. The script requires the explicit `--execute` flag and cannot use a
+live connector.

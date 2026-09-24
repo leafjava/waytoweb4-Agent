@@ -36,8 +36,11 @@ class PaperWorkerController:
         self.heartbeat_task: asyncio.Task | None = None
         self.ready = asyncio.Event()
         self.stopped = asyncio.Event()
+        self.stopping = asyncio.Event()
         self.execution_adapter = execution_adapter
         self.external_stop_attempted = False
+        self.external_stop_succeeded = False
+        self.external_stop_failed = False
 
     async def start(self, rec: PassportRecord):
         policy_path = self.state.ledger_path.parent / "policy.json"
@@ -72,6 +75,8 @@ class PaperWorkerController:
                 await self._send({"op": "heartbeat"})
                 await asyncio.sleep(0.5)
         except Exception:
+            if self.stopping.is_set() or self.stopped.is_set():
+                return
             await self._record_stop("CONTROLLER_HEARTBEAT_FAILED", failed=True)
 
     async def _read(self):
@@ -107,8 +112,10 @@ class PaperWorkerController:
             self.external_stop_attempted = True
             try:
                 await self.execution_adapter.stop(rec.external_execution_id)
+                self.external_stop_succeeded = True
                 rec.external_execution_status = "stopped"
             except Exception:  # noqa: BLE001 - remote uncertainty must fail closed.
+                self.external_stop_failed = True
                 rec.external_execution_status = "uncertain"
                 failed = True
         should_log = False
@@ -146,6 +153,7 @@ class PaperWorkerController:
         return self.state.passports[self.passport_id]
 
     async def stop(self, reason="STOP_REQUESTED"):
+        self.stopping.set()
         if self.process and self.process.returncode is None:
             try: await self._send({"op": "stop", "reason": reason})
             except Exception: pass
@@ -219,7 +227,29 @@ async def stop_engine(passport_id: str, state: AppState, backend, reason: str = 
     if rec is None: raise KeyError(passport_id)
     rec.stop_requested = True; state.upsert_passport(rec)
     controller = _WORKERS.pop(passport_id, None)
-    if controller: await controller.stop(reason)
+    if controller:
+        await controller.stop(reason)
+        rec = state.passports[passport_id]
+        if execution_adapter and rec.external_execution_id and not controller.external_stop_attempted:
+            controller.external_stop_attempted = True
+            try:
+                await execution_adapter.stop(rec.external_execution_id)
+                controller.external_stop_succeeded = True
+            except Exception:  # noqa: BLE001 - remote uncertainty must fail closed.
+                controller.external_stop_failed = True
+        if controller.external_stop_failed:
+            rec.external_execution_status = "uncertain"
+            rec.engine_status = "stop_failed"
+            rec.status = "uncertain"
+            state.upsert_passport(rec)
+            raise EngineStartError("ALPHAFOX_STOP_FAILED", "AlphaFox stop outcome is uncertain")
+        if execution_adapter and rec.external_execution_id:
+            # Reconcile the public record after the stop coroutine completes.
+            # The worker-reader and request tasks may both persist the record;
+            # a successful idempotent stop always wins over an earlier
+            # snapshot that still said ``running``.
+            rec.external_execution_status = "stopped"
+            state.upsert_passport(rec)
     else:
         if execution_adapter and rec.external_execution_id and rec.external_execution_status != "stopped":
             try:

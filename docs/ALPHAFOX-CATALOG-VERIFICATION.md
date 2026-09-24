@@ -14,15 +14,22 @@ directory.
 | 3 | `trading.strategy_definitions.byId.get` | live read | pass; `simple_copy_trading`, schema v4 |
 | 4 | `trading.strategy_definitions.byId.validate_config` | live server validation | pass |
 | 5 | `trading.traders.list` | live read | pass; two existing Paper traders observed |
-| 6 | `trading.traders.create` | official CLI `--dry-run` | pass; high-risk write not sent |
-| 7 | `trading.traders.byId.start` | official CLI `--dry-run` | pass; high-risk write not sent |
-| 8 | `trading.traders.byId.stop` | official CLI `--dry-run` | pass; high-risk write not sent |
+| 6 | `trading.traders.create` | dry-run + isolated Paper execution | pass; trader created after human gate |
+| 7 | `trading.traders.byId.start` | create with `autoStart: true` | pass; runtime became active |
+| 8 | `trading.traders.byId.stop` | dry-run + isolated Paper execution | pass; runtime read back as stopped |
 
-No trader was created, started or stopped by this verification. The current
-account has two active Paper connectors and both are occupied by existing
-traders, so a new isolated create cannot be executed until a separate Paper
-connector is available. Existing traders are not reused or modified as test
-fixtures.
+A dedicated internal Paper connector was created for WayToWeb4; the two
+pre-existing teammate connectors and traders were not modified. The final
+application-level rehearsal created and auto-started trader
+`01a0d35b-d3ab-7a1c-adb0-1dc34c393cac` only after hash authorization and a
+fresh human approval. The application then stopped it with
+`closePositions: true`. AlphaFox readback reported `enabled: false`,
+`desiredState: disabled`, and `runtime.state: stopped`.
+
+The pre-gate start attempt failed with `FACE_GATE_REQUIRED`. Local Passport
+state ended `revoked` with `external_execution_status: stopped`. Passport
+transactions remained null because this rehearsal deliberately used the mock
+Passport backend and did not broadcast a public-chain transaction.
 
 ## Validated Demo proposal
 
@@ -30,7 +37,7 @@ fixtures.
 |---|---|---|
 | `strategyDefinitionId` | `simple_copy_trading` | verified catalog definition |
 | `configSchemaVersion` | `4` | definition contract |
-| `exchangeConnectorId` | unresolved dedicated Paper connector | required; both current connectors occupied |
+| `exchangeConnectorId` | dedicated internal Paper connector | created for this rehearsal; pre-existing connectors untouched |
 | `config.common.execution.leverage` | `1` | WayToWeb4 conservative override |
 | `config.common.execution.openMinPosition` | `false` | skip orders below venue minimum |
 | `config.common.riskControl` | `{}` | optional AlphaFox controls omitted; local RedLine remains authoritative |
@@ -54,13 +61,13 @@ The frozen 50 USD absolute loss limit is enforced by the local RedLine worker.
 It is not mapped to AlphaFox's leader-drawdown percentage because the two fields
 have different meanings.
 
-## Mutation gate
+## Field result
 
-The final field mutation requires all of the following:
+The mutation gate was exercised through `scripts/alphafox_paper_rehearsal.py`.
+It retained the WayToWeb4 hash authorization and one-use human gate, used the
+reviewed configuration above, performed official CLI dry-runs before writes,
+and saved only sanitized IDs and state. OAuth credentials remained in Windows
+Credential Manager.
 
-1. a dedicated, unoccupied Paper connector;
-2. confirmation of the selected signal source and the full table above;
-3. the existing WayToWeb4 hash authorization and per-run human gate;
-4. create/start/stop dry-run immediately before `--yes`;
-5. saved trader ID and readback without exposing OAuth credentials.
-
+Trader inspection:
+`https://www.alphafox.app/zh/dashboard/traders/01a0d35b-d3ab-7a1c-adb0-1dc34c393cac`.
