@@ -395,3 +395,22 @@ Validation: combined Python suite 163 passed; chain 4 passed; frontend
 production build and both production dependency audits passed. The live local
 HTTP rehearsal produced two distinct passports, two `TRIP` verdicts and no
 mock transaction hashes.
+
+### P12 — AlphaFox eight-operation catalog verification
+
+Status: complete for non-mutating production verification; isolated Paper
+mutation awaits an unoccupied connector and final parameter confirmation.
+
+- Reverified the production OAuth session, CLI/catalog compatibility and all
+  eight Demo operation contracts against the live AlphaFox catalog.
+- Live reads returned 394 signal sources, 21 active strategy definitions and
+  two existing Paper traders. `simple_copy_trading` schema v4 was fetched and
+  the Demo configuration passed live server validation.
+- Official create, start and stop commands all passed CLI `--dry-run`. No
+  existing trader was changed and no high-risk write was sent.
+- Refreshed connector setup data: both available Paper connectors are occupied,
+  so a new isolated trader cannot yet be created without adding a dedicated
+  Paper connector. This is recorded as a field dependency rather than silently
+  reusing a teammate's trader.
+- Added `docs/ALPHAFOX-CATALOG-VERIFICATION.md` with the eight results, complete
+  proposed configuration and the remaining mutation gate.
