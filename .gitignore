@@ -37,3 +37,6 @@ frontend/dist/
 .coverage
 htmlcov/
 *.log
+
+# Local secrets (Kiln key, testnet private key). NEVER commit.
+.env
