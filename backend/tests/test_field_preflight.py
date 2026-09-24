@@ -61,3 +61,20 @@ def test_live_preflight_fails_closed_without_credentials(monkeypatch, tmp_path):
     assert result["configuration_ready"] is False
     assert "kiln_api_key" in result["failed"]
     assert "private_key" in result["failed"]
+
+
+def test_alphafox_preflight_requires_explicit_paper_controls(monkeypatch, tmp_path):
+    monkeypatch.setattr(field_preflight, "_node_major", lambda: 22)
+    monkeypatch.setattr(field_preflight, "_free", lambda port: True)
+    monkeypatch.setattr(field_preflight.shutil, "which", lambda name: "alphafox" if name == "alphafox" else "node")
+    env = {
+        "EXECUTION_BACKEND": "alphafox",
+        "ALPHAFOX_PAPER_CONNECTOR_ID": "paper-1",
+        "ALPHAFOX_LEVERAGE": "1",
+        "ALPHAFOX_STOP_CLOSE_POSITIONS": "true",
+    }
+    result = field_preflight.run_preflight(_root(tmp_path), env=env)
+    names = {row["name"]: row["status"] for row in result["checks"]}
+    assert names["alphafox_cli"] == "pass"
+    assert names["alphafox_paper_connector"] == "pass"
+    assert names["alphafox_stop_policy"] == "pass"

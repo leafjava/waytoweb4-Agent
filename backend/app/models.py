@@ -139,6 +139,7 @@ class HealthResponse(BaseModel):
     ok: bool = True
     kiln: str
     passport_backend: str
+    execution_backend: str
 
 
 class DemoResetResponse(BaseModel):

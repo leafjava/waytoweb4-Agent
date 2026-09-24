@@ -76,6 +76,9 @@ class PassportRecord:
     stop_requested: bool = False
     simulation_id: str | None = None
     stop_reason: str | None = None
+    external_execution_provider: str | None = None
+    external_execution_id: str | None = None
+    external_execution_status: str | None = None
 
     def invalidate_face_gate(self, reason: str) -> bool:
         """Make this mandate's gate unusable while retaining audit history."""
@@ -127,6 +130,9 @@ class PassportRecord:
             "stop_requested": self.stop_requested,
             "simulation_id": self.simulation_id,
             "stop_reason": self.stop_reason,
+            "external_execution_provider": self.external_execution_provider,
+            "external_execution_id": self.external_execution_id,
+            "external_execution_status": self.external_execution_status,
         }
 
 
@@ -324,6 +330,9 @@ def _dataclass_to_jsonable(rec: PassportRecord) -> dict[str, Any]:
         "stop_requested": rec.stop_requested,
         "simulation_id": rec.simulation_id,
         "stop_reason": rec.stop_reason,
+        "external_execution_provider": rec.external_execution_provider,
+        "external_execution_id": rec.external_execution_id,
+        "external_execution_status": rec.external_execution_status,
     }
 
 

@@ -21,7 +21,12 @@ def health() -> HealthResponse:
     mode = os.environ.get("KILN_MODE", "offline").lower()
     has_key = bool(os.environ.get(KILN_API_KEY_ENV))
     kiln_label = "http" if has_key and mode == "live" else ("misconfigured" if mode == "live" else "mock")
-    return HealthResponse(ok=True, kiln=kiln_label, passport_backend=settings.passport_backend)
+    return HealthResponse(
+        ok=True,
+        kiln=kiln_label,
+        passport_backend=settings.passport_backend,
+        execution_backend=settings.execution_backend,
+    )
 
 
 __all__ = ["router"]

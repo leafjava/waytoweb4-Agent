@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Query
 
 from ..audit import make_event
 from ..authorization import AuthorizationError
-from ..deps import get_passport_backend, get_state, get_trip_seconds
+from ..deps import get_execution_adapter, get_passport_backend, get_state, get_trip_seconds
 from ..engine import EngineStartError, start_engine, stop_engine, tick_drawdown
 from ..errors import not_found
 from ..models import (
@@ -27,9 +27,10 @@ async def engine_start(
     state: AppState = Depends(get_state),
     trip_seconds: int = Depends(get_trip_seconds),
     backend=Depends(get_passport_backend),
+    execution_adapter=Depends(get_execution_adapter),
 ):
     try:
-        rec = await start_engine(req.passport_id, state, trip_seconds, backend)
+        rec = await start_engine(req.passport_id, state, trip_seconds, backend, execution_adapter)
     except KeyError:
         raise not_found(f"passport {req.passport_id} not found")
     except EngineStartError as e:
@@ -43,6 +44,9 @@ async def engine_start(
             "face_verified_at": rec.face_verified_at,
             "face_verification_method": rec.face_verification_method,
             "face_verification_session_id": rec.face_verification_session_id,
+            "external_execution_provider": rec.external_execution_provider,
+            "external_execution_id": rec.external_execution_id,
+            "external_execution_status": rec.external_execution_status,
         },
     ))
     return EngineStartResponse(
@@ -55,17 +59,27 @@ async def engine_stop(
     req: EngineStartRequest,
     state: AppState = Depends(get_state),
     backend=Depends(get_passport_backend),
+    execution_adapter=Depends(get_execution_adapter),
 ):
     try:
-        rec = await stop_engine(req.passport_id, state, backend)
+        rec = await stop_engine(req.passport_id, state, backend, execution_adapter=execution_adapter)
     except KeyError:
         raise not_found(f"passport {req.passport_id} not found")
     except AuthorizationError as exc:
         from ..errors import conflict
         raise conflict(str(exc))
+    except EngineStartError as exc:
+        from ..errors import coded_conflict
+        raise coded_conflict(exc.code, str(exc))
     state.append_event(make_event(
         "engine_stop", req.passport_id,
-        {"drawdown_usd": rec.drawdown_usd, "reason": rec.stop_reason or "STOP_REQUESTED"},
+        {
+            "drawdown_usd": rec.drawdown_usd,
+            "reason": rec.stop_reason or "STOP_REQUESTED",
+            "external_execution_provider": rec.external_execution_provider,
+            "external_execution_id": rec.external_execution_id,
+            "external_execution_status": rec.external_execution_status,
+        },
     ))
     return EngineStopResponse(status=rec.status, drawdown_usd=rec.drawdown_usd)
 

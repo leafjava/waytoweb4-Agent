@@ -27,7 +27,7 @@ class EngineStartError(ValueError):
 
 
 class PaperWorkerController:
-    def __init__(self, passport_id: str, state: AppState, backend):
+    def __init__(self, passport_id: str, state: AppState, backend, execution_adapter=None):
         self.passport_id = passport_id
         self.state = state
         self.backend = backend
@@ -36,6 +36,8 @@ class PaperWorkerController:
         self.heartbeat_task: asyncio.Task | None = None
         self.ready = asyncio.Event()
         self.stopped = asyncio.Event()
+        self.execution_adapter = execution_adapter
+        self.external_stop_attempted = False
 
     async def start(self, rec: PassportRecord):
         policy_path = self.state.ledger_path.parent / "policy.json"
@@ -95,6 +97,20 @@ class PaperWorkerController:
                 self.state._save_locked()
 
     async def _record_stop(self, reason: str, drawdown=None, failed=False):
+        rec = self.state.passports.get(self.passport_id)
+        if (
+            self.execution_adapter
+            and rec
+            and rec.external_execution_id
+            and not self.external_stop_attempted
+        ):
+            self.external_stop_attempted = True
+            try:
+                await self.execution_adapter.stop(rec.external_execution_id)
+                rec.external_execution_status = "stopped"
+            except Exception:  # noqa: BLE001 - remote uncertainty must fail closed.
+                rec.external_execution_status = "uncertain"
+                failed = True
         should_log = False
         async with self.state._lock:
             rec = self.state.passports.get(self.passport_id)
@@ -151,7 +167,7 @@ class PaperWorkerController:
             except (asyncio.CancelledError, Exception): pass
 
 
-async def start_engine(passport_id: str, state: AppState, trip_seconds: int, backend) -> PassportRecord:
+async def start_engine(passport_id: str, state: AppState, trip_seconds: int, backend, execution_adapter=None) -> PassportRecord:
     rec = state.passports.get(passport_id)
     if rec is None: raise KeyError(passport_id)
     if rec.authorization_status != "authorized" or rec.confirmed_spec_hash != rec.spec_hash:
@@ -161,9 +177,35 @@ async def start_engine(passport_id: str, state: AppState, trip_seconds: int, bac
     if rec.stop_requested or is_expired(rec.expiry) or rec.engine_status in {"stopped", "stop_failed"}:
         raise EngineStartError("PASSPORT_STOPPED_OR_EXPIRED", f"passport {passport_id} is stopped or expired")
     if rec.engine_running: return rec
-    controller = PaperWorkerController(passport_id, state, backend)
+    controller = PaperWorkerController(passport_id, state, backend, execution_adapter)
     rec.engine_status = "starting"; rec.status = "starting"; state.upsert_passport(rec)
     await controller.start(rec)
+    if execution_adapter:
+        command = build_start_command(rec, str(state.ledger_path.parent / "policy.json"))
+        try:
+            rec.external_execution_id = await execution_adapter.start(command)
+            rec.external_execution_provider = execution_adapter.provider
+            rec.external_execution_status = "running"
+            if controller.stopped.is_set() or rec.authorization_status != "authorized":
+                await execution_adapter.stop(rec.external_execution_id)
+                rec.external_execution_status = "stopped"
+                raise RuntimeError("local safety controller stopped during external start")
+        except Exception as exc:  # noqa: BLE001 - do not retry an uncertain mutation.
+            await controller.force_terminate()
+            external_stopped = rec.external_execution_status == "stopped"
+            rec.engine_running = False
+            rec.engine_status = "start_failed"
+            rec.status = "stopped" if external_stopped else "uncertain"
+            if not external_stopped or rec.authorization_status == "authorized":
+                rec.authorization_status = "uncertain"
+            rec.stop_requested = True
+            rec.external_execution_provider = getattr(execution_adapter, "provider", "external")
+            if not external_stopped:
+                rec.external_execution_status = "uncertain"
+            rec.stop_reason = "EXTERNAL_START_FAILED"
+            rec.invalidate_face_gate("EXTERNAL_START_FAILED")
+            state.upsert_passport(rec)
+            raise EngineStartError("ALPHAFOX_START_FAILED", str(exc)) from exc
     _WORKERS[passport_id] = controller
     rec.engine_started_at = datetime.now(timezone.utc).isoformat(); rec.drawdown_usd = 0.0
     rec.engine_running = True; rec.engine_status = "running"; rec.status = "active"; rec.trip_seconds = trip_seconds
@@ -172,13 +214,23 @@ async def start_engine(passport_id: str, state: AppState, trip_seconds: int, bac
     return rec
 
 
-async def stop_engine(passport_id: str, state: AppState, backend, reason: str = "STOP_REQUESTED") -> PassportRecord:
+async def stop_engine(passport_id: str, state: AppState, backend, reason: str = "STOP_REQUESTED", execution_adapter=None) -> PassportRecord:
     rec = state.passports.get(passport_id)
     if rec is None: raise KeyError(passport_id)
     rec.stop_requested = True; state.upsert_passport(rec)
     controller = _WORKERS.pop(passport_id, None)
     if controller: await controller.stop(reason)
     else:
+        if execution_adapter and rec.external_execution_id and rec.external_execution_status != "stopped":
+            try:
+                await execution_adapter.stop(rec.external_execution_id)
+                rec.external_execution_status = "stopped"
+            except Exception:  # noqa: BLE001
+                rec.external_execution_status = "uncertain"
+                rec.engine_status = "stop_failed"
+                rec.status = "uncertain"
+                state.upsert_passport(rec)
+                raise EngineStartError("ALPHAFOX_STOP_FAILED", "AlphaFox stop outcome is uncertain")
         rec.engine_running = False; rec.engine_status = "stopped"; rec.status = "stopped"; rec.stop_reason = rec.stop_reason or reason; state.upsert_passport(rec)
     rec, _, _ = await authorization_service.revoke(state, passport_id, backend, reason)
     return rec

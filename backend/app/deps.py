@@ -49,6 +49,13 @@ def get_trip_seconds() -> int:
     return settings.trip_seconds
 
 
+def get_execution_adapter():
+    if settings.execution_backend != "alphafox":
+        return None
+    from .execution_adapters.alphafox import AlphaFoxCliAdapter, AlphaFoxConfig
+    return AlphaFoxCliAdapter(AlphaFoxConfig.from_env())
+
+
 def get_redline_judge():
     from agent.follow_agent.kiln_client import HttpKilnClient, build_kiln_client
     from agent.redline_agent import HynixMockClassifier, KilnEventClassifier, RedLineJudge
@@ -58,4 +65,4 @@ def get_redline_judge():
     return RedLineJudge(classifier=classifier)
 
 
-__all__ = ["get_state", "get_passport_backend", "get_trip_seconds", "get_redline_judge", "close_passport_backend"]
+__all__ = ["get_state", "get_passport_backend", "get_trip_seconds", "get_execution_adapter", "get_redline_judge", "close_passport_backend"]

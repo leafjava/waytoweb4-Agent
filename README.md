@@ -48,7 +48,7 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 | Drawdown hard gate | RedLine rule gate | `agent/redline_agent/rule_gate.py` |
 | Event classification (Hynix / leverage / ...) | RedLine LLM classifier | `agent/redline_agent/llm_classifier.py` |
 | Face verification, start/stop | Backend | `backend/app/routers/{face,engine}.py` |
-| Provisional waytoweb4 adapter contract | Backend + docs | `backend/app/execution_contract.py`, `docs/WAYTOWEB4-INTERFACE-CONTRACT.md` |
+| AlphaFox Paper execution adapter | Backend + official CLI | `backend/app/execution_adapters/alphafox.py`, `docs/ALPHAFOX-ADAPTER.md` |
 | Passport mint / revoke | Backend + isolated Node worker | `backend/app/routers/passport.py`, `chain/` |
 | Mock ledger / Sepolia keccak | Backend | `backend/app/passport_backends/` |
 | Web UI | Frontend | `frontend/src/` |
@@ -70,6 +70,10 @@ Open <http://localhost:5173/>. Offline flow is prepare → explicit confirm → 
 | `TRIP_SECONDS` | `60` | Seconds for the mock engine drawdown to reach `maxLossUsd`. |
 | `LEDGER_PATH` | `backend/var/passports.json` | Mock passport ledger. |
 | `FRONTEND_ORIGIN` | `http://localhost:5173` | CORS origin for the backend. |
+| `EXECUTION_BACKEND` | `paper` | `paper` keeps the isolated offline worker; `alphafox` adds the official CLI Paper transport after authorization and the human gate. |
+| `ALPHAFOX_PAPER_CONNECTOR_ID` | (unset) | Required for the AlphaFox backend; must name an active Paper connector. |
+| `ALPHAFOX_LEVERAGE` | (unset) | Required positive integer; never silently inferred for a live AlphaFox create. |
+| `ALPHAFOX_STOP_CLOSE_POSITIONS` | (unset) | Required `true` or `false`; makes the RedLine flatten/leave-position decision explicit. |
 
 The one-shot launcher binds both services to loopback. The demo API has no
 account authentication and must not be exposed as a shared or public service.
@@ -129,8 +133,8 @@ API-reported usage from a live run is acceptable as final evidence.
   endpoint. Without it the offline `MockKilnClient` is used. Both
   paths record tokens through the same `TokenLogger`.
 - **Passport**: offline mode never fabricates a tx hash. The local chain worker uses a temporary EVM and the v2 contract. The guarded testnet worker supports Kairos or Sepolia, but no public transaction was broadcast in this local pass.
-- **Engine**: the paper worker is a separate process with drawdown, expiry, policy and lease hard stops. No real waytoweb4 service is called.
-- **waytoweb4 interface**: official endpoint documentation is still pending. The paper worker consumes the provisional internal adapter DTO so a documented HTTP transport can replace it without changing authorization rules.
+- **Engine**: the paper worker is a separate process with drawdown, expiry, policy and lease hard stops. It remains the default execution path.
+- **AlphaFox transport**: the optional adapter uses the official AlphaFox CLI and its eight catalog operations. Read-only account discovery and a create dry-run have succeeded; this integration pass did not create, start or stop a live account trader. OAuth credentials stay in the OS keychain.
 - **Human gate**: a local camera preview plus an explicit confirmation button. No image is captured, uploaded or stored, and no face recognition or KYC is claimed. Approval time, method and session live in the persisted application passport and audit log; StrategyPassport v2 stores the frozen mandate confirmation but not those three metadata fields on-chain.
 
 ## FuriosaAI workload view

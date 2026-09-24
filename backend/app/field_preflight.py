@@ -83,6 +83,25 @@ def _artifact_matches(root: Path) -> bool:
         return False
 
 
+def _alphafox_checks(env: Mapping[str, str]) -> list[dict]:
+    checks = [_check("alphafox_cli", shutil.which(env.get("ALPHAFOX_CLI", "alphafox")) is not None, "official CLI is installed")]
+    connector = env.get("ALPHAFOX_PAPER_CONNECTOR_ID", "").strip()
+    checks.append(_check("alphafox_paper_connector", bool(connector), "Paper connector id is configured (value redacted)"))
+    try:
+        leverage = int(env.get("ALPHAFOX_LEVERAGE", ""))
+    except ValueError:
+        leverage = 0
+    checks.append(_check("alphafox_leverage", leverage > 0, "positive leverage is explicitly configured"))
+    close_positions = env.get("ALPHAFOX_STOP_CLOSE_POSITIONS", "").strip().lower()
+    checks.append(_check("alphafox_stop_policy", close_positions in {"true", "false"}, "closePositions is explicitly configured"))
+    checks.append(_check(
+        "alphafox_definition",
+        env.get("ALPHAFOX_STRATEGY_DEFINITION_ID", "simple_copy_trading") == "simple_copy_trading",
+        "verified simple_copy_trading definition is selected",
+    ))
+    return checks
+
+
 def _rpc_probe(env: Mapping[str, str], chain_id: int) -> list[dict]:
     """Perform read-only RPC calls. No signer sends a transaction."""
     checks: list[dict] = []
@@ -132,6 +151,8 @@ def run_preflight(
         _check("backend_port", backend_free, f"127.0.0.1:{backend_port} is {'available' if backend_free else 'already in use'}"),
         _check("frontend_port", frontend_free, f"127.0.0.1:{frontend_port} is {'available' if frontend_free else 'already in use'}"),
     ])
+    if source.get("EXECUTION_BACKEND", "paper").strip().lower() == "alphafox":
+        checks.extend(_alphafox_checks(source))
 
     if live:
         kiln_base = source.get("KILN_API_BASE", "").strip()

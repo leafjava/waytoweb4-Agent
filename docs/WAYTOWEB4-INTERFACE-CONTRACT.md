@@ -1,12 +1,12 @@
 # waytoweb4 execution adapter contract
 
-Status: **provisional internal contract while the official waytoweb4 API documentation is pending**.
+Status: **internal mandate contract with an official AlphaFox CLI Paper adapter**.
 
 The authorization, RedLine and passport layers depend on this contract rather
-than guessed external URLs. The current paper subprocess is the mock adapter.
-When the official documentation arrives, add an HTTP adapter that maps these
-commands to the documented endpoints; do not move policy or authorization
-decisions into the transport.
+than external transport details. The credential-free paper subprocess remains
+the default. The optional AlphaFox transport maps this command to the official
+catalog through the vendor CLI; see `ALPHAFOX-ADAPTER.md`. Policy and
+authorization decisions stay outside the transport.
 
 ## Start command
 

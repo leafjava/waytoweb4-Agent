@@ -23,6 +23,7 @@ packages = [
     "backend",
     "backend.app",
     "backend.app.passport_backends",
+    "backend.app.execution_adapters",
     "backend.app.routers",
     "backend.scripts",
 ]

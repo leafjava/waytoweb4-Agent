@@ -5,6 +5,7 @@ import time
 
 from .helpers import prepare, prepare_confirm_mint, verify_face
 from backend.app.engine import _WORKERS
+from backend.app.deps import get_execution_adapter
 from backend.app.policy import write_policy
 
 
@@ -105,3 +106,58 @@ def test_controller_disconnect_stops_real_worker_process(client):
         time.sleep(0.02)
     assert record["stop_reason"] == "CONTROLLER_DISCONNECTED"
     assert controller.process.returncode == 0
+
+
+def test_alphafox_adapter_runs_only_after_human_gate(app_and_state):
+    from fastapi.testclient import TestClient
+
+    app, _state = app_and_state
+
+    class Adapter:
+        provider = "alphafox"
+
+        def __init__(self): self.calls = []
+        async def start(self, command):
+            self.calls.append(("start", command.leader_id, command.paper))
+            return "trader-demo-1"
+        async def stop(self, trader_id): self.calls.append(("stop", trader_id))
+
+    adapter = Adapter()
+    app.dependency_overrides[get_execution_adapter] = lambda: adapter
+    with TestClient(app) as local_client:
+        body = prepare_confirm_mint(local_client)
+        pid = body["passport_id"]
+        assert local_client.post("/api/engine/start", json={"passport_id": pid}).status_code == 409
+        assert adapter.calls == []
+        verify_face(local_client, pid)
+        assert local_client.post("/api/engine/start", json={"passport_id": pid}).status_code == 200
+        record = local_client.get(f"/api/passport/{pid}").json()
+        assert record["external_execution_id"] == "trader-demo-1"
+        assert adapter.calls[0][0] == "start"
+        assert local_client.post("/api/engine/stop", json={"passport_id": pid}).status_code == 200
+        assert adapter.calls[-1] == ("stop", "trader-demo-1")
+
+
+def test_alphafox_uncertain_start_invalidates_mandate(app_and_state):
+    from fastapi.testclient import TestClient
+
+    app, _state = app_and_state
+
+    class FailingAdapter:
+        provider = "alphafox"
+        async def start(self, command): raise RuntimeError("outcome uncertain")
+        async def stop(self, trader_id): raise AssertionError("no id was returned")
+
+    app.dependency_overrides[get_execution_adapter] = lambda: FailingAdapter()
+    with TestClient(app) as local_client:
+        body = prepare_confirm_mint(local_client)
+        pid = body["passport_id"]
+        verify_face(local_client, pid)
+        response = local_client.post("/api/engine/start", json={"passport_id": pid})
+        assert response.status_code == 409
+        assert response.json()["detail"]["code"] == "ALPHAFOX_START_FAILED"
+        record = local_client.get(f"/api/passport/{pid}").json()
+        assert record["status"] == "uncertain"
+        assert record["authorization_status"] == "uncertain"
+        assert record["face_gate_status"] == "invalidated"
+        assert record["stop_requested"] is True

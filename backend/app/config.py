@@ -24,6 +24,7 @@ class Settings:
     ledger_path: Path            # JSON ledger for the mock backend
     frontend_origin: str         # for CORS
     chain_id_sepolia: int        # 11155111
+    execution_backend: str       # "paper" | "alphafox"
 
     @classmethod
     def load(cls) -> "Settings":
@@ -34,6 +35,9 @@ class Settings:
             raise ValueError(
                 f"PASSPORT_BACKEND must be 'mock', 'local' or 'testnet'; got {backend!r}"
             )
+        execution_backend = os.environ.get("EXECUTION_BACKEND", "paper").strip().lower()
+        if execution_backend not in {"paper", "alphafox"}:
+            raise ValueError("EXECUTION_BACKEND must be 'paper' or 'alphafox'")
         return cls(
             passport_backend=backend,
             trip_seconds=int(os.environ.get("TRIP_SECONDS", "60")),
@@ -47,6 +51,7 @@ class Settings:
                 "FRONTEND_ORIGIN", "http://localhost:5173"
             ),
             chain_id_sepolia=11155111,
+            execution_backend=execution_backend,
         )
 
 

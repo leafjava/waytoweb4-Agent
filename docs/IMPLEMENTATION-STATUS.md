@@ -256,13 +256,24 @@ Validation: full combined Python suite 136 passed; frontend production build
 passed; English and Korean key sets both contain 185 entries with no missing
 counterpart.
 
-### P5 — official waytoweb4 adapter
+### P5 — official AlphaFox Paper adapter
 
-Status: pending official teammate documentation.
+Status: code complete; live mutation requires final operator parameter approval.
 
-- The frozen paper-only execution DTO and isolated worker boundary are ready.
-- Endpoint paths, authentication, idempotency and stop/status semantics remain
-  intentionally unmapped rather than guessed.
+- Installed and verified AlphaFox CLI `0.3.24` against contract `2026-08-31`.
+  Device OAuth is stored by Windows Credential Manager; no token or browser
+  cookie is passed to the app.
+- Locked the demo to eight official catalog operations covering signal sources,
+  strategy discovery/validation, trader list/create/start/stop.
+- Mapped the frozen notional to `simple_copy_trading` v4 `fixedEquity`, kept the
+  local absolute max-loss gate authoritative, and added mandatory Paper
+  connector, leverage and stop-position choices.
+- Added mutation `dry-run` before `--yes`, fail-closed timeout handling and
+  persisted external provider/trader status. AlphaFox is never called before
+  hash authorization and the per-mandate human gate.
+- Real account reads returned 395 active signal sources, 21 strategy definitions
+  and two existing Paper traders. A generated create request passed the official
+  CLI dry-run. No trader mutation was performed.
 
 ### P6 — field acceptance
 
@@ -297,9 +308,10 @@ Status: code-level audit complete; live acceptance remains pending.
   test/compile toolchain. Neither is loaded by the live worker; Ganache uses an
   in-memory provider and never listens on a socket in this project.
 
-Field blockers are unchanged: a fresh live Kiln/gpt-oss-120b trace with API
-usage, a fresh public-testnet receipt/readback, the official waytoweb4 adapter,
-physical-camera rehearsal, and final video/Deck artifacts.
+Field blockers: a final reviewed AlphaFox parameter set and Paper create/stop
+rehearsal, a fresh live Kiln/gpt-oss-120b trace with API usage, a fresh
+public-testnet receipt/readback, physical-camera rehearsal, and final video/Deck
+artifacts.
 
 ### P8 — field tooling and continuous verification
 
