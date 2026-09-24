@@ -51,43 +51,45 @@ export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-900/40 border border-slate-800 rounded-lg overflow-hidden">
-      <div className="px-4 py-2 border-b border-slate-800 text-sm uppercase tracking-wider text-slate-400">
+    <div className="surface-card flex h-full flex-col overflow-hidden">
+      <div className="border-b border-black/10 px-5 py-4 text-sm font-semibold text-[#1d1d1f]">
         <i className="fa fa-comments mr-2"></i> Chat
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 text-sm">
+      <div className="flex-1 space-y-3 overflow-y-auto p-5 text-sm">
         {draft.history.length === 0 && (
           <div className="text-slate-500 italic">{t('chat.empty')}</div>
         )}
         {draft.history.map((m, i) => (
-          <div key={i} className={m.role === 'user' ? 'text-sky-300' : 'text-emerald-300'}>
-            <span className="text-slate-500 mr-2">
-              {m.role === 'user' ? t('chat.user_prefix') : t('chat.agent_prefix')}
-            </span>
-            {m.text}
+          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            <div className={`max-w-[88%] rounded-2xl px-4 py-2.5 leading-6 ${m.role === 'user' ? 'rounded-br-md bg-[#0071e3] text-white' : 'rounded-bl-md bg-black/[0.055] text-[#1d1d1f]'}`}>
+              <span className={`mb-0.5 block text-[10px] font-semibold uppercase tracking-wider ${m.role === 'user' ? 'text-white/65' : 'text-slate-500'}`}>
+                {m.role === 'user' ? t('chat.user_prefix') : t('chat.agent_prefix')}
+              </span>
+              {m.text}
+            </div>
           </div>
         ))}
       </div>
 
       {error && (
-        <div className="px-4 py-2 bg-rose-900/40 border-t border-rose-700 text-xs text-rose-200">
+        <div className="px-4 py-2 bg-rose-50 border-t border-rose-200 text-xs text-rose-700">
           {error}
         </div>
       )}
 
-      <div className="border-t border-slate-800 p-3 flex gap-2">
+      <div className="flex gap-2 border-t border-black/10 p-4">
         <textarea
           rows={2}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="flex-1 bg-slate-950 border border-slate-700 rounded px-2 py-1 text-sm resize-none focus:outline-none focus:border-sky-500"
+          className="min-w-0 flex-1 resize-none rounded-2xl border border-black/10 bg-black/[0.035] px-3 py-2 text-sm focus:border-blue-400 focus:outline-none"
           placeholder={t('chat.placeholder')}
         />
         <button
           onClick={handleSend}
           disabled={busy}
-          className="px-4 py-1 bg-sky-600 hover:bg-sky-500 disabled:opacity-50 rounded text-sm font-medium"
+          className="primary-button px-4 py-1 text-sm font-medium disabled:opacity-50"
         >
           <i className="fa fa-paper-plane mr-1"></i>
           {t('chat.send')}

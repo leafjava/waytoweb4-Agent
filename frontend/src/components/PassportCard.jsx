@@ -10,8 +10,8 @@ function CopyableHash({ label, value, copyText, copiedText }) {
   if (!value) {
     return (
       <div className="flex justify-between text-xs">
-        <span className="text-slate-400">{label}</span>
-        <span className="text-slate-600">—</span>
+        <span className="text-slate-500">{label}</span>
+        <span className="text-slate-400">—</span>
       </div>
     )
   }
@@ -25,12 +25,12 @@ function CopyableHash({ label, value, copyText, copiedText }) {
   return (
     <div className="text-xs">
       <div className="flex justify-between">
-        <span className="text-slate-400">{label}</span>
+        <span className="text-slate-500">{label}</span>
         <button className="copy-btn" onClick={copy} title={copyText}>
           <i className="fa fa-clipboard"></i> {copied ? copiedText : copyText}
         </button>
       </div>
-      <div className="txhash text-slate-200">{value}</div>
+      <div className="txhash text-slate-800">{value}</div>
     </div>
   )
 }
@@ -57,8 +57,8 @@ export default function PassportCard({ draft, snapshot, onAction }) {
 
   if (!draft.passport_id) {
     return (
-      <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-4">
-        <h2 className="text-sm uppercase tracking-wider text-slate-400 mb-2">
+      <div className="surface-card border border-black/10 rounded-lg p-4">
+        <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-2">
           <i className="fa fa-id-card-o mr-2"></i> {t('pass.title')}
         </h2>
         <div className="text-slate-500 italic text-sm">{t('pass.empty')}</div>
@@ -75,15 +75,15 @@ export default function PassportCard({ draft, snapshot, onAction }) {
   const executionId = passport?.external_execution_id
   const executionStatus = passport?.external_execution_status
   const executionTone = executionStatus === 'running'
-    ? 'border-emerald-800 bg-emerald-950/60 text-emerald-300'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
     : executionStatus
-      ? 'border-slate-700 bg-slate-900 text-slate-300'
+      ? 'border-black/10 bg-white text-slate-700'
       : ''
 
   return (
-    <div className={`bg-slate-900/40 border ${palette.border} rounded-lg p-4 space-y-2`}>
+    <div className={`surface-card border ${palette.border} rounded-lg p-4 space-y-2`}>
       <div className="flex items-center justify-between">
-        <h2 className="text-sm uppercase tracking-wider text-slate-400">
+        <h2 className="text-sm uppercase tracking-wider text-slate-500">
           <i className="fa fa-id-card-o mr-2"></i> {t('pass.title')}
         </h2>
         <span className={`text-xs px-2 py-0.5 rounded ${palette.bg} ${palette.fg} border ${palette.border}`}>
@@ -93,8 +93,8 @@ export default function PassportCard({ draft, snapshot, onAction }) {
 
       <div className="text-xs space-y-2">
         <div>
-          <div className="text-slate-400">{t('pass.id')}</div>
-          <div className="txhash text-slate-200">{draft.passport_id}</div>
+          <div className="text-slate-500">{t('pass.id')}</div>
+          <div className="txhash text-slate-800">{draft.passport_id}</div>
         </div>
         <CopyableHash
           label={t('pass.spec_hash')}
@@ -115,8 +115,8 @@ export default function PassportCard({ draft, snapshot, onAction }) {
           copiedText={t('pass.copied')}
         />
         <div className="flex justify-between text-xs">
-          <span className="text-slate-400">{t('pass.face')}</span>
-          <span className={faceVerified ? 'text-emerald-300' : 'text-amber-300'}>
+          <span className="text-slate-500">{t('pass.face')}</span>
+          <span className={faceVerified ? 'text-emerald-700' : 'text-amber-700'}>
             {faceVerified
               ? gateStatus === 'invalidated' ? t('pass.face_historical') : t('pass.face_verified')
               : t('pass.face_not_verified')}
@@ -125,43 +125,43 @@ export default function PassportCard({ draft, snapshot, onAction }) {
         {passport?.face_verified_at && (
           <>
             <div className="flex justify-between gap-4 text-xs">
-              <span className="text-slate-400">{t('pass.verified_at')}</span>
-              <span className="min-w-0 break-words text-right text-slate-200">
+              <span className="text-slate-500">{t('pass.verified_at')}</span>
+              <span className="min-w-0 break-words text-right text-slate-800">
                 {new Intl.DateTimeFormat(locale === 'ko' ? 'ko-KR' : 'en-US', { dateStyle: 'medium', timeStyle: 'medium' }).format(new Date(passport.face_verified_at))}
               </span>
             </div>
             <div className="flex justify-between gap-4 text-xs">
-              <span className="text-slate-400">{t('pass.gate_status')}</span>
-              <span className={gateStatus === 'invalidated' ? 'text-rose-300' : 'text-cyan-200'}>
+              <span className="text-slate-500">{t('pass.gate_status')}</span>
+              <span className={gateStatus === 'invalidated' ? 'text-rose-700' : 'text-cyan-700'}>
                 {t(`pass.gate_${gateStatus}`)}
               </span>
             </div>
             <div className="flex justify-between gap-4 text-xs">
-              <span className="text-slate-400">{t('pass.method')}</span>
-              <span className="text-slate-200">{passport.face_verification_method}</span>
+              <span className="text-slate-500">{t('pass.method')}</span>
+              <span className="text-slate-800">{passport.face_verification_method}</span>
             </div>
             <div className="text-xs">
-              <div className="text-slate-400">{t('pass.session')}</div>
-              <div className="txhash text-slate-200">{passport.face_verification_session_id}</div>
+              <div className="text-slate-500">{t('pass.session')}</div>
+              <div className="txhash text-slate-800">{passport.face_verification_session_id}</div>
             </div>
           </>
         )}
         {gateStatus === 'invalidated' && (
-          <div className="rounded-xl bg-rose-950/60 p-3 text-xs leading-5 text-rose-200" role="status">
+          <div className="rounded-xl bg-rose-50 p-3 text-xs leading-5 text-rose-700" role="status">
             <i className="fa fa-ban mr-2" aria-hidden="true"></i>
             {t('pass.gate_invalidated_help')}
             {passport?.face_gate_invalidation_reason && (
-              <span className="mt-1 block font-mono text-rose-300">
+              <span className="mt-1 block font-mono text-rose-700">
                 {passport.face_gate_invalidation_reason}
               </span>
             )}
           </div>
         )}
         {(executionProvider || executionId || executionStatus) && (
-          <div className="mt-3 border-t border-slate-800 pt-3">
+          <div className="mt-3 border-t border-black/10 pt-3">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <span className="text-slate-400">{t('pass.execution_backend')}</span>
-              <span className="font-mono text-sky-200">{executionProvider}</span>
+              <span className="text-slate-500">{t('pass.execution_backend')}</span>
+              <span className="font-mono text-blue-700">{executionProvider}</span>
             </div>
             {executionId && (
               <CopyableHash
@@ -173,7 +173,7 @@ export default function PassportCard({ draft, snapshot, onAction }) {
             )}
             {executionStatus && (
               <div className="mt-2 flex items-center justify-between gap-3">
-                <span className="text-slate-400">{t('pass.execution_status')}</span>
+                <span className="text-slate-500">{t('pass.execution_status')}</span>
                 <span className={`rounded border px-2 py-0.5 font-mono ${executionTone}`}>
                   {executionStatus}
                 </span>

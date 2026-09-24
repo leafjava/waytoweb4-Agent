@@ -53,13 +53,13 @@ export default function SpecCard({ draft, setDraft, onMinted }) {
         : t('spec.authorized_btn')
 
   return (
-    <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-4">
+    <div className="surface-card border border-black/10 rounded-lg p-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm uppercase tracking-wider text-slate-400">
+        <h2 className="text-sm uppercase tracking-wider text-slate-500">
           <i className="fa fa-file-text-o mr-2"></i> {t('spec.title')}
         </h2>
         {spec && (
-          <span className="text-xs px-2 py-0.5 rounded bg-cyan-900/40 border border-cyan-700 text-cyan-200">
+          <span className="text-xs px-2 py-0.5 rounded bg-cyan-50 border border-cyan-200 text-cyan-700">
             {t('spec.locked')}
           </span>
         )}
@@ -96,8 +96,8 @@ export default function SpecCard({ draft, setDraft, onMinted }) {
 function Row({ k, v }) {
   return (
     <div className="flex justify-between gap-4">
-      <span className="text-slate-400">{k}</span>
-      <span className="text-slate-100 text-right break-all">{v}</span>
+      <span className="text-slate-500">{k}</span>
+      <span className="text-[#1d1d1f] text-right break-all">{v}</span>
     </div>
   )
 }

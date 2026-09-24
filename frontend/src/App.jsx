@@ -45,7 +45,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="app-shell min-h-screen flex flex-col">
       <Header
         health={health}
         onReset={handleReset}
@@ -53,7 +53,7 @@ export default function App() {
         onGoDemo={() => setView('demo')}
         onGoHome={() => setView('home')}
       />
-      <main className="mx-auto w-full max-w-7xl flex-1 overflow-x-clip p-4 md:p-6">
+      <main className="mx-auto w-full max-w-[1280px] flex-1 overflow-x-clip px-4 pb-12 pt-6 md:px-8 md:pt-10">
         {view === 'home' ? (
           <HomePage snapshot={snapshot} onTryDemo={() => setView('demo')} />
         ) : (
@@ -75,7 +75,7 @@ function DemoView({ snapshot, draft, setDraft }) {
     return () => clearInterval(id)
   }, [])
   return (
-    <div className="grid grid-cols-12 gap-4">
+    <div className="grid grid-cols-12 gap-5 lg:gap-6">
       <section className="col-span-12 min-h-[60vh] lg:col-span-5 lg:min-h-[70vh]">
         <ChatPanel draft={draft} setDraft={setDraft} onSpecLocked={() => {}} />
       </section>

@@ -47,21 +47,21 @@ const ACCENT_TEXT = {
   emerald: 'text-emerald-400',
   rose: 'text-rose-400',
   fuchsia: 'text-fuchsia-400',
-  slate: 'text-slate-400',
+  slate: 'text-slate-500',
 }
 
 function Tile({ icon, value, label, accent = 'sky', suffix }) {
   const v = useAnimatedNumber(typeof value === 'number' ? value : 0)
   return (
-    <div className="relative bg-slate-900/60 border border-slate-800 rounded-xl p-5 overflow-hidden">
+    <div className="metric-card relative overflow-hidden p-6 md:p-7">
       <div className={`absolute -top-12 -right-12 w-32 h-32 rounded-full ${ACCENT_GLOW[accent] || ACCENT_GLOW.sky} blur-2xl pointer-events-none`} />
       <div className="relative">
         <i className={`fa ${icon} ${ACCENT_TEXT[accent] || ACCENT_TEXT.sky} text-lg`}></i>
-        <div className="mt-3 text-4xl md:text-5xl font-semibold text-slate-50 tabular-nums">
+        <div className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-[#1d1d1f] tabular-nums md:text-5xl">
           {typeof value === 'number' ? v.toLocaleString() : value}
-          {suffix && <span className="text-xl text-slate-400 ml-1">{suffix}</span>}
+          {suffix && <span className="text-xl text-slate-500 ml-1">{suffix}</span>}
         </div>
-        <div className="mt-1 text-xs uppercase tracking-wider text-slate-400">{label}</div>
+        <div className="mt-1 text-xs uppercase tracking-wider text-slate-500">{label}</div>
       </div>
     </div>
   )
@@ -107,31 +107,24 @@ function parseTokenTable(tokenReport) {
 export default function StatTicker({ snapshot }) {
   const passports = snapshot?.passports || {}
   const passportCount = Object.keys(passports).length
-  const revokedCount = Object.values(passports).filter(
-    (p) => p.status === 'revoked',
-  ).length
   const eventCount = (snapshot?.events || []).length
   const tok = parseTokenTable(snapshot?.token_report)
 
   return (
     <section>
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm uppercase tracking-wider text-slate-400">
+        <h2 className="text-sm uppercase tracking-wider text-slate-500">
           <i className="fa fa-signal mr-2"></i> Live system metrics
         </h2>
         <span className="text-[10px] uppercase tracking-wider text-slate-500">
           counts derived from <code>/api/state</code>
         </span>
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Tile icon="fa-id-card" value={passportCount} label="passports minted" accent="emerald" />
-        <Tile icon="fa-ban" value={revokedCount} label="passports revoked" accent="rose" />
         <Tile icon="fa-list" value={eventCount} label="audit events" accent="sky" />
         <Tile icon="fa-bolt" value={tok.tokensIn + tok.tokensOut} label="Kiln tokens (in+out)" accent="amber" suffix=" tok" />
         <Tile icon="fa-bolt" value={Math.round(tok.energyWh * 1000) / 1000} label="energy @180W" accent="fuchsia" suffix=" Wh" />
-        <Tile icon="fa-clock-o" value={Math.round(tok.latencyS * 100) / 100} label="Kiln latency (cum)" accent="sky" suffix=" s" />
-        <Tile icon="fa-tasks" value={tok.calls} label="flows touched" accent="emerald" />
-        <Tile icon="fa-shield" value={revokedCount > 0 ? 'safe' : '—'} label="RedLine state" accent={revokedCount > 0 ? 'fuchsia' : 'slate'} />
       </div>
     </section>
   )

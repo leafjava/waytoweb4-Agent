@@ -510,3 +510,23 @@ Validation: Python 170 passed; chain 4 passed; frontend production build
 passed; Python and production Node dependency audits found zero known
 vulnerabilities. Full chain development audit still reports advisories inside
 Ganache/Solc and is documented as an isolated local-development risk.
+
+### P16 — simplified light product interface
+
+Status: complete.
+
+- Replaced the dark terminal-style visual system with a restrained light
+  product interface using system typography, white translucent surfaces,
+  neutral gray hierarchy, large radii and a single primary blue.
+- Reduced the landing page to the product statement, four live proof metrics,
+  four core controls, the safety lifecycle and one final Demo action.
+- Reworked the control graph for the light palette and converted the Demo chat
+  into a familiar message layout while retaining every authorization, Passport,
+  RedLine, AlphaFox and inference-evidence action.
+- Updated status, warning, modal, log and evidence colors across the complete
+  Demo flow for readable light-mode contrast. No API behavior or evidence
+  semantics changed.
+
+Validation: frontend production build passed; production dependency audit
+reported zero vulnerabilities; desktop visual capture was reviewed at
+1440 px and responsive constraints were retained for small screens.

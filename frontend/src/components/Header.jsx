@@ -5,14 +5,16 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
   const { locale, toggle, t } = useI18n()
 
   return (
-    <header className="site-header flex min-w-0 items-center gap-3 overflow-hidden border-b border-slate-800 bg-slate-900/70 px-4 py-3 md:px-6">
+    <header className="site-header sticky top-0 z-40 flex min-w-0 items-center gap-3 overflow-hidden border-b border-black/[0.06] bg-white/75 px-4 py-3 backdrop-blur-2xl md:px-8">
       <button
         onClick={onGoHome}
-        className="flex min-w-0 items-center gap-2 hover:opacity-80"
+        className="group flex min-w-0 items-center gap-2.5"
         title={t('header.back_home')}
       >
-        <i className="fa fa-bolt text-amber-400"></i>
-        <h1 className="font-semibold tracking-wide">
+        <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#0071e3] text-sm text-white shadow-sm shadow-blue-500/20 transition-transform group-hover:scale-[1.03]">
+          <i className="fa fa-shield"></i>
+        </span>
+        <h1 className="font-semibold tracking-[-0.015em] text-[#1d1d1f]">
           <span className="sm:hidden">waytoweb4 agent</span>
           <span className="hidden text-lg sm:inline">waytoweb4 copy-trading agent</span>
         </h1>
@@ -27,7 +29,7 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
 
         <button
           onClick={toggle}
-          className="flex min-h-9 items-center gap-1.5 rounded border border-slate-700 bg-slate-800 px-2.5 py-1 text-slate-200 hover:bg-slate-700"
+          className="nav-control flex min-h-9 items-center gap-1.5 px-3 py-1 text-slate-700"
           title="Switch language"
         >
           <i className="fa fa-globe"></i>
@@ -39,14 +41,14 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
         {view === 'home' ? (
           <button
             onClick={onGoDemo}
-            className="hidden min-h-9 rounded bg-sky-600 px-3 py-1 font-medium text-white hover:bg-sky-500 sm:block"
+            className="primary-button hidden min-h-9 px-4 py-1.5 text-sm sm:block"
           >
             {t('header.try_demo')} <i className="fa fa-arrow-right ml-1"></i>
           </button>
         ) : (
           <button
             onClick={onGoHome}
-            className="min-h-9 rounded border border-slate-700 bg-slate-800 px-3 py-1 text-slate-200 hover:bg-slate-700"
+            className="nav-control min-h-9 px-3 py-1 text-slate-700"
           >
             <i className="fa fa-arrow-left mr-1"></i> {t('header.back_home')}
           </button>
@@ -54,7 +56,7 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
 
         <button
           onClick={onReset}
-          className="hidden min-h-9 rounded border border-slate-700 bg-slate-800 px-3 py-1 text-slate-200 hover:bg-slate-700 sm:block"
+          className="nav-control hidden min-h-9 px-3 py-1 text-slate-700 sm:block"
           title={t('header.reset')}
         >
           <i className="fa fa-rotate-right mr-1"></i> {t('header.reset')}
@@ -66,9 +68,9 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
 
 function Pill({ label, value }) {
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800 border border-slate-700">
-      <span className="text-slate-400">{label}:</span>
-      <span className="text-slate-100 font-mono">{value}</span>
+    <div className="flex items-center gap-1.5 rounded-full bg-black/[0.035] px-2.5 py-1">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-mono text-[#1d1d1f]">{value}</span>
     </div>
   )
 }

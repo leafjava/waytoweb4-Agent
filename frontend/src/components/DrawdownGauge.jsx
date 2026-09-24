@@ -14,12 +14,12 @@ export default function DrawdownGauge({ drawdown = 0, maxLoss = 0 }) {
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
-        <span className="text-slate-400">{t('gauge.drawdown')}</span>
-        <span className="text-slate-200 font-mono">
+        <span className="text-slate-500">{t('gauge.drawdown')}</span>
+        <span className="text-slate-800 font-mono">
           ${drawdown.toFixed(1)} / ${maxLoss.toFixed(1)}
         </span>
       </div>
-      <div className="h-3 w-full rounded bg-slate-800 overflow-hidden">
+      <div className="h-3 w-full rounded bg-black/[0.04] overflow-hidden">
         <div
           className={`h-full ${color} transition-all`}
           style={{ width: `${pctText}%` }}

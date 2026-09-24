@@ -12,14 +12,14 @@ function evidenceRef(txHash, simulationId) {
 
 function Card({ tone, title, badge, rows }) {
   const palette = {
-    emerald: 'border-emerald-700/60 bg-emerald-900/10',
-    rose: 'border-rose-700/60 bg-rose-900/10',
-    sky: 'border-sky-700/60 bg-sky-900/10',
+    emerald: 'border-emerald-200 bg-emerald-50',
+    rose: 'border-rose-200 bg-rose-50',
+    sky: 'border-blue-200 bg-blue-50',
   }[tone]
   return (
     <div className={`border ${palette} rounded-xl p-4`}>
       <div className="flex items-center justify-between mb-3">
-        <div className="text-sm font-semibold text-slate-100">{title}</div>
+        <div className="text-sm font-semibold text-[#1d1d1f]">{title}</div>
         {badge && (
           <span className={`text-[10px] px-2 py-0.5 rounded-full uppercase tracking-wider ${badge.cls}`}>
             {badge.label}
@@ -29,8 +29,8 @@ function Card({ tone, title, badge, rows }) {
       <dl className="space-y-1.5 text-xs font-mono">
         {rows.map((r) => (
           <div key={r.k} className="flex justify-between gap-3">
-            <dt className="text-slate-400">{r.k}</dt>
-            <dd className={`text-right break-all ${r.danger ? 'text-rose-300' : 'text-slate-100'}`}>
+            <dt className="text-slate-500">{r.k}</dt>
+            <dd className={`text-right break-all ${r.danger ? 'text-rose-700' : 'text-[#1d1d1f]'}`}>
               {r.v}
             </dd>
           </div>
@@ -45,8 +45,8 @@ export default function ConditionalRunPanel({ latestRuns }) {
   const runs = latestRuns?.runs ?? []
   if (runs.length === 0) {
     return (
-      <section className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-        <h2 className="text-sm uppercase tracking-wider text-slate-400 mb-2">
+      <section className="surface-card border border-black/10 rounded-xl p-4">
+        <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-2">
           <i className="fa fa-clone mr-2"></i> {t('demo.cond.title')}
         </h2>
         <div className="text-sm text-slate-500 italic">
@@ -57,8 +57,8 @@ export default function ConditionalRunPanel({ latestRuns }) {
   }
 
   return (
-    <section className="bg-slate-900/50 border border-slate-800 rounded-xl p-4">
-      <h2 className="text-sm uppercase tracking-wider text-slate-400 mb-3">
+    <section className="surface-card border border-black/10 rounded-xl p-4">
+      <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-3">
         <i className="fa fa-clone mr-2"></i> {t('demo.cond.title')}
       </h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -66,8 +66,8 @@ export default function ConditionalRunPanel({ latestRuns }) {
           const tones = ['sky', 'rose']
           const tripCodes = (r.verdict_codes || []).join(', ') || '—'
           const badge = r.verdict_level === 'TRIP'
-            ? { label: `TRIP · ${r.verdict_source}`, cls: 'bg-rose-500/20 border border-rose-500/40 text-rose-200' }
-            : { label: r.verdict_level, cls: 'bg-slate-700 text-slate-300' }
+            ? { label: `TRIP · ${r.verdict_source}`, cls: 'bg-rose-500/20 border border-rose-500/40 text-rose-700' }
+            : { label: r.verdict_level, cls: 'bg-slate-100 text-slate-700' }
           return (
             <Card
               key={r.passport_id ?? i}

@@ -412,3 +412,224 @@ body,
     opacity: 0.85;
   }
 }
+
+/* Apple-inspired product surface: quiet materials, strong hierarchy, one blue. */
+:root {
+  color: #1d1d1f;
+  background: #f5f5f7;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, system-ui, sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 50% -18%, rgba(255, 255, 255, 0.98), transparent 34rem),
+    #f5f5f7;
+  color: #1d1d1f;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+a,
+textarea,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+a {
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease,
+    opacity 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+textarea:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(0, 113, 227, 0.28);
+  outline-offset: 2px;
+}
+
+.app-shell {
+  background: transparent;
+}
+
+.surface-card,
+.metric-card,
+.feature-card {
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.025), 0 12px 36px rgba(0, 0, 0, 0.045);
+  backdrop-filter: blur(18px) saturate(130%);
+}
+
+.surface-card,
+.metric-card {
+  border-radius: 22px;
+}
+
+.surface-card h2 {
+  color: #1d1d1f;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+}
+
+.surface-card button:not(.copy-btn):not(.primary-button) {
+  border-radius: 12px;
+}
+
+.feature-card {
+  min-height: 220px;
+  border-radius: 26px;
+  box-shadow: none;
+}
+
+.feature-card:hover,
+.metric-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.07);
+}
+
+.primary-button {
+  border-radius: 999px;
+  background: #0071e3;
+  color: #fff;
+  box-shadow: none;
+}
+
+.primary-button:hover {
+  background: #0077ed;
+  transform: translateY(-1px);
+}
+
+.secondary-button,
+.nav-control {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.secondary-button:hover,
+.nav-control:hover {
+  background: rgba(0, 0, 0, 0.045);
+}
+
+.site-header {
+  min-height: 60px;
+}
+
+.hero-command {
+  border: 0;
+  border-radius: 32px;
+  background:
+    radial-gradient(circle at 82% 32%, rgba(0, 113, 227, 0.1), transparent 30%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(248, 249, 251, 0.92));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.07);
+}
+
+.hero-command__beam {
+  background: linear-gradient(transparent, rgba(0, 113, 227, 0.16), transparent);
+  opacity: 1;
+}
+
+.chain-mandate {
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 20px 58px rgba(0, 0, 0, 0.08);
+}
+
+.chain-mandate::before,
+.chain-mandate::after {
+  display: none;
+}
+
+.chain-mandate__topline,
+.chain-mandate__proof {
+  border-color: rgba(0, 0, 0, 0.065);
+  color: #86868b;
+}
+
+.chain-mandate__status {
+  color: #248a3d;
+}
+
+.chain-mandate__status i {
+  background: #30d158;
+  box-shadow: 0 0 0 4px rgba(48, 209, 88, 0.11);
+}
+
+.chain-orbit {
+  stroke: rgba(110, 110, 115, 0.24);
+}
+
+.chain-orbit--inner {
+  stroke: rgba(0, 113, 227, 0.18);
+}
+
+.chain-route--base {
+  stroke: rgba(110, 110, 115, 0.28);
+}
+
+.chain-node__body {
+  fill: #fff;
+}
+
+.chain-node text {
+  fill: #6e6e73;
+}
+
+.chain-core > path:first-child {
+  fill: #f7f8fa;
+  stroke: rgba(0, 113, 227, 0.46);
+}
+
+.chain-core__inner {
+  fill: #fff;
+  stroke: rgba(48, 209, 88, 0.3);
+}
+
+.chain-core__shield {
+  stroke: #0071e3;
+  filter: none;
+}
+
+.chain-core__label {
+  fill: #1d1d1f;
+}
+
+.chain-mandate__proof b {
+  color: #424245;
+}
+
+.copy-btn {
+  color: #0071e3;
+}
+
+.copy-btn:hover {
+  color: #0058b0;
+}
+
+.txhash {
+  color: #424245;
+}
+
+textarea,
+input {
+  color: #1d1d1f;
+  caret-color: #0071e3;
+}
+
+@media (max-width: 640px) {
+  .hero-command {
+    border-radius: 24px;
+  }
+
+  .feature-card {
+    min-height: auto;
+  }
+}

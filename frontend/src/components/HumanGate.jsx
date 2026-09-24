@@ -108,25 +108,25 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/25 backdrop-blur-xl p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="human-gate-title"
     >
-      <div className="max-h-[calc(100vh-2rem)] w-full max-w-4xl overflow-y-auto rounded-2xl bg-slate-900 shadow-2xl shadow-black/50">
-        <div className="flex items-start justify-between gap-6 border-b border-slate-700 px-5 py-4 md:px-7">
+      <div className="max-h-[calc(100vh-2rem)] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl shadow-black/50">
+        <div className="flex items-start justify-between gap-6 border-b border-black/10 px-5 py-4 md:px-7">
           <div>
             <h2 id="human-gate-title" className="text-xl font-semibold text-white md:text-2xl">
               {t('gate.title')}
             </h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-300">{t('gate.subtitle')}</p>
+            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-700">{t('gate.subtitle')}</p>
           </div>
           <button
             ref={closeRef}
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="shrink-0 rounded-lg px-3 py-2 text-sm text-slate-300 hover:bg-slate-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-400 disabled:opacity-50"
+            className="shrink-0 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-black/[0.04] hover:text-[#1d1d1f] focus:outline-none focus:ring-2 focus:ring-cyan-400 disabled:opacity-50"
             aria-label={t('gate.close')}
           >
             <i className="fa fa-times" aria-hidden="true"></i>
@@ -135,7 +135,7 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
 
         <div className="grid gap-0 md:grid-cols-[1.15fr_0.85fr]">
           <section className="bg-black p-4 md:p-6">
-            <div className="relative aspect-video overflow-hidden rounded-xl bg-slate-950">
+            <div className="relative aspect-video overflow-hidden rounded-xl bg-[#f5f5f7]">
               <video
                 ref={videoRef}
                 muted
@@ -144,7 +144,7 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
                 aria-label={t('gate.preview')}
               />
               {cameraState !== 'ready' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-slate-300" aria-live="polite">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6 text-center text-slate-700" aria-live="polite">
                   <i className={`fa ${cameraState === 'requesting' ? 'fa-circle-o-notch fa-spin' : 'fa-video-camera'} text-2xl`} aria-hidden="true"></i>
                   <p className="max-w-sm text-sm leading-6">
                     {t(`gate.camera.${cameraState}`)}
@@ -152,13 +152,13 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
                 </div>
               )}
               {cameraState === 'ready' && (
-                <div className="absolute bottom-3 left-3 rounded-full bg-emerald-950/90 px-3 py-1 text-xs font-medium text-emerald-200">
+                <div className="absolute bottom-3 left-3 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
                   <i className="fa fa-circle mr-2 text-[8px]" aria-hidden="true"></i>
                   {t('gate.camera.ready')}
                 </div>
               )}
             </div>
-            <p className="mt-3 text-xs leading-5 text-slate-400">
+            <p className="mt-3 text-xs leading-5 text-slate-500">
               <i className="fa fa-lock mr-2" aria-hidden="true"></i>
               {t('gate.privacy')}
             </p>
@@ -174,7 +174,7 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
               <GateRow label={t('spec.expiry')} value={expiry} />
             </dl>
 
-            <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl bg-slate-800/80 p-4 text-sm leading-6 text-slate-200">
+            <label className="mt-6 flex cursor-pointer items-start gap-3 rounded-xl bg-black/[0.04] p-4 text-sm leading-6 text-slate-800">
               <input
                 type="checkbox"
                 checked={consented}
@@ -185,7 +185,7 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
             </label>
 
             {error && (
-              <div className="mt-4 rounded-xl bg-rose-950/70 p-3 text-sm leading-5 text-rose-200" role="alert">
+              <div className="mt-4 rounded-xl bg-rose-50 p-3 text-sm leading-5 text-rose-700" role="alert">
                 <i className="fa fa-exclamation-triangle mr-2" aria-hidden="true"></i>
                 {error}
               </div>
@@ -195,7 +195,7 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
               type="button"
               onClick={approveAndStart}
               disabled={cameraState !== 'ready' || !consented || busy}
-              className="mt-5 w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+              className="mt-5 w-full rounded-xl bg-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 hover:bg-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
             >
               <i className={`fa ${busy ? 'fa-circle-o-notch fa-spin' : 'fa-check-circle'} mr-2`} aria-hidden="true"></i>
               {busy ? t('gate.approving') : t('gate.approve_start')}
@@ -209,9 +209,9 @@ export default function HumanGate({ open, passport, spec, onClose, onComplete })
 
 function GateRow({ label, value }) {
   return (
-    <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-4 border-b border-slate-800 pb-3 last:border-0">
-      <dt className="text-slate-400">{label}</dt>
-      <dd className="min-w-0 break-words text-right font-medium text-slate-100">{value}</dd>
+    <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] gap-4 border-b border-black/10 pb-3 last:border-0">
+      <dt className="text-slate-500">{label}</dt>
+      <dd className="min-w-0 break-words text-right font-medium text-[#1d1d1f]">{value}</dd>
     </div>
   )
 }
