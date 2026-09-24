@@ -71,6 +71,14 @@ export default function PassportCard({ draft, snapshot, onAction }) {
   const faceVerified = !!passport?.face_verified
   const gateStatus = passport?.face_gate_status ?? 'pending'
   const authorizationReady = passport?.authorization_status === 'authorized'
+  const executionProvider = passport?.external_execution_provider
+  const executionId = passport?.external_execution_id
+  const executionStatus = passport?.external_execution_status
+  const executionTone = executionStatus === 'running'
+    ? 'border-emerald-800 bg-emerald-950/60 text-emerald-300'
+    : executionStatus
+      ? 'border-slate-700 bg-slate-900 text-slate-300'
+      : ''
 
   return (
     <div className={`bg-slate-900/40 border ${palette.border} rounded-lg p-4 space-y-2`}>
@@ -146,6 +154,30 @@ export default function PassportCard({ draft, snapshot, onAction }) {
               <span className="mt-1 block font-mono text-rose-300">
                 {passport.face_gate_invalidation_reason}
               </span>
+            )}
+          </div>
+        )}
+        {(executionProvider || executionId || executionStatus) && (
+          <div className="mt-3 border-t border-slate-800 pt-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <span className="text-slate-400">{t('pass.execution_backend')}</span>
+              <span className="font-mono text-sky-200">{executionProvider}</span>
+            </div>
+            {executionId && (
+              <CopyableHash
+                label={t('pass.trader_id')}
+                value={executionId}
+                copyText={t('pass.copy')}
+                copiedText={t('pass.copied')}
+              />
+            )}
+            {executionStatus && (
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <span className="text-slate-400">{t('pass.execution_status')}</span>
+                <span className={`rounded border px-2 py-0.5 font-mono ${executionTone}`}>
+                  {executionStatus}
+                </span>
+              </div>
             )}
           </div>
         )}

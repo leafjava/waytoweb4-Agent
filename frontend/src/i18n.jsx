@@ -24,6 +24,7 @@ const STRINGS = {
     'header.reset': 'Reset',
     'header.lang.ko': '한국어',
     'header.lang.en': 'EN',
+    'header.execution': 'Execution',
 
     // ---- Hero ---------------------------------------------------------
     'hero.eyebrow': 'GWDC 2026 Korea · FuriosaAI × Bricksum · Challenge A + B',
@@ -32,6 +33,21 @@ const STRINGS = {
     'hero.product': 'NL → Spec → face → Paper copy-trading → on-chain passport → RedLine kill switch.',
     'hero.cta': 'Try the Demo',
     'hero.prd': 'PRD / Brief',
+    'motion.aria': 'Animated control graph showing the mandate moving through human approval, an on-chain passport, and the RedLine stop path.',
+    'motion.graph': 'Mandate control graph',
+    'motion.status': 'illustrated paper route',
+    'motion.node.spec': '01 · SPEC',
+    'motion.node.human': '02 · HUMAN',
+    'motion.node.passport': '03 · PASSPORT',
+    'motion.node.redline': '04 · REDLINE',
+    'motion.core': 'BOUNDED EXECUTION',
+    'motion.caption': 'The illustrated route locks the mandate, requires human approval, records a passport, and preserves the RedLine stop path.',
+    'motion.proof.spec_label': 'SPEC',
+    'motion.proof.spec_value': 'locked mandate',
+    'motion.proof.gate_label': 'GATE',
+    'motion.proof.gate_value': 'human approval',
+    'motion.proof.mode_label': 'MODE',
+    'motion.proof.mode_value': 'paper only',
 
     // ---- Primitives grid ----------------------------------------------
     'primitives.title': 'Four primitives',
@@ -175,6 +191,9 @@ const STRINGS = {
     'pass.engine_running': 'Engine running',
     'pass.copy': 'copy',
     'pass.copied': 'copied',
+    'pass.execution_backend': 'execution backend',
+    'pass.trader_id': 'trader ID',
+    'pass.execution_status': 'execution status',
 
     // ---- Human gate --------------------------------------------------
     'gate.title': 'Approve this mandate',
@@ -248,6 +267,7 @@ const STRINGS = {
     'header.reset': '초기화',
     'header.lang.ko': '한국어',
     'header.lang.en': 'EN',
+    'header.execution': '실행',
 
     // ---- Hero ---------------------------------------------------------
     'hero.eyebrow': 'GWDC 2026 한국 · FuriosaAI × Bricksum · Challenge A + B',
@@ -256,6 +276,21 @@ const STRINGS = {
     'hero.product': '자연어 → Spec → 페이스 게이트 → 페이퍼 카피 트레이딩 → 온체인 패스포트 → RedLine 킬 스위치.',
     'hero.cta': '데모 체험',
     'hero.prd': 'PRD / 브리프',
+    'motion.aria': '위임이 사람 승인, 온체인 패스포트, RedLine 정지 경로를 통과하는 과정을 보여 주는 제어 그래프.',
+    'motion.graph': '위임 제어 그래프',
+    'motion.status': '페이퍼 경로 예시',
+    'motion.node.spec': '01 · SPEC',
+    'motion.node.human': '02 · HUMAN',
+    'motion.node.passport': '03 · PASSPORT',
+    'motion.node.redline': '04 · REDLINE',
+    'motion.core': '제한된 실행',
+    'motion.caption': '위임을 잠그고 사람의 승인을 거쳐 패스포트를 기록하며 RedLine 정지 경로를 유지하는 흐름을 보여 줍니다.',
+    'motion.proof.spec_label': 'SPEC',
+    'motion.proof.spec_value': '위임 잠금',
+    'motion.proof.gate_label': '게이트',
+    'motion.proof.gate_value': '사용자 승인',
+    'motion.proof.mode_label': '모드',
+    'motion.proof.mode_value': '페이퍼 전용',
 
     // ---- Primitives grid ----------------------------------------------
     'primitives.title': '네 가지 핵심 구성요소',
@@ -399,6 +434,9 @@ const STRINGS = {
     'pass.engine_running': '엔진 실행 중',
     'pass.copy': '복사',
     'pass.copied': '복사됨',
+    'pass.execution_backend': '실행 백엔드',
+    'pass.trader_id': '트레이더 ID',
+    'pass.execution_status': '실행 상태',
 
     // ---- Human gate --------------------------------------------------
     'gate.title': '이 위임을 승인하세요',

@@ -5,25 +5,29 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
   const { locale, toggle, t } = useI18n()
 
   return (
-    <header className="px-6 py-3 border-b border-slate-800 bg-slate-900/70 flex items-center gap-4">
+    <header className="site-header flex min-w-0 items-center gap-3 overflow-hidden border-b border-slate-800 bg-slate-900/70 px-4 py-3 md:px-6">
       <button
         onClick={onGoHome}
-        className="flex items-center gap-2 hover:opacity-80"
+        className="flex min-w-0 items-center gap-2 hover:opacity-80"
         title={t('header.back_home')}
       >
         <i className="fa fa-bolt text-amber-400"></i>
-        <h1 className="text-lg font-semibold tracking-wide">
-          waytoweb4 copy-trading agent
+        <h1 className="font-semibold tracking-wide">
+          <span className="sm:hidden">waytoweb4 agent</span>
+          <span className="hidden text-lg sm:inline">waytoweb4 copy-trading agent</span>
         </h1>
       </button>
 
-      <div className="ml-auto flex items-center gap-3 text-xs">
-        <Pill label="Kiln" value={health?.kiln ?? '—'} />
-        <Pill label="Passport" value={health?.passport_backend ?? '—'} />
+      <div className="site-header__actions ml-auto flex min-w-0 items-center justify-end gap-2 text-xs">
+        <div className="hidden items-center gap-2 xl:flex">
+          <Pill label="Kiln" value={health?.kiln ?? '—'} />
+          <Pill label="Passport" value={health?.passport_backend ?? '—'} />
+          <Pill label={t('header.execution')} value={health?.execution_backend ?? '—'} />
+        </div>
 
         <button
           onClick={toggle}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200"
+          className="flex min-h-9 items-center gap-1.5 rounded border border-slate-700 bg-slate-800 px-2.5 py-1 text-slate-200 hover:bg-slate-700"
           title="Switch language"
         >
           <i className="fa fa-globe"></i>
@@ -33,14 +37,14 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
         {view === 'home' ? (
           <button
             onClick={onGoDemo}
-            className="px-3 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white font-medium"
+            className="hidden min-h-9 rounded bg-sky-600 px-3 py-1 font-medium text-white hover:bg-sky-500 sm:block"
           >
             {t('header.try_demo')} <i className="fa fa-arrow-right ml-1"></i>
           </button>
         ) : (
           <button
             onClick={onGoHome}
-            className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200"
+            className="min-h-9 rounded border border-slate-700 bg-slate-800 px-3 py-1 text-slate-200 hover:bg-slate-700"
           >
             <i className="fa fa-arrow-left mr-1"></i> {t('header.back_home')}
           </button>
@@ -48,7 +52,7 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
 
         <button
           onClick={onReset}
-          className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200"
+          className="hidden min-h-9 rounded border border-slate-700 bg-slate-800 px-3 py-1 text-slate-200 hover:bg-slate-700 sm:block"
           title={t('header.reset')}
         >
           <i className="fa fa-rotate-right mr-1"></i> {t('header.reset')}

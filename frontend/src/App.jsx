@@ -42,7 +42,7 @@ export default function App() {
         onGoDemo={() => setView('demo')}
         onGoHome={() => setView('home')}
       />
-      <main className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
+      <main className="mx-auto w-full max-w-7xl flex-1 overflow-x-clip p-4 md:p-6">
         {view === 'home' ? (
           <HomePage snapshot={snapshot} onTryDemo={() => setView('demo')} />
         ) : (

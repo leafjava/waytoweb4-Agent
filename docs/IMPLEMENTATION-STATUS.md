@@ -331,3 +331,22 @@ Status: complete for credential-free scope.
 Validation: Python 144 passed; chain 4 passed; frontend production build and
 both production dependency audits passed. Offline preflight and evidence export
 passed; live variants failed closed without credentials, as required.
+
+### P9 — blockchain control-graph frontend
+
+Status: complete.
+
+- Reworked the hero around the actual authorization path: frozen Spec, human
+  approval, Passport, bounded execution and RedLine stop are connected in one
+  animated control graph rather than shown as generic crypto decoration.
+- Added the configured execution backend to the header and exposes AlphaFox
+  provider, external trader ID and execution status on the passport when those
+  fields exist.
+- The animation pauses while off-screen or in a background tab and becomes
+  static under `prefers-reduced-motion`.
+- Verified a 390 CSS-pixel viewport through browser device emulation: document
+  and body scroll widths both remain 390, with no horizontal overflow.
+
+Validation: combined Python suite 151 passed; chain 4 passed; frontend
+production build and both production dependency audits passed; `git diff
+--check` passed.
