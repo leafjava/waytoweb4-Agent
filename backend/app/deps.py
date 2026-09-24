@@ -7,6 +7,8 @@ hits the singleton; everything else is cheap.
 
 from __future__ import annotations
 
+import os
+
 from fastapi import Request
 
 from .config import settings
@@ -32,7 +34,18 @@ def get_passport_backend(request: Request):
             from .chain_bridge import ChainBridge
             from .passport_backends.node import NodePassportBackend
             mode = "live" if settings.passport_backend == "testnet" else "local"
-            _node_backend = NodePassportBackend(ChainBridge(mode=mode), label=settings.passport_backend)
+            # A first live mint may contain two sequential confirmations:
+            # contract deployment and Passport mint. Keep the bridge alive for
+            # both bounded receipt waits instead of reporting an uncertain
+            # outcome after the local 15-second development default.
+            timeout = 15.0
+            if mode == "live":
+                receipt_timeout = int(os.environ.get("TX_TIMEOUT_MS", "60000")) / 1000
+                timeout = receipt_timeout * 2 + 15
+            _node_backend = NodePassportBackend(
+                ChainBridge(mode=mode, timeout=timeout),
+                label=settings.passport_backend,
+            )
         return _node_backend
     from .passport_backends.mock import MockPassportBackend
     return MockPassportBackend()

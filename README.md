@@ -121,21 +121,24 @@ API-reported usage from a live run is acceptable as final evidence.
 
 ## On-chain tx hashes
 
-`PASSPORT_BACKEND=local` produces local-EVM transaction hashes. `PASSPORT_BACKEND=testnet` enables the real isolated public-testnet worker only when its explicit RPC, wallet and chain configuration is present. Offline simulation stores a `simulation_id` and leaves transaction fields null. No public-chain transaction was made by this integration work.
+`PASSPORT_BACKEND=local` produces local-EVM transaction hashes. `PASSPORT_BACKEND=testnet` enables the real isolated public-testnet worker only when its explicit RPC, wallet and chain configuration is present. Offline simulation stores a `simulation_id` and leaves transaction fields null. The authorized Sepolia field rehearsal below was executed on 2026-09-24.
 
 > Public testnet hashes must be pasted only after the authorized field rehearsal; never copy historical hashes into a new run.
 
 | Step | tx hash |
 |---|---|
-| Mint Passport (field live run) | pending field rehearsal |
-| Revoke on RedLine TRIP | pending field rehearsal |
+| Deploy StrategyPassport v2 | [`0xa61a…adea`](https://sepolia.etherscan.io/tx/0xa61aafa30896d6abc9c4d16f1c5e87c2519d4fd043584df68074d9957fb4adea) |
+| Mint Passport #1 | [`0xf482…4839`](https://sepolia.etherscan.io/tx/0xf482be1f0ee4bf233ed7ad48ef30020ff86713f296b661b5f3931a0b254e4839) |
+| Revoke on controlled stop | [`0x77bb…b64f`](https://sepolia.etherscan.io/tx/0x77bb51bab499e98ff5d71cc2f13f4c5359f017d23fa7f4864380a5a1afecb64f) |
+
+Contract: [`0x818A…87D`](https://sepolia.etherscan.io/address/0x818AF51261940013ba6c40aFa74937a3BFd1887D). Independent RPC readback returned version `2-cents`, the frozen spec hash, `humanConfirmed: true`, and final status `revoked`.
 
 ## Honest disclaimer: what is real and what is mock
 
 - **Kiln**: if `KILN_API_KEY` is set we call the real `gpt-oss-120b`
   endpoint. Without it the offline `MockKilnClient` is used. Both
   paths record tokens through the same `TokenLogger`.
-- **Passport**: offline mode never fabricates a tx hash. The local chain worker uses a temporary EVM and the v2 contract. The guarded testnet worker supports Kairos or Sepolia, but no public transaction was broadcast in this local pass.
+- **Passport**: offline mode never fabricates a tx hash. The local chain worker uses a temporary EVM and the v2 contract. The guarded testnet worker completed an authorized Sepolia deploy, mint and revoke with successful receipts and final contract readback.
 - **Engine**: the paper worker is a separate process with drawdown, expiry, policy and lease hard stops. It remains the default execution path.
 - **AlphaFox transport**: the optional adapter uses the official AlphaFox CLI and its eight catalog operations. An isolated Paper trader was created and auto-started only after authorization and human approval, then stopped with server readback confirming `runtime.state: stopped`. OAuth credentials stay in the OS keychain; mutations remain opt-in.
 - **Human gate**: a local camera preview plus an explicit confirmation button. No image is captured, uploaded or stored, and no face recognition or KYC is claimed. Approval time, method and session live in the persisted application passport and audit log; StrategyPassport v2 stores the frozen mandate confirmation but not those three metadata fields on-chain.

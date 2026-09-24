@@ -277,13 +277,13 @@ Status: code complete; live mutation requires final operator parameter approval.
 
 ### P6 — field acceptance
 
-Status: pending authorized credentials and a physical-camera rehearsal.
+Status: public-testnet acceptance complete; Kiln and physical-camera acceptance remain pending.
 
-- No real Kiln request or public-chain transaction was made during this pass.
+- A fresh Sepolia deployment, Passport mint and controlled-stop revoke were
+  confirmed and independently read back in P14.
 - Required live work is limited to a fresh `gpt-oss-120b` run with API usage,
-  a changed-condition rerun with stop evidence, at least one fresh public
-  testnet transaction/receipt/readback, physical camera permission checks, and
-  the final README/video/Deck evidence update.
+  a changed-condition rerun with stop evidence, physical camera permission
+  checks, and the final README/video/Deck evidence update.
 
 ### P7 — security and contest-readiness audit
 
@@ -308,9 +308,9 @@ Status: code-level audit complete; live acceptance remains pending.
   test/compile toolchain. Neither is loaded by the live worker; Ganache uses an
   in-memory provider and never listens on a socket in this project.
 
-Field blockers: a fresh live Kiln/gpt-oss-120b trace with API usage, a fresh
-public-testnet receipt/readback, physical-camera rehearsal, and final video/Deck
-artifacts. The reviewed AlphaFox Paper lifecycle is complete.
+Field blockers: a fresh live Kiln/gpt-oss-120b trace with API usage,
+physical-camera rehearsal, and final video/Deck artifacts. The reviewed
+AlphaFox Paper lifecycle and public-testnet Passport evidence are complete.
 
 ### P8 — field tooling and continuous verification
 
@@ -435,3 +435,31 @@ Status: complete.
 Validation: Python 163 passed; chain 4 passed; frontend production build and
 both production dependency audits passed; `git diff --check` passed. CI is
 recorded with the implementing commit.
+
+### P14 — authorized Sepolia Passport lifecycle
+
+Status: complete.
+
+- Generated a dedicated test-only wallet, verified Sepolia chain ID `11155111`
+  and funded it only with faucet ETH. Wallet secrets remain in the ignored local
+  evidence directory.
+- Added an explicit `--execute` field script and extended the live bridge
+  timeout to cover the sequential deployment and mint receipt waits.
+- Deployed StrategyPassport v2 at
+  `0x818AF51261940013ba6c40aFa74937a3BFd1887D`; receipt status was `1` at block
+  `11772196`.
+- Minted Passport #1 with the frozen intent hash
+  `0xde4368e0218eb3319d3d0fd49614d764a9b45b9f918654776ac32070a85dd85f`;
+  receipt status was `1` at block `11772197`.
+- Started the bounded local worker only after human approval, then stopped it.
+  The stop invalidated the one-use gate and revoked Passport #1; receipt status
+  was `1` at block `11772198`.
+- Independent RPC readback verified contract version `2-cents`, author, intent
+  hash, 50000-cent notional, 5000-cent max loss, human confirmation and final
+  `revoked` status. No mainnet wallet or real-value account was used.
+
+Transactions:
+
+- deploy: `0xa61aafa30896d6abc9c4d16f1c5e87c2519d4fd043584df68074d9957fb4adea`
+- mint: `0xf482be1f0ee4bf233ed7ad48ef30020ff86713f296b661b5f3931a0b254e4839`
+- revoke: `0x77bb51bab499e98ff5d71cc2f13f4c5359f017d23fa7f4864380a5a1afecb64f`
