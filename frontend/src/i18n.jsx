@@ -1,4 +1,4 @@
-// Tiny i18n: a flat key namespace, two locales (en / ko), localStorage
+// Tiny i18n: a flat key namespace, three locales (en / zh / ko), localStorage
 // persistence. Intentionally not using react-i18next -- 80 keys do not
 // justify a dependency.
 //
@@ -21,6 +21,7 @@ const STRINGS = {
     'header.try_demo': 'Try the Demo',
     'header.back_home': '← Back to Home',
     'header.reset': 'Reset',
+    'header.lang.zh': '中文',
     'header.lang.ko': '한국어',
     'header.lang.en': 'EN',
     'header.execution': 'Execution',
@@ -295,11 +296,185 @@ const STRINGS = {
     'acceptance.footer': 'Each row links to the file or module that satisfies the check. Verify it with',
   },
 
+  zh: {
+    // ---- Header -------------------------------------------------------
+    'header.try_demo': '进入 Demo',
+    'header.back_home': '← 返回首页',
+    'header.reset': '重置',
+    'header.lang.zh': '中文',
+    'header.lang.en': 'English',
+    'header.lang.ko': '한국어',
+    'header.execution': '执行',
+    'header.switch_language': '切换语言',
+    'common.reset_failed': '重置失败',
+
+    // ---- Hero ---------------------------------------------------------
+    'hero.eyebrow': 'GWDC 2026 韩国站 · FuriosaAI × Bricksum · Challenge A + B',
+    'hero.title.line1': '跟单委托,AI 来锁,',
+    'hero.title.line2': '你来开闸。',
+    'hero.product': '自然语言 → Spec → 人脸闸 → 模拟盘跟单 → 链上护照 → RedLine 熔断。',
+    'hero.cta': '进入 Demo',
+    'hero.prd': 'PRD / 任务书',
+
+    // ---- Primitives grid ----------------------------------------------
+    'primitives.title': '四个核心组件',
+    'prim.follow.title': 'Follow Agent',
+    'prim.follow.tag': 'Kiln · gpt-oss-120b',
+    'prim.follow.body': '自然语言 → 锁死的 Spec。1–2 轮澄清;JSON-only 输出;后端用 Pydantic 再校验一次。模型锁定后看不到人脸和限亏。',
+    'prim.face.title': '人脸闸',
+    'prim.face.tag': '人参与',
+    'prim.face.body': '人脸闸是唯一把 faceVerified 翻成 true 的路径。Agent 没有 API 能改。模型永远不能决定开跑。',
+    'prim.passport.title': '策略护照',
+    'prim.passport.tag': 'keccak256 · mock | sepolia',
+    'prim.passport.body': 'Spec 用 keccak256 哈希。Mint 返回一条 0x… 交易哈希;Revoke 返回第二条不同的 0x… 哈希。后端永远不让模型放宽限亏。',
+    'prim.redline.title': 'RedLine Agent',
+    'prim.redline.tag': '独立进程 · 不看收益',
+    'prim.redline.body': '硬闸先判(DD_LIMIT,模型无权覆盖)。LLM 分类器只打分结构冲击(海力士 / 杠杆 / 盘前异常)。',
+
+    // ---- Judge checklist ----------------------------------------------
+    'judge.title': '评委验收清单',
+    'judge.user_need': '用户需求',
+    'judge.user_need.body': '散户 / 评委想用自然语言委托跟单,但担心 Agent 代客后无法切断。',
+    'judge.agent_vs_code': 'Agent vs Code',
+    'judge.agent_vs_code.body': 'Agent 负责:澄清、Spec 产出、事件分类。Code 负责:字段校验、人脸闸、起停、铸烧护照、限亏硬闸。',
+    'judge.kiln': 'Kiln gpt-oss-120b',
+    'judge.kiln.body': 'Follow 多轮澄清 + RedLine 事件分类。KILN_API_KEY 未设时自动 fallback 到离线 Mock。',
+    'judge.tokens': 'Token 按流程分桶',
+    'judge.tokens.body': 'clarify / spec_emit / redline_hold / redline_trip / demo_inject —— 永远不报总数。',
+    'judge.energy': '能耗估算',
+    'judge.energy.body': '180W NPU 假设;energy_Wh = 180 × latency / 3600。README §9 已写明。',
+    'judge.ontx': '≥1 笔链上交易',
+    'judge.ontx.body': 'Mint 返回 keccak256 交易哈希;Revoke 返回第二条不同的哈希。诚实声明:未接 Sepolia RPC 与部署合约前不发真实交易。',
+    'judge.twice': '两次条件对照',
+    'judge.twice.body': 'Run 1(500U / 50 亏)→ 引擎到限停。Run 2(小额度 或注入海力士)→ 更早停。两次都留完整事件日志。',
+    'judge.overshoot': '越权即停',
+    'judge.overshoot.body': 'mode=grid_bot、paper=False、maxLoss>notional、过期、禁 Leader —— 全部在校验阶段拒绝,不调引擎。',
+    'judge.audit': '第三方可审计',
+    'judge.audit.body': '仅凭护照 + 日志,第三方就能回答:跟谁、多少钱、是否人脸、为何停。每次判决都带 reason_codes + source。',
+
+    // ---- Spec simulator ----------------------------------------------
+    'sim.title': 'Spec 模拟器',
+    'sim.notional': '本金 (USD)',
+    'sim.maxloss': '限亏 (USD)',
+    'sim.expiry': '到期',
+    'sim.venue': '场所',
+    'sim.mode': '类型',
+    'sim.expiry_val': '+{hours} 小时',
+    'sim.venue_val': '模拟盘',
+    'sim.mode_val': '跟单',
+    'sim.invalid': '限亏不能超过本金 —— 后端会拒绝这个 Spec。',
+    'sim.outcome.no_events': '无任何事件',
+    'sim.outcome.no_events.note': '{sec} 秒后引擎画线到 maxLoss=$${maxLoss};硬闸触发;模型无发言权',
+    'sim.outcome.hynix': '注入海力士事件包',
+    'sim.outcome.hynix.note': 'LLM 分类器评估结构冲击;最差单笔跌幅 {pct}%',
+    'sim.outcome.dash': '—',
+    'sim.frozen_attr': 'model_may_override = false',
+
+    // ---- Security strip ----------------------------------------------
+    'sec.title': '安全架构',
+    'sec.1.title': '交易前',
+    'sec.1.body': '无人脸不开跑。Spec 字段白名单(extra="forbid")。本金 ≤ 10k。限亏 ≤ 本金。到期 > 当前。',
+    'sec.2.title': '推理中',
+    'sec.2.body': 'Kiln 输出 JSON;后端用 Pydantic 再校验。任何自由文本字段都不透传到下游。',
+    'sec.3.title': '交易中',
+    'sec.3.body': '只跑模拟盘(venue="paper")。代码硬闸:drawdown ≥ maxLoss 即无条件 TRIP。RedLine 独立进程。',
+    'sec.4.title': '事后(审计)',
+    'sec.4.body': '每次 RedLine 判决都产结构化 JSON,带 reason_codes + evidence + source。第三方仅凭护照 + 日志即可复���。',
+    'sec.5.title': 'AI 不能做的事',
+    'sec.5.body': '改 maxLoss。关 RedLine。自己开人脸闸。看 PnL 给 TRIP"放行"。塞 schema 禁止的字段。',
+
+    // ---- Live data panel ---------------------------------------------
+    'live.title': '实时证据',
+    'live.polled': '从',
+    'live.polled.every': '每 1.5 秒轮询',
+    'live.latest': '最新护照',
+    'live.no_passport': '还没有护照。打开 Demo,锁一个 Spec,mint 一本。',
+    'live.id': 'ID',
+    'live.spec_hash': 'Spec 哈希',
+    'live.mint_tx': 'Mint 交易',
+    'live.revoke_tx': 'Revoke 交易',
+    'live.status': '状态',
+    'live.token_table': 'Token / 能耗表',
+    'live.empty_table': '(还没有 Kiln 调用 —— 打开 Demo 跑一个 Spec 即可填上)',
+    'live.audit_count': '审计事件数:',
+    'live.footer_note': '同样的内容也可以从',
+    'live.footer_note.tail': '拿到。提交前贴进 README §9。',
+
+    // ---- Home page CTA -----------------------------------------------
+    'home.cta': '进入 Demo',
+    'home.cta_sub': '3 分钟走完 · PRD §7',
+
+    // ---- Demo view: ChatPanel ----------------------------------------
+    'chat.empty': '用一句话描述你想怎么跟单。例:"跟 leader-demo-001,500 USD,亏 50 停,48 小时"。',
+    'chat.user_prefix': '用户>',
+    'chat.agent_prefix': 'Agent>',
+    'chat.placeholder': '输入跟单意图...',
+    'chat.send': '发送',
+    'chat.locked_note': 'Spec 已锁定。',
+
+    // ---- Demo view: SpecCard -----------------------------------------
+    'spec.title': 'Spec',
+    'spec.locked': '已锁定',
+    'spec.empty': '还没有 Spec。在聊天里发一句话,把字段填齐。',
+    'spec.leader': 'leader',
+    'spec.notional': '本金',
+    'spec.maxloss': '限亏',
+    'spec.expiry': '到期',
+    'spec.venue': '场所',
+    'spec.paper': 'paper',
+    'spec.lock_btn': '锁定 Spec 并铸护照',
+    'spec.locked_btn': 'Spec 已铸入护照',
+
+    // ---- Demo view: PassportCard -------------------------------------
+    'pass.title': '护照',
+    'pass.empty': '还没有护照。先锁一个 Spec。',
+    'pass.id': 'ID',
+    'pass.spec_hash': 'Spec 哈希',
+    'pass.mint_tx': 'Mint 交易',
+    'pass.revoke_tx': 'Revoke 交易',
+    'pass.face': '人脸',
+    'pass.face_verified': '已验证',
+    'pass.face_not_verified': '未验证',
+    'pass.verify_face': '人脸验证',
+    'pass.face_ok': '人脸已通过',
+    'pass.start_engine': '启动引擎',
+    'pass.engine_running': '引擎运行中',
+    'pass.copy': '复制',
+    'pass.copied': '已复制',
+
+    // ---- Demo view: RedLinePanel -------------------------------------
+    'red.title': 'RedLine',
+    'red.running': '运行中',
+    'red.drawdown': '回撤',
+    'red.verdict': '判决',
+    'red.inject_hynix': '注入海力士',
+    'red.trigger': '触发 RedLine',
+
+    // ---- VerdictBadge ------------------------------------------------
+    'verdict.no_verdict': '暂无判决',
+    'verdict.via': '经',
+
+    // ---- EventLog ----------------------------------------------------
+    'events.title': '最近事件',
+    'events.empty': '暂无事件',
+
+    // ---- DrawdownGauge -----------------------------------------------
+    'gauge.drawdown': '回撤',
+
+    // ---- Demo: token strip -------------------------------------------
+    'tokens.title': 'Token / 能耗报告',
+    'tokens.empty': '—',
+
+    // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
+    'demo.cond.title': '控制对照运行 (PRD §5)',
+    'demo.cond.empty': '暂无两轮对照报告。在项目根目录运行 `python scripts/two_runs_demo.py` 以填充此面板。',
+  },
   ko: {
     // ---- Header -------------------------------------------------------
     'header.try_demo': '데모 체험',
     'header.back_home': '← 홈으로',
     'header.reset': '초기화',
+    'header.lang.zh': '中文',
     'header.lang.ko': '한국어',
     'header.lang.en': 'EN',
     'header.execution': '실행',
@@ -603,11 +778,14 @@ export function I18nProvider({ children }) {
   }, [locale])
 
   function setLocale(next) {
-    if (next !== 'en' && next !== 'ko') return
+    if (!LOCALES.some((option) => option.code === next)) return
     setLocaleState(next)
   }
   function toggle() {
-    setLocaleState((cur) => (cur === 'en' ? 'ko' : 'en'))
+    setLocaleState((current) => {
+      const index = LOCALES.findIndex((option) => option.code === current)
+      return LOCALES[(index + 1) % LOCALES.length].code
+    })
   }
   function t(key, values = {}) {
     const message = STRINGS[locale]?.[key] ?? STRINGS.en?.[key] ?? key
@@ -629,5 +807,6 @@ export function useI18n() {
 
 export const LOCALES = [
   { code: 'en', label: 'English' },
+  { code: 'zh', label: '中文' },
   { code: 'ko', label: '한국어' },
 ]

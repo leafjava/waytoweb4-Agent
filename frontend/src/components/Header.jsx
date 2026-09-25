@@ -1,8 +1,8 @@
 import { apiPost } from '../api'
-import { useI18n } from '../i18n.jsx'
+import { useI18n, LOCALES } from '../i18n.jsx'
 
 export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
-  const { locale, toggle, t } = useI18n()
+  const { locale, setLocale, t } = useI18n()
 
   return (
     <header className="site-header sticky top-0 z-40 flex min-w-0 items-center justify-center gap-2 overflow-hidden px-4 py-3 md:gap-3 md:px-8">
@@ -24,16 +24,28 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
           <Pill label={t('header.execution')} value={health?.execution_backend ?? '—'} />
         </div>
 
-        <button
-          onClick={toggle}
-          className="nav-control flex min-h-9 items-center gap-1.5 px-3 py-1 text-slate-700"
+        <div
+          className="nav-control flex min-h-9 items-center gap-1 px-1.5 py-1 text-slate-700"
           title={t('header.switch_language')}
         >
           <i className="fa fa-globe"></i>
-          <span className="font-mono">
-            {locale === 'en' ? t('header.lang.ko') : t('header.lang.en')}
-          </span>
-        </button>
+          {LOCALES.map((option) => (
+            <button
+              key={option.code}
+              type="button"
+              aria-pressed={locale === option.code}
+              onClick={() => setLocale(option.code)}
+              className={`rounded-full px-2 py-1 font-mono transition-colors ${
+                locale === option.code
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+              title={`Switch to ${option.label}`}
+            >
+              {t(`header.lang.${option.code}`)}
+            </button>
+          ))}
+        </div>
 
         <button
           onClick={onReset}
