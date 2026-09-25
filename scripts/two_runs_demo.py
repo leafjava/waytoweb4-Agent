@@ -4,16 +4,13 @@
 Run 1: 500 USD notional / 50 loss cap  -> rule-gate trips at limit.
 Run 2: 100 USD notional / 10 loss cap  -> same gate, tighter budget.
 
-Both runs use the existing /api/* endpoints (no backend changes).
+Both runs use the current prepare -> confirm -> mint -> human gate -> start
+API lifecycle.
 Output: prints Run1/Run2 summary to stdout and writes
 `runs/two_runs_*.json` for the frontend ConditionalRunPanel to pick up.
 
-NOTE on the offline MockKilnClient: the demo's MockKilnClient always
-returns a single canned Spec (notional=500, maxLoss=50) regardless of
-user input. That's deliberate for the demo flow but it would make both
-runs identical. So Run 2 sends a *constructed* Spec dict directly to
-/api/passport/mint -- the backend still re-validates it with
-CopyTradingSpec.model_validate, so the security story is unchanged.
+The script constructs both Specs directly so the controlled variable is
+explicit. The backend validates and freezes each Spec before confirmation.
 
 Usage:
     python scripts/two_runs_demo.py [--base http://localhost:8000]
@@ -25,6 +22,7 @@ import argparse
 import json
 import sys
 import time
+from uuid import uuid4
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -69,11 +67,28 @@ def _run_one(client, label, notional, max_loss, tick_amount):
         "paper": True,
     }
 
-    # 3. mint (the backend re-validates this with CopyTradingSpec)
-    minted = _post(client, "/api/passport/mint", {"spec": spec})
+    # 3. Prepare, manually confirm the frozen hash, then mint/authorize.
+    prefix = str(uuid4())
+    prepared = _post(client, "/api/passport/prepare", {
+        "spec": spec,
+        "request_id": f"{prefix}-prepare",
+    })
+    _post(client, "/api/passport/confirm", {
+        "passport_id": prepared["passport_id"],
+        "spec_hash": prepared["spec_hash"],
+        "request_id": f"{prefix}-confirm",
+    })
+    minted = _post(client, "/api/passport/mint", {
+        "passport_id": prepared["passport_id"],
+        "request_id": f"{prefix}-mint",
+    })
 
     # 4. face verify
-    _post(client, "/api/face/verify", {"passport_id": minted["passport_id"]})
+    _post(client, "/api/face/verify", {
+        "passport_id": minted["passport_id"],
+        "method": "button",
+        "session_id": str(uuid4()),
+    })
 
     # 5. start engine
     _post(client, "/api/engine/start", {"passport_id": minted["passport_id"]})
@@ -102,6 +117,7 @@ def _run_one(client, label, notional, max_loss, tick_amount):
         "spec": spec,
         "passport_id": minted["passport_id"],
         "mint_tx_hash": minted["tx_hash"],
+        "simulation_id": p.get("simulation_id"),
         "drawdown_usd": p["drawdown_usd"],
         "max_loss_usd": p["max_loss_usd"],
         "status": p["status"],
@@ -148,6 +164,9 @@ def main():
         },
     }
     out_file.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    (RUNS_DIR / "latest.json").write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
     print(f"\nSaved: {out_file}")
 
 

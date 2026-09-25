@@ -32,6 +32,13 @@ def conflict(detail: str) -> HTTPException:
     return HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
 
 
+def coded_conflict(code: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail={"code": code, "message": message},
+    )
+
+
 def map_agent_error(exc: Exception) -> HTTPException:
     """Best-effort mapping for the agent's exception hierarchy."""
     if isinstance(exc, SpecValidationError):
@@ -42,7 +49,12 @@ def map_agent_error(exc: Exception) -> HTTPException:
         return unauthorized(str(exc))
     if isinstance(exc, KilnUnavailableError):
         return HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc))
-    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+    # Do not reflect provider response bodies, filesystem paths, or other
+    # implementation details to an unauthenticated client.
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail="internal agent error",
+    )
 
 
 __all__ = [
@@ -50,5 +62,6 @@ __all__ = [
     "unauthorized",
     "not_found",
     "conflict",
+    "coded_conflict",
     "map_agent_error",
 ]

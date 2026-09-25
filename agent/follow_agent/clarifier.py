@@ -43,7 +43,7 @@ class ClarificationQuestion:
     """One round of clarification.
 
     `field` is the schema field we're asking about. `question` is the
-    Chinese / English sentence to show the user. `attempt` is the
+    user-facing sentence to show the user. `attempt` is the
     1-based round number, useful for the frontend to show "round 2 of
     2" progress.
     """
@@ -55,10 +55,11 @@ class ClarificationQuestion:
 
 # Cheap heuristics for parsing the user's answer. We use these so the
 # clarifier can do "still missing?" checks without round-tripping to
-# the LLM for every reply.
-_AMOUNT_RE = re.compile(r"(\d{1,6}(?:\.\d+)?)\s*(u|usd|美元|元|\$)?", re.IGNORECASE)
+# the LLM for every reply. Amount/loss/expiry matchers accept English,
+# Korean and Chinese phrasing (Demo Day runs in EN/KO).
+_AMOUNT_RE = re.compile(r"(\d{1,6}(?:\.\d+)?)\s*(u|usd|美元|元|달러|\$)?", re.IGNORECASE)
 _LEADER_RE = re.compile(r"\bleader[-_a-zA-Z0-9]{1,32}\b")
-_LOSS_RE = re.compile(r"(亏|止损|loss)[^\d]{0,8}(\d{1,6}(?:\.\d+)?)", re.IGNORECASE)
+_LOSS_RE = re.compile(r"(亏|止损|loss|손실)[^\d]{0,8}(\d{1,6}(?:\.\d+)?)", re.IGNORECASE)
 
 
 def _looks_like_answer(field: str, text: str) -> bool:
@@ -71,7 +72,7 @@ def _looks_like_answer(field: str, text: str) -> bool:
         return bool(_AMOUNT_RE.search(t))
     if field == "expiry":
         # Accept anything that mentions a duration or a date.
-        return bool(re.search(r"(\d+\s*(h|hour|d|day|天|小时|分钟|分))|(20\d{2}-)", t, re.IGNORECASE))
+        return bool(re.search(r"(\d+\s*(h|hour|d|day|天|小时|分钟|分|시간|분))|(20\d{2}-)", t, re.IGNORECASE))
     return True
 
 
@@ -96,11 +97,14 @@ class Clarifier:
         """Return the first question for the user, if any."""
         missing = self._missing_fields(user_text)
         if not missing:
-            return ClarificationQuestion(field="", question="字段都齐了，可以出 Spec。", attempt=1)
+            return ClarificationQuestion(
+                field="", question="All required fields are present — ready to emit the Spec.", attempt=1
+            )
         first = missing[0]
         prompt = (
-            f"用户说：{user_text!r}\n"
-            f"还缺字段：{first}（{', '.join(missing)}）。请用中文问 1 个聚焦的问题。"
+            f"The user said: {user_text!r}\n"
+            f"Missing field: {first} (still missing: {', '.join(missing)}). "
+            "Ask ONE focused question in English."
         )
         reply = self.client.chat(
             messages=[
@@ -129,8 +133,8 @@ class Clarifier:
             # "please answer the previous question" error.
             return None
         prompt = (
-            f"用户补充说：{user_text!r}\n"
-            f"现在缺：{next_field}。请用中文问 1 个聚焦的问题。"
+            f"The user added: {user_text!r}\n"
+            f"Now missing: {next_field}. Ask ONE focused question in English."
         )
         reply = self.client.chat(
             messages=[

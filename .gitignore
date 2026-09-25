@@ -28,10 +28,15 @@ node_modules/
 frontend/dist/
 .vite/
 
-# Backend runtime data (mock ledger — recreated by the demo)
-/backend/var/passports.json
+# Backend runtime data (ledger, policy and evidence — recreated by the demo)
+/backend/var/
+/artifacts/
+/frontend/public/runs/*.json
 
 # Coverage / build artifacts
 .coverage
 htmlcov/
 *.log
+
+# Local secrets (Kiln key, testnet private key). NEVER commit.
+.env

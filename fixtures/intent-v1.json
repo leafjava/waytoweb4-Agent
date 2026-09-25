@@ -1,0 +1,14 @@
+{
+  "spec": {
+    "mode": "copy",
+    "leaderId": "leader-demo-001",
+    "venue": "paper",
+    "notionalUsd": 500,
+    "maxLossUsd": 50,
+    "expiry": "2099-01-01T00:00:00+00:00",
+    "faceVerified": false,
+    "paper": true
+  },
+  "canonical": "{\"expiryUnix\":\"4070908800\",\"leaderId\":\"leader-demo-001\",\"maxLossCents\":\"5000\",\"mode\":\"copy\",\"notionalCents\":\"50000\",\"paper\":true,\"venue\":\"paper\",\"version\":\"intent-keccak-v1\"}",
+  "hash": "0x105d06a9adcbb049b6ed3b41cdb72da5e0506743d3087f733df54f3fc6a65b80"
+}

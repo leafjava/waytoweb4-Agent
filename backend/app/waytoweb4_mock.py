@@ -31,11 +31,9 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from .audit import make_event
 from .config import settings
 from .deps import get_passport_backend, get_state
-from .engine import start_engine, stop_engine, tick_drawdown
-from .hash import spec_hash
+from .engine import EngineStartError, start_engine, stop_engine
 from .state import PASS_ACTIVE, PASS_REVOKED, PASS_STOPPED, AppState
 
 
@@ -58,6 +56,7 @@ def _load_leaders() -> list[dict[str, Any]]:
 
 
 class StartPaperRequest(BaseModel):
+    passport_id: str = Field(..., description="authorized application passport id")
     leader_id: str = Field(..., description="waytoweb4 leader id")
     notional_usd: float = Field(..., gt=0)
     max_loss_usd: float = Field(..., gt=0)
@@ -101,63 +100,32 @@ async def start_paper(
 ):
     """Start a paper copy-trade run.
 
-    Internally this:
-      1. builds a frozen CopyTradingSpec (and re-validates server-side)
-      2. mints a Strategy Passport via the configured backend
-      3. flips faceVerified (mock face gate)
-      4. starts the deterministic engine
-
-    The returned `paper_id` is the passport_id; downstream endpoints
-    accept that as the document key.
+    This is an execution adapter, not an authorization shortcut. The caller
+    must supply an already confirmed, minted and human-approved passport. The
+    frozen execution fields are compared with that passport before start.
     """
     if req.venue != "paper":
         raise HTTPException(status_code=422, detail="venue must be 'paper'")
     if req.max_loss_usd > req.notional_usd:
         raise HTTPException(status_code=422, detail="max_loss_usd cannot exceed notional_usd")
 
-    # Build the locked Spec server-side; reject any value the caller
-    # might inject that the agent schema forbids.
-    spec_dict = {
-        "mode": "copy",
-        "leaderId": req.leader_id,
-        "venue": "paper",
-        "notionalUsd": req.notional_usd,
-        "maxLossUsd": req.max_loss_usd,
-        "expiry": req.expiry_iso,
-        "faceVerified": False,
-        "paper": True,
-    }
-
-    # Re-validate through the agent schema (defence in depth).
-    from agent.follow_agent.spec_schema import CopyTradingSpec
-    from agent.shared.exceptions import SpecValidationError
-
+    rec = state.passports.get(req.passport_id)
+    if rec is None:
+        raise HTTPException(status_code=404, detail=f"passport {req.passport_id} not found")
+    frozen = rec.spec
+    requested = (req.leader_id, req.notional_usd, req.max_loss_usd, req.expiry_iso)
+    expected = (
+        frozen.get("leaderId"),
+        float(frozen.get("notionalUsd", 0)),
+        float(frozen.get("maxLossUsd", 0)),
+        rec.expiry,
+    )
+    if requested != expected:
+        raise HTTPException(status_code=409, detail="execution request does not match frozen passport")
     try:
-        CopyTradingSpec.model_validate(spec_dict)
-    except SpecValidationError as e:
-        raise HTTPException(status_code=422, detail=str(e))
-
-    sh = spec_hash(spec_dict)
-    rec = backend.mint(spec_dict, sh, state)
-    state.append_event(make_event(
-        "mint", rec.passport_id,
-        {
-            "tx_hash": rec.tx_mint_hash,
-            "spec_hash": rec.spec_hash,
-            "leader_id": rec.leader_id,
-            "notional_usd": rec.notional_usd,
-            "fee_bps": rec.fee_bps,
-            "expiry": rec.expiry,
-            "backend": backend.label,
-            "via": "waytoweb4-mock /v1/paper/start",
-        },
-    ))
-
-    # Mock face gate (matches routers/face.py behaviour).
-    rec.face_verified = True
-    state.upsert_passport(rec)
-
-    await start_engine(rec.passport_id, state, settings.trip_seconds)
+        await start_engine(rec.passport_id, state, settings.trip_seconds, backend)
+    except EngineStartError as exc:
+        raise HTTPException(status_code=409, detail={"code": exc.code, "message": str(exc)})
     return {
         "paper_id": rec.passport_id,
         "status": PASS_ACTIVE,
@@ -203,20 +171,15 @@ async def stop_paper(
     if rec is None:
         raise HTTPException(status_code=404, detail=f"paper {paper_id} not found")
 
-    await stop_engine(paper_id, state)
-
-    if req.reason == "kill":
-        try:
-            new_rec = backend.revoke(paper_id, state)
-        except (KeyError, ValueError) as e:
-            raise HTTPException(status_code=409, detail=str(e))
-        state.append_event(make_event(
-            "revoke", paper_id,
-            {"tx_hash": new_rec.tx_revoke_hash, "trigger": "waytoweb4-mock kill"},
-        ))
-        return {"paper_id": paper_id, "status": PASS_REVOKED, "revoke_tx_hash": new_rec.tx_revoke_hash}
-
-    return {"paper_id": paper_id, "status": PASS_STOPPED}
+    reason_code = "REDLINE_KILL" if req.reason == "kill" else "USER_STOP"
+    rec = await stop_engine(paper_id, state, backend, reason_code)
+    return {
+        "paper_id": paper_id,
+        "status": PASS_REVOKED if req.reason == "kill" else PASS_STOPPED,
+        "passport_status": rec.authorization_status,
+        "revoke_tx_hash": rec.tx_revoke_hash,
+        "simulation_id": rec.simulation_id,
+    }
 
 
 __all__ = ["router", "_load_leaders"]

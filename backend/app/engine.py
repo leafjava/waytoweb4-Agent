@@ -1,154 +1,331 @@
-"""Mock copy-trading engine.
-
-The real waytoweb4 service would stream market data and execute
-paper trades; we don't have it on the demo machine, so we model it
-as a deterministic state machine:
-
-    drawdown_usd(t) = maxLossUsd * (t - t0) / trip_seconds
-
-This means a fresh engine ticks up from 0 to `maxLossUsd` exactly
-over `trip_seconds` seconds. At `drawdown_usd >= maxLossUsd`, the
-RedLine rule gate would TRIP. We let the engine loop run; the
-trigger of TRIP is the user clicking "Inject Hynix" (immediate) or
-the demo running to completion naturally.
-
-The loop is one asyncio.Task per passport; cancellation is clean
-via `task.cancel()`. We expose `tick(amount)` as a synchronous
-advance hook so the demo runner can skip the wait.
-"""
+"""Controller for credential-free, fail-closed paper worker subprocesses."""
 
 from __future__ import annotations
 
 import asyncio
+import json
+import os
+import sys
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
-from agent.redline_agent import HynixMockClassifier, RedLineJudge
+from .authorization import AuthorizationError, authorization_service
+from .audit import make_event
+from .execution_contract import build_start_command
+from .intent import is_expired
+from .policy import write_policy
+from .state import AppState, PassportRecord
 
-from .state import (
-    PASS_ACTIVE,
-    PASS_PENDING_FACE,
-    PASS_STOPPED,
-    AppState,
-    PassportRecord,
-)
-
-
-_JUDGE = RedLineJudge(classifier=HynixMockClassifier())
-
-
-# Per-passport task registry. The module-level dict makes it easy to
-# cancel from any router without going through a class.
-_TASKS: dict[str, asyncio.Task] = {}
+_WORKERS: dict[str, "PaperWorkerController"] = {}
+# Serializes the whole start/stop transition per passport. A stop request sets
+# its fail-safe flag before waiting for this lock, so an in-flight start sees
+# the request at its next await boundary and can never overwrite it with a
+# later "running" state.
+_START_LOCKS: dict[str, asyncio.Lock] = {}
 
 
-async def _engine_loop(passport_id: str, state: AppState, trip_seconds: int) -> None:
-    """Tick the engine once a second until cancelled or status flips.
-
-    Each tick updates `drawdown_usd` deterministically. We do NOT call
-    RedLine here -- the engine advances drawdown regardless; RedLine
-    is invoked explicitly via /api/redline/judge or /inject/hynix so
-    the demo can show the events explicitly.
-    """
-    try:
-        while True:
-            async with state:
-                    rec = state.passports.get(passport_id)
-                    if rec is None or rec.status != PASS_ACTIVE or not rec.engine_running:
-                        return
-                    started = datetime.fromisoformat(rec.engine_started_at) if rec.engine_started_at else datetime.now(timezone.utc)
-                    elapsed = (datetime.now(timezone.utc) - started).total_seconds()
-                    ratio = min(1.0, max(0.0, elapsed / max(trip_seconds, 1)))
-                    rec.drawdown_usd = float(rec.spec["maxLossUsd"]) * ratio
-                    state.upsert_passport(rec)
-            await asyncio.sleep(1.0)
-    except asyncio.CancelledError:
-        return
+class EngineStartError(ValueError):
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
 
 
-async def start_engine(passport_id: str, state: AppState, trip_seconds: int) -> PassportRecord:
-    """Start the engine task for one passport. Idempotent.
+class PaperWorkerController:
+    def __init__(self, passport_id: str, state: AppState, backend, execution_adapter=None):
+        self.passport_id = passport_id
+        self.state = state
+        self.backend = backend
+        self.process: asyncio.subprocess.Process | None = None
+        self.reader_task: asyncio.Task | None = None
+        self.heartbeat_task: asyncio.Task | None = None
+        self.ready = asyncio.Event()
+        self.stopped = asyncio.Event()
+        self.stopping = asyncio.Event()
+        self.execution_adapter = execution_adapter
+        self.external_stop_attempted = False
+        self.external_stop_succeeded = False
+        self.external_stop_failed = False
 
-    Async so we can `asyncio.create_task` inside the running loop.
-    """
+    async def start(self, rec: PassportRecord):
+        policy_path = self.state.ledger_path.parent / "policy.json"
+        if not policy_path.exists():
+            write_policy(policy_path, 1, [rec.leader_id])
+        allowed = ("PATH", "SYSTEMROOT", "WINDIR", "TEMP", "TMP", "PYTHONPATH")
+        env = {k: os.environ[k] for k in allowed if k in os.environ}
+        self.process = await asyncio.create_subprocess_exec(
+            sys.executable, "-m", "backend.app.paper_worker_process",
+            stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE, env=env,
+        )
+        self.reader_task = asyncio.create_task(self._read())
+        command = build_start_command(rec, str(policy_path))
+        await self._send({"op": "init", **command.model_dump(mode="json")})
+        try:
+            await asyncio.wait_for(self.ready.wait(), 2)
+        except TimeoutError as exc:
+            await self.force_terminate()
+            raise RuntimeError("paper worker did not become ready") from exc
+        self.heartbeat_task = asyncio.create_task(self._heartbeat())
+
+    async def _send(self, value: dict):
+        if not self.process or self.process.returncode is not None or not self.process.stdin:
+            raise RuntimeError("paper worker is unavailable")
+        self.process.stdin.write((json.dumps(value, separators=(",", ":")) + "\n").encode())
+        await self.process.stdin.drain()
+
+    async def _heartbeat(self):
+        try:
+            while not self.stopped.is_set():
+                await self._send({"op": "heartbeat"})
+                await asyncio.sleep(0.5)
+        except Exception:
+            if self.stopping.is_set() or self.stopped.is_set():
+                return
+            await self._record_stop("CONTROLLER_HEARTBEAT_FAILED", failed=True)
+
+    async def _read(self):
+        assert self.process and self.process.stdout
+        try:
+            while line := await self.process.stdout.readline():
+                event = json.loads(line)
+                if event.get("kind") == "ready": self.ready.set()
+                elif event.get("kind") == "tick": await self._record_tick(float(event["drawdown_usd"]))
+                elif event.get("kind") == "stopped":
+                    await self._record_stop(event.get("reason", "WORKER_STOPPED"), drawdown=event.get("drawdown_usd"))
+                    break
+        except Exception:
+            await self._record_stop("WORKER_PROTOCOL_ERROR", failed=True)
+        finally:
+            self.stopped.set()
+
+    async def _record_tick(self, amount: float):
+        async with self.state._lock:
+            rec = self.state.passports.get(self.passport_id)
+            if rec:
+                rec.drawdown_usd = amount
+                self.state._save_locked()
+
+    async def _record_stop(self, reason: str, drawdown=None, failed=False):
+        rec = self.state.passports.get(self.passport_id)
+        if (
+            self.execution_adapter
+            and rec
+            and rec.external_execution_id
+            and not self.external_stop_attempted
+        ):
+            self.external_stop_attempted = True
+            try:
+                await self.execution_adapter.stop(rec.external_execution_id)
+                self.external_stop_succeeded = True
+                rec.external_execution_status = "stopped"
+            except Exception:  # noqa: BLE001 - remote uncertainty must fail closed.
+                self.external_stop_failed = True
+                rec.external_execution_status = "uncertain"
+                failed = True
+        should_log = False
+        async with self.state._lock:
+            rec = self.state.passports.get(self.passport_id)
+            if rec:
+                should_log = rec.engine_running or rec.engine_status not in {"stopped", "stop_failed"}
+                if drawdown is not None: rec.drawdown_usd = float(drawdown)
+                rec.stop_requested = True
+                rec.engine_running = False
+                rec.engine_status = "stop_failed" if failed else "stopped"
+                if rec.authorization_status not in {"revoked", "uncertain"}:
+                    rec.status = rec.engine_status
+                rec.stop_reason = reason
+                self.state._save_locked()
+        try:
+            await authorization_service.revoke(self.state, self.passport_id, self.backend, reason)
+        except (AuthorizationError, KeyError):
+            # The authorization service has already persisted an uncertain
+            # outcome. The worker must remain stopped even when chain status
+            # cannot be confirmed.
+            pass
+        if should_log:
+            self.state.append_event(make_event(
+                "engine_stop", self.passport_id,
+                {"reason": reason, "drawdown_usd": drawdown, "failed": failed},
+            ))
+
+    async def tick(self, amount: float):
+        await self._send({"op": "tick", "amount": amount})
+        for _ in range(20):
+            await asyncio.sleep(0.02)
+            rec = self.state.passports[self.passport_id]
+            if rec.drawdown_usd == amount or rec.engine_status != "running": return rec
+        return self.state.passports[self.passport_id]
+
+    async def stop(self, reason="STOP_REQUESTED"):
+        self.stopping.set()
+        if self.process and self.process.returncode is None:
+            try: await self._send({"op": "stop", "reason": reason})
+            except Exception: pass
+            try: await asyncio.wait_for(self.stopped.wait(), 2)
+            except TimeoutError: await self.force_terminate()
+        await self._record_stop(reason)
+
+    async def force_terminate(self):
+        if self.process and self.process.returncode is None:
+            self.process.kill()
+            await self.process.wait()
+        self.stopped.set()
+
+    async def close(self):
+        if self.heartbeat_task: self.heartbeat_task.cancel()
+        await self.stop("CONTROLLER_SHUTDOWN")
+        if self.reader_task:
+            try: await self.reader_task
+            except (asyncio.CancelledError, Exception): pass
+
+
+async def start_engine(passport_id: str, state: AppState, trip_seconds: int, backend, execution_adapter=None) -> PassportRecord:
     rec = state.passports.get(passport_id)
-    if rec is None:
-        raise KeyError(passport_id)
-    if not rec.face_verified:
-        raise ValueError(f"passport {passport_id} has not passed face verification")
-    if rec.status == PASS_PENDING_FACE:
-        rec.status = PASS_ACTIVE
-    if rec.engine_running:
-        return rec
-    rec.engine_started_at = datetime.now(timezone.utc).isoformat()
-    rec.drawdown_usd = 0.0
-    rec.engine_running = True
-    rec.trip_seconds = trip_seconds
+    if rec is None: raise KeyError(passport_id)
+    lock = _START_LOCKS.setdefault(passport_id, asyncio.Lock())
+    async with lock:
+        return await _start_engine_locked(passport_id, state, trip_seconds, backend, execution_adapter)
+
+
+async def _start_engine_locked(passport_id: str, state: AppState, trip_seconds: int, backend, execution_adapter=None) -> PassportRecord:
+    rec = state.passports.get(passport_id)
+    if rec is None: raise KeyError(passport_id)
+    if rec.authorization_status != "authorized" or rec.confirmed_spec_hash != rec.spec_hash:
+        raise EngineStartError("PASSPORT_NOT_AUTHORIZED", f"passport {passport_id} is not authorized")
+    if not rec.face_verified or rec.face_gate_status != "active":
+        raise EngineStartError("FACE_GATE_REQUIRED", f"passport {passport_id} has not passed the human gate")
+    if rec.stop_requested or is_expired(rec.expiry) or rec.engine_status in {"stopped", "stop_failed"}:
+        raise EngineStartError("PASSPORT_STOPPED_OR_EXPIRED", f"passport {passport_id} is stopped or expired")
+    if rec.engine_running: return rec
+    controller = PaperWorkerController(passport_id, state, backend, execution_adapter)
+    rec.engine_status = "starting"; rec.status = "starting"; state.upsert_passport(rec)
+    await controller.start(rec)
+    rec = state.passports[passport_id]
+    if rec.stop_requested or rec.authorization_status != "authorized":
+        await controller.stop("STOP_DURING_START")
+        raise EngineStartError(
+            "PASSPORT_STOPPED_OR_EXPIRED",
+            f"passport {passport_id} was stopped during startup",
+        )
+    if execution_adapter:
+        command = build_start_command(rec, str(state.ledger_path.parent / "policy.json"))
+        try:
+            rec.external_execution_id = await execution_adapter.start(command)
+            rec.external_execution_provider = execution_adapter.provider
+            rec.external_execution_status = "running"
+            if (
+                controller.stopped.is_set()
+                or rec.stop_requested
+                or rec.authorization_status != "authorized"
+            ):
+                controller.external_stop_attempted = True
+                await execution_adapter.stop(rec.external_execution_id)
+                controller.external_stop_succeeded = True
+                rec.external_execution_status = "stopped"
+                await controller.stop("STOP_DURING_START")
+                raise EngineStartError(
+                    "PASSPORT_STOPPED_OR_EXPIRED",
+                    f"passport {passport_id} was stopped during external startup",
+                )
+        except EngineStartError:
+            state.upsert_passport(rec)
+            raise
+        except Exception as exc:  # noqa: BLE001 - do not retry an uncertain mutation.
+            await controller.force_terminate()
+            external_stopped = rec.external_execution_status == "stopped"
+            rec.engine_running = False
+            rec.engine_status = "start_failed"
+            rec.status = "stopped" if external_stopped else "uncertain"
+            if not external_stopped or rec.authorization_status == "authorized":
+                rec.authorization_status = "uncertain"
+            rec.stop_requested = True
+            rec.external_execution_provider = getattr(execution_adapter, "provider", "external")
+            if not external_stopped:
+                rec.external_execution_status = "uncertain"
+            rec.stop_reason = "EXTERNAL_START_FAILED"
+            rec.invalidate_face_gate("EXTERNAL_START_FAILED")
+            state.upsert_passport(rec)
+            raise EngineStartError("ALPHAFOX_START_FAILED", str(exc)) from exc
+    _WORKERS[passport_id] = controller
+    rec.engine_started_at = datetime.now(timezone.utc).isoformat(); rec.drawdown_usd = 0.0
+    rec.engine_running = True; rec.engine_status = "running"; rec.status = "active"; rec.trip_seconds = trip_seconds
+    rec.face_gate_status = "consumed"
     state.upsert_passport(rec)
-    task = asyncio.create_task(_engine_loop(passport_id, state, trip_seconds))
-    _TASKS[passport_id] = task
     return rec
 
 
-async def stop_engine(passport_id: str, state: AppState) -> PassportRecord:
-    """Stop the engine without revoking."""
+async def stop_engine(passport_id: str, state: AppState, backend, reason: str = "STOP_REQUESTED", execution_adapter=None) -> PassportRecord:
     rec = state.passports.get(passport_id)
-    if rec is None:
-        raise KeyError(passport_id)
-    task = _TASKS.get(passport_id)
-    if task is not None and not task.done():
-        task.cancel()
-    _TASKS.pop(passport_id, None)
-    if rec.status == PASS_ACTIVE:
-        rec.status = PASS_STOPPED
-    rec.engine_running = False
-    state.upsert_passport(rec)
+    if rec is None: raise KeyError(passport_id)
+    # Publish the fail-safe intent immediately. If start_engine currently owns
+    # the transition lock it will observe this flag after its pending await.
+    rec.stop_requested = True; state.upsert_passport(rec)
+    lock = _START_LOCKS.setdefault(passport_id, asyncio.Lock())
+    async with lock:
+        return await _stop_engine_locked(
+            passport_id, state, backend, reason, execution_adapter
+        )
+
+
+async def _stop_engine_locked(passport_id: str, state: AppState, backend, reason: str, execution_adapter=None) -> PassportRecord:
+    rec = state.passports.get(passport_id)
+    if rec is None: raise KeyError(passport_id)
+    controller = _WORKERS.pop(passport_id, None)
+    if controller:
+        await controller.stop(reason)
+        rec = state.passports[passport_id]
+        if execution_adapter and rec.external_execution_id and not controller.external_stop_attempted:
+            controller.external_stop_attempted = True
+            try:
+                await execution_adapter.stop(rec.external_execution_id)
+                controller.external_stop_succeeded = True
+            except Exception:  # noqa: BLE001 - remote uncertainty must fail closed.
+                controller.external_stop_failed = True
+        if controller.external_stop_failed:
+            rec.external_execution_status = "uncertain"
+            rec.engine_status = "stop_failed"
+            rec.status = "uncertain"
+            state.upsert_passport(rec)
+            raise EngineStartError("ALPHAFOX_STOP_FAILED", "AlphaFox stop outcome is uncertain")
+        if execution_adapter and rec.external_execution_id:
+            # Reconcile the public record after the stop coroutine completes.
+            # The worker-reader and request tasks may both persist the record;
+            # a successful idempotent stop always wins over an earlier
+            # snapshot that still said ``running``.
+            rec.external_execution_status = "stopped"
+            state.upsert_passport(rec)
+    else:
+        if execution_adapter and rec.external_execution_id and rec.external_execution_status != "stopped":
+            try:
+                await execution_adapter.stop(rec.external_execution_id)
+                rec.external_execution_status = "stopped"
+            except Exception:  # noqa: BLE001
+                rec.external_execution_status = "uncertain"
+                rec.engine_status = "stop_failed"
+                rec.status = "uncertain"
+                state.upsert_passport(rec)
+                raise EngineStartError("ALPHAFOX_STOP_FAILED", "AlphaFox stop outcome is uncertain")
+        rec.engine_running = False; rec.engine_status = "stopped"; rec.status = "stopped"; rec.stop_reason = rec.stop_reason or reason; state.upsert_passport(rec)
+    rec, _, _ = await authorization_service.revoke(state, passport_id, backend, reason)
     return rec
 
 
-def tick_drawdown(passport_id: str, amount_usd: float, state: AppState) -> PassportRecord:
-    """Synchronous drawdown advance. Used by tests and by the demo's
-    'skip the wait' knob.
-
-    Clamps the value to `maxLossUsd` so we never overshoot.
-    """
-    rec = state.passports.get(passport_id)
-    if rec is None:
-        raise KeyError(passport_id)
-    max_loss = float(rec.spec["maxLossUsd"])
-    rec.drawdown_usd = min(max_loss, max(0.0, float(amount_usd)))
-    state.upsert_passport(rec)
-    return rec
+async def tick_drawdown(passport_id: str, amount_usd: float, state: AppState) -> PassportRecord:
+    if not isinstance(amount_usd, (int, float)) or amount_usd < 0: raise ValueError("invalid drawdown")
+    controller = _WORKERS.get(passport_id)
+    if not controller: raise ValueError("paper worker is not running")
+    return await controller.tick(float(amount_usd))
 
 
 async def cancel_all() -> None:
-    """Stop every running engine task. Called on app shutdown."""
-    tasks = list(_TASKS.values())
-    _TASKS.clear()
-    for t in tasks:
-        t.cancel()
-    for t in tasks:
-        try:
-            await t
-        except (asyncio.CancelledError, Exception):
-            pass
+    controllers = list(_WORKERS.values()); _WORKERS.clear()
+    await asyncio.gather(*(c.close() for c in controllers), return_exceptions=True)
 
 
-def run_judge(spec: dict[str, Any], drawdown_usd: float, events: list[Any] | None):
-    """Thin wrapper around RedLineJudge for routers. Returned object
-    is a RedLineVerdict (from the agent package)."""
-    # Build a transient CopyTradingSpec object so the judge sees the
-    # real locked spec, not a dict.
+def run_judge(spec: dict[str, Any], drawdown_usd: float, events: list[Any] | None, judge):
     from agent.follow_agent.spec_schema import CopyTradingSpec
-
-    cspec = CopyTradingSpec.model_validate(spec)
-    return _JUDGE.judge(cspec, drawdown_usd, events or [])
+    return judge.judge(CopyTradingSpec.model_validate(spec), drawdown_usd, events or [])
 
 
-__all__ = [
-    "start_engine",
-    "stop_engine",
-    "tick_drawdown",
-    "cancel_all",
-    "run_judge",
-]
+__all__ = ["start_engine", "stop_engine", "tick_drawdown", "cancel_all", "run_judge", "PaperWorkerController", "EngineStartError"]

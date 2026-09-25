@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Header from './components/Header.jsx'
 import ChatPanel from './components/ChatPanel.jsx'
 import SpecCard from './components/SpecCard.jsx'
@@ -8,6 +8,7 @@ import HomePage from './components/HomePage.jsx'
 import ConditionalRunPanel from './components/ConditionalRunPanel.jsx'
 import { apiPost } from './api'
 import { usePoll } from './usePoll'
+import InferenceEvidencePanel from './components/InferenceEvidencePanel.jsx'
 import { useI18n } from './i18n.jsx'
 
 const INITIAL_DRAFT = () => ({
@@ -18,55 +19,35 @@ const INITIAL_DRAFT = () => ({
   mint: null,
 })
 
-// Find the most recent runs/two_runs_*.json written by scripts/two_runs_demo.py.
-// Vite serves frontend/public/ at the URL root, so we list via fetch.
 async function fetchLatestTwoRuns() {
   try {
-    const res = await fetch('/runs/')
+    const res = await fetch('/runs/latest.json', { cache: 'no-store' })
     if (!res.ok) return null
-    const text = await res.text()
-    // Vite returns a directory listing as HTML <a href="...">file.json</a>.
-    const matches = [...text.matchAll(/href="(two_runs_[^"]+\.json)"/g)]
-    if (matches.length === 0) return null
-    const last = matches[matches.length - 1][1]
-    const fileRes = await fetch(`/runs/${last}`)
-    if (!fileRes.ok) return null
-    return await fileRes.json()
+    return await res.json()
   } catch {
     return null
   }
 }
 
-function useLatestTwoRuns() {
-  const [data, setData] = useState(null)
-  useState(() => {
-    fetchLatestTwoRuns().then(setData)
-    const id = setInterval(() => fetchLatestTwoRuns().then(setData), 5000)
-    return () => clearInterval(id)
-  })
-  return data
-}
-
 export default function App() {
+  const { t } = useI18n()
   const [view, setView] = useState('home')
   const [draft, setDraft] = useState(INITIAL_DRAFT)
   const { data: snapshot } = usePoll('/api/state', 1500)
   const { data: health } = usePoll('/api/health', 5000)
-  const { t } = useI18n()
-  // const latestRuns = useLatestTwoRuns()  // intentionally unused — see below
 
   async function handleReset() {
     try {
       await apiPost('/api/state/reset', null)
     } catch (e) {
-      alert(`reset failed: ${e.message || e}`)
+      alert(`${t('common.reset_failed')}: ${e.message || e}`)
       return
     }
     setDraft(INITIAL_DRAFT())
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="app-shell min-h-screen flex flex-col">
       <Header
         health={health}
         onReset={handleReset}
@@ -74,7 +55,7 @@ export default function App() {
         onGoDemo={() => setView('demo')}
         onGoHome={() => setView('home')}
       />
-      <main className="flex-1 p-4 md:p-6 max-w-7xl mx-auto w-full">
+      <main className="mx-auto w-full max-w-[1280px] flex-1 overflow-x-clip px-4 pb-12 pt-6 md:px-8 md:pt-10">
         {view === 'home' ? (
           <HomePage snapshot={snapshot} onTryDemo={() => setView('demo')} />
         ) : (
@@ -82,37 +63,30 @@ export default function App() {
             snapshot={snapshot}
             draft={draft}
             setDraft={setDraft}
-            t={t}
           />
         )}
       </main>
     </div>
   )
 }
-
-function DemoView({ snapshot, draft, setDraft, t }) {
+function DemoView({ snapshot, draft, setDraft }) {
   const [latestRuns, setLatestRuns] = useState(null)
-  useState(() => {
+  useEffect(() => {
     fetchLatestTwoRuns().then(setLatestRuns)
     const id = setInterval(() => fetchLatestTwoRuns().then(setLatestRuns), 5000)
     return () => clearInterval(id)
-  })
+  }, [])
   return (
-    <div className="grid grid-cols-12 gap-4">
-      <section className="col-span-5 min-h-[70vh]">
+    <div className="demo-grid grid grid-cols-12 gap-5 lg:gap-6">
+      <section className="col-span-12 min-h-[60vh] lg:col-span-5 lg:min-h-[70vh]">
         <ChatPanel draft={draft} setDraft={setDraft} onSpecLocked={() => {}} />
       </section>
-      <section className="col-span-7 space-y-4">
+      <section className="col-span-12 space-y-4 lg:col-span-7">
         <SpecCard draft={draft} setDraft={setDraft} onMinted={() => {}} />
         <PassportCard draft={draft} snapshot={snapshot} onAction={() => {}} />
         <RedLinePanel draft={draft} snapshot={snapshot} onAction={() => {}} />
         <ConditionalRunPanel latestRuns={latestRuns} />
-        <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-3">
-          <div className="text-xs text-slate-400 mb-1">{t('tokens.title')}</div>
-          <pre className="text-[11px] text-slate-200 whitespace-pre-wrap font-mono">
-{snapshot?.token_report || t('tokens.empty')}
-          </pre>
-        </div>
+        <InferenceEvidencePanel snapshot={snapshot} />
       </section>
     </div>
   )

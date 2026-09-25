@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+from .helpers import prepare_confirm_mint, verify_face
 
-def _start_payload(**overrides):
+
+def _start_payload(passport_id=None, **overrides):
     base = {
+        "passport_id": passport_id,
         "leader_id": "leader-demo-001",
         "notional_usd": 500,
         "max_loss_usd": 50,
@@ -13,6 +16,12 @@ def _start_payload(**overrides):
     }
     base.update(overrides)
     return base
+
+
+def _approved_payload(client, **overrides):
+    passport = prepare_confirm_mint(client)
+    assert verify_face(client, passport["passport_id"]).status_code == 200
+    return _start_payload(passport["passport_id"], **overrides)
 
 
 def test_list_leaders_returns_seed(client):
@@ -32,26 +41,33 @@ def test_list_leader_positions_is_always_empty(client):
 
 
 def test_start_paper_returns_paper_id_and_status(client):
-    r = client.post("/v1/paper/start", json=_start_payload())
+    r = client.post("/v1/paper/start", json=_approved_payload(client))
     assert r.status_code == 201
     body = r.json()
     assert body["status"] == "active"
-    assert body["paper_id"].startswith("0x")
+    assert body["paper_id"]
     assert body["trip_seconds"] >= 1
 
 
 def test_start_paper_rejects_non_paper_venue(client):
-    r = client.post("/v1/paper/start", json=_start_payload(venue="binance"))
+    r = client.post("/v1/paper/start", json=_approved_payload(client, venue="binance"))
     assert r.status_code == 422
 
 
 def test_start_paper_rejects_max_loss_over_notional(client):
-    r = client.post("/v1/paper/start", json=_start_payload(notional_usd=100, max_loss_usd=999))
+    r = client.post("/v1/paper/start", json=_approved_payload(client, notional_usd=100, max_loss_usd=999))
     assert r.status_code == 422
 
 
+def test_start_paper_rejects_missing_human_gate(client):
+    passport = prepare_confirm_mint(client)
+    r = client.post("/v1/paper/start", json=_start_payload(passport["passport_id"]))
+    assert r.status_code == 409
+    assert r.json()["detail"]["code"] == "FACE_GATE_REQUIRED"
+
+
 def test_get_paper_pnl_returns_drawdown(client):
-    started = client.post("/v1/paper/start", json=_start_payload()).json()
+    started = client.post("/v1/paper/start", json=_approved_payload(client)).json()
     pid = started["paper_id"]
     r = client.get(f"/v1/paper/{pid}/pnl")
     assert r.status_code == 200
@@ -68,28 +84,30 @@ def test_get_paper_pnl_unknown_returns_404(client):
 
 
 def test_stop_paper_user_halts_engine(client):
-    started = client.post("/v1/paper/start", json=_start_payload()).json()
+    started = client.post("/v1/paper/start", json=_approved_payload(client)).json()
     pid = started["paper_id"]
     r = client.post(f"/v1/paper/{pid}/stop", json={"reason": "user"})
     assert r.status_code == 200
     assert r.json()["status"] == "stopped"
+    assert r.json()["passport_status"] == "revoked"
     # No revoke tx hash -- user halt does not burn passport
     assert r.json().get("revoke_tx_hash") is None
 
 
 def test_stop_paper_kill_revokes_passport(client):
-    started = client.post("/v1/paper/start", json=_start_payload()).json()
+    started = client.post("/v1/paper/start", json=_approved_payload(client)).json()
     pid = started["paper_id"]
     r = client.post(f"/v1/paper/{pid}/stop", json={"reason": "kill"})
     assert r.status_code == 200
     body = r.json()
     assert body["status"] == "revoked"
-    assert body.get("revoke_tx_hash", "").startswith("0x")
+    assert body["revoke_tx_hash"] is None
+    assert body["simulation_id"].startswith("sim-")
     # passport state mirrors the kill
     r2 = client.get(f"/api/passport/{pid}")
     assert r2.status_code == 200
     assert r2.json()["status"] == "revoked"
-    assert r2.json()["tx_revoke_hash"] is not None
+    assert r2.json()["tx_revoke_hash"] is None
 
 
 def test_stop_paper_unknown_returns_404(client):

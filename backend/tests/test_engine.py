@@ -1,43 +1,35 @@
 """Engine tests."""
 
 from __future__ import annotations
+import asyncio
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
+
+from .helpers import prepare, prepare_confirm_mint, verify_face
+from backend.app.engine import PaperWorkerController, _WORKERS
+from backend.app.deps import get_execution_adapter
+from backend.app.policy import write_policy
 
 
 def _mint_and_face(client) -> str:
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    body = client.post("/api/passport/mint", json=payload).json()
+    body = prepare_confirm_mint(client)
     pid = body["passport_id"]
-    client.post("/api/face/verify", json={"passport_id": pid})
+    verify_face(client, pid)
     return pid
 
 
-def test_engine_start_requires_face_verified(client):
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    pid = client.post("/api/passport/mint", json=payload).json()["passport_id"]
+def test_engine_start_requires_authorized_passport(client):
+    pid = prepare(client)["passport_id"]
     r = client.post("/api/engine/start", json={"passport_id": pid})
-    assert r.status_code == 409  # face not verified
+    assert r.status_code == 409
+
+
+def test_engine_start_requires_face_gate_after_authorization(client):
+    body = prepare_confirm_mint(client)
+    response = client.post("/api/engine/start", json={"passport_id": body["passport_id"]})
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == "FACE_GATE_REQUIRED"
 
 
 def test_engine_start_and_tick(client):
@@ -45,8 +37,9 @@ def test_engine_start_and_tick(client):
     r = client.post("/api/engine/start", json={"passport_id": pid})
     assert r.status_code == 200
     body = r.json()
-    assert body["status"] in {"active", "pending_face"}
+    assert body["status"] == "active"
     assert body["drawdown_usd"] == 0.0
+    assert client.get(f"/api/passport/{pid}").json()["face_gate_status"] == "consumed"
 
 
 def test_tick_advances_drawdown(client):
@@ -59,20 +52,188 @@ def test_tick_advances_drawdown(client):
     assert body["max_loss_usd"] == 50.0
 
 
-def test_tick_clamps_to_max_loss(client):
+def test_drawdown_limit_stops_without_judge_click(client):
     pid = _mint_and_face(client)
     client.post("/api/engine/start", json={"passport_id": pid})
     r = client.post(f"/api/engine/tick?amount=999", json={"passport_id": pid})
     assert r.status_code == 200
     body = r.json()
-    assert body["drawdown_usd"] == 50.0  # clamped to maxLossUsd
+    assert body["drawdown_usd"] == 999.0
+    for _ in range(30):
+        record = client.get(f"/api/passport/{pid}").json()
+        if record["engine_status"] == "stopped": break
+        time.sleep(0.02)
+    assert record["stop_reason"] == "DD_LIMIT"
+    assert record["stop_requested"] is True
 
 
-def test_engine_stop_does_not_revoke(client):
+def test_engine_stop_stops_then_revokes(client):
     pid = _mint_and_face(client)
     client.post("/api/engine/start", json={"passport_id": pid})
     r = client.post("/api/engine/stop", json={"passport_id": pid})
     assert r.status_code == 200
     pr = client.get(f"/api/passport/{pid}").json()
-    assert pr["status"] == "stopped"
+    assert pr["status"] == "revoked"
     assert pr["tx_revoke_hash"] is None
+    assert pr["stop_requested"] is True
+    assert pr["face_verified"] is True
+    assert pr["face_gate_status"] == "invalidated"
+    assert pr["face_gate_invalidated_at"]
+    assert pr["face_gate_invalidation_reason"] == "STOP_REQUESTED"
+    events = client.get("/api/state").json()["events"]
+    assert sum(event["kind"] == "face_gate_invalidated" for event in events) == 1
+    assert client.post("/api/engine/start", json={"passport_id": pid}).status_code == 409
+
+
+def test_stop_during_start_can_never_finish_running(client, monkeypatch):
+    """A concurrent stop is a fail-safe latch, even while start awaits I/O."""
+    pid = _mint_and_face(client)
+    entered_start = threading.Event()
+
+    async def slow_start(self, rec):
+        entered_start.set()
+        await asyncio.sleep(0.15)
+
+    monkeypatch.setattr(PaperWorkerController, "start", slow_start)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        start_future = pool.submit(
+            client.post, "/api/engine/start", json={"passport_id": pid}
+        )
+        assert entered_start.wait(timeout=2)
+        stop_future = pool.submit(
+            client.post, "/api/engine/stop", json={"passport_id": pid}
+        )
+        start_response = start_future.result(timeout=5)
+        stop_response = stop_future.result(timeout=5)
+
+    assert start_response.status_code == 409
+    assert stop_response.status_code == 200
+    record = client.get(f"/api/passport/{pid}").json()
+    assert record["stop_requested"] is True
+    assert record["engine_running"] is False
+    assert record["authorization_status"] == "revoked"
+
+
+def test_stop_during_external_start_compensates_exactly_once(app_and_state):
+    from fastapi.testclient import TestClient
+
+    app, _state = app_and_state
+    entered_external_start = threading.Event()
+
+    class SlowAdapter:
+        provider = "alphafox"
+
+        def __init__(self):
+            self.stop_calls = []
+
+        async def start(self, command):
+            entered_external_start.set()
+            await asyncio.sleep(0.15)
+            return "trader-race-1"
+
+        async def stop(self, trader_id):
+            self.stop_calls.append(trader_id)
+
+    adapter = SlowAdapter()
+    app.dependency_overrides[get_execution_adapter] = lambda: adapter
+    with TestClient(app) as local_client:
+        pid = _mint_and_face(local_client)
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            start_future = pool.submit(
+                local_client.post, "/api/engine/start", json={"passport_id": pid}
+            )
+            assert entered_external_start.wait(timeout=2)
+            stop_future = pool.submit(
+                local_client.post, "/api/engine/stop", json={"passport_id": pid}
+            )
+            assert start_future.result(timeout=5).status_code == 409
+            assert stop_future.result(timeout=5).status_code == 200
+
+        record = local_client.get(f"/api/passport/{pid}").json()
+        assert record["engine_running"] is False
+        assert record["external_execution_status"] == "stopped"
+        assert adapter.stop_calls == ["trader-race-1"]
+
+
+def test_policy_change_stops_worker_without_button(client, fresh_state):
+    pid = _mint_and_face(client)
+    assert client.post("/api/engine/start", json={"passport_id": pid}).status_code == 200
+    write_policy(fresh_state.ledger_path.parent / "policy.json", 2, [])
+    for _ in range(30):
+        record = client.get(f"/api/passport/{pid}").json()
+        if record["engine_status"] == "stopped": break
+        time.sleep(0.02)
+    assert record["stop_reason"] == "POLICY_REVOKED"
+    assert record["face_gate_status"] == "invalidated"
+    assert record["face_gate_invalidation_reason"] == "POLICY_REVOKED"
+
+
+def test_controller_disconnect_stops_real_worker_process(client):
+    pid = _mint_and_face(client)
+    assert client.post("/api/engine/start", json={"passport_id": pid}).status_code == 200
+    controller = _WORKERS[pid]
+    client.portal.call(controller.process.stdin.close)
+    for _ in range(50):
+        record = client.get(f"/api/passport/{pid}").json()
+        if record["engine_status"] == "stopped": break
+        time.sleep(0.02)
+    assert record["stop_reason"] == "CONTROLLER_DISCONNECTED"
+    assert controller.process.returncode == 0
+
+
+def test_alphafox_adapter_runs_only_after_human_gate(app_and_state):
+    from fastapi.testclient import TestClient
+
+    app, _state = app_and_state
+
+    class Adapter:
+        provider = "alphafox"
+
+        def __init__(self): self.calls = []
+        async def start(self, command):
+            self.calls.append(("start", command.leader_id, command.paper))
+            return "trader-demo-1"
+        async def stop(self, trader_id): self.calls.append(("stop", trader_id))
+
+    adapter = Adapter()
+    app.dependency_overrides[get_execution_adapter] = lambda: adapter
+    with TestClient(app) as local_client:
+        body = prepare_confirm_mint(local_client)
+        pid = body["passport_id"]
+        assert local_client.post("/api/engine/start", json={"passport_id": pid}).status_code == 409
+        assert adapter.calls == []
+        verify_face(local_client, pid)
+        assert local_client.post("/api/engine/start", json={"passport_id": pid}).status_code == 200
+        record = local_client.get(f"/api/passport/{pid}").json()
+        assert record["external_execution_id"] == "trader-demo-1"
+        assert adapter.calls[0][0] == "start"
+        assert local_client.post("/api/engine/stop", json={"passport_id": pid}).status_code == 200
+        assert adapter.calls[-1] == ("stop", "trader-demo-1")
+        stopped = local_client.get(f"/api/passport/{pid}").json()
+        assert stopped["external_execution_status"] == "stopped"
+        assert stopped["face_gate_invalidation_reason"] == "STOP_REQUESTED"
+
+
+def test_alphafox_uncertain_start_invalidates_mandate(app_and_state):
+    from fastapi.testclient import TestClient
+
+    app, _state = app_and_state
+
+    class FailingAdapter:
+        provider = "alphafox"
+        async def start(self, command): raise RuntimeError("outcome uncertain")
+        async def stop(self, trader_id): raise AssertionError("no id was returned")
+
+    app.dependency_overrides[get_execution_adapter] = lambda: FailingAdapter()
+    with TestClient(app) as local_client:
+        body = prepare_confirm_mint(local_client)
+        pid = body["passport_id"]
+        verify_face(local_client, pid)
+        response = local_client.post("/api/engine/start", json={"passport_id": pid})
+        assert response.status_code == 409
+        assert response.json()["detail"]["code"] == "ALPHAFOX_START_FAILED"
+        record = local_client.get(f"/api/passport/{pid}").json()
+        assert record["status"] == "uncertain"
+        assert record["authorization_status"] == "uncertain"
+        assert record["face_gate_status"] == "invalidated"
+        assert record["stop_requested"] is True

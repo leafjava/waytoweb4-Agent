@@ -31,7 +31,7 @@ from agent.shared.exceptions import SpecValidationError
 
 # ---- Demo / PRD defaults -----------------------------------------------------
 
-# PRD §4.1 "Demo 默认" column. These are the values the demo uses when
+# PRD §4.1 "Demo defaults" column. These are the values the demo uses when
 # the user is vague and the clarifier has to fill in blanks. They are
 # kept here (not in prompts) so the contract is one place to audit.
 DEMO_DEFAULT_NOTIONAL_USD: float = 500.0
@@ -120,7 +120,7 @@ class CopyTradingSpec(BaseModel):
     @model_validator(mode="after")
     def _cross_field(self) -> "CopyTradingSpec":
         # PRD says: maxLossUsd cannot exceed notionalUsd. This is the
-        # whole point of the "限亏不能超过本金" guard rail.
+        # whole point of the "loss limit cannot exceed notional" guard rail.
         if self.maxLossUsd > self.notionalUsd:
             raise SpecValidationError(
                 f"maxLossUsd ({self.maxLossUsd}) cannot exceed "

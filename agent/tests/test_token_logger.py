@@ -69,3 +69,24 @@ def test_report_assumption_matches_prd() -> None:
     report = lg.report()
     assert "180" in report  # the 180W assumption
     assert "latency / 3600" in report
+
+
+def test_snapshot_preserves_flow_source_model_and_energy() -> None:
+    lg = TokenLogger()
+    lg.record(
+        "clarify", 100, 25, 2.0,
+        usage_source="api", model="gpt-oss-120b", request_id="call-1",
+    )
+    snapshot = lg.snapshot()
+    clarify = next(row for row in snapshot["flows"] if row["flow"] == "clarify")
+    assert clarify == {
+        "flow": "clarify",
+        "calls": 1,
+        "tokens_in": 100,
+        "tokens_out": 25,
+        "latency_s": 2.0,
+        "energy_Wh_est": 0.1,
+        "usage_source": "api",
+        "model": "gpt-oss-120b",
+    }
+    assert snapshot["total"]["calls"] == 1

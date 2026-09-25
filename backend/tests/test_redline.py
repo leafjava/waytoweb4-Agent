@@ -2,23 +2,15 @@
 
 from __future__ import annotations
 
+from .helpers import prepare_confirm_mint, verify_face
+from agent.redline_agent import KilnEventClassifier
+from backend.app.deps import get_redline_judge
+
 
 def _mint_and_face(client) -> str:
-    payload = {
-        "spec": {
-            "mode": "copy",
-            "leaderId": "leader-demo-001",
-            "venue": "paper",
-            "notionalUsd": 500,
-            "maxLossUsd": 50,
-            "expiry": "2099-01-01T00:00:00+00:00",
-            "faceVerified": False,
-            "paper": True,
-        }
-    }
-    body = client.post("/api/passport/mint", json=payload).json()
+    body = prepare_confirm_mint(client)
     pid = body["passport_id"]
-    client.post("/api/face/verify", json={"passport_id": pid})
+    verify_face(client, pid)
     client.post("/api/engine/start", json={"passport_id": pid})
     return pid
 
@@ -39,15 +31,31 @@ def test_redline_inject_hynix_trips(client):
     body = r.json()
     assert body["verdict"]["level"] == "TRIP"
     assert body["flow"] == "redline_trip"
-    # side effects: revoked with a tx hash
+    # Offline side effects are explicit and never masquerade as a transaction.
     assert body["side_effects"]["revoked"] is True
-    assert body["side_effects"]["revoke_tx_hash"] is not None
+    assert body["side_effects"]["revoke_tx_hash"] is None
     # passport is now revoked
     pr = client.get(f"/api/passport/{pid}").json()
     assert pr["status"] == "revoked"
-    assert pr["tx_revoke_hash"] is not None
+    assert pr["tx_revoke_hash"] is None
 
 
 def test_redline_judge_unknown_returns_404(client):
     r = client.post("/api/redline/judge", json={"passport_id": "0xnope"})
     assert r.status_code == 404
+
+
+def test_redline_rejects_unbounded_event_batch(client):
+    pid = _mint_and_face(client)
+    events = [{"symbol": "KS200", "change_pct": -1}] * 101
+    response = client.post(
+        "/api/redline/judge", json={"passport_id": pid, "events": events}
+    )
+    assert response.status_code == 422
+
+
+def test_live_mode_wires_kiln_classifier(monkeypatch):
+    monkeypatch.setenv("KILN_MODE", "live")
+    monkeypatch.setenv("KILN_API_KEY", "test-key")
+    judge = get_redline_judge()
+    assert isinstance(judge.classifier, KilnEventClassifier)

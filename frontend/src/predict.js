@@ -12,12 +12,16 @@ export const HYNIX_EVENTS = [
   { symbol: 'KS200', change_pct: -8.5, kind: 'circuit_breaker' },
 ]
 
+// Keyword matchers accept EN / KO / ZH event phrasing. The KO entries let
+// Demo Day input in Korean classify correctly; the ZH entries are input
+// parsing (not user-visible copy). Kept in lockstep with
+// agent/redline_agent/llm_classifier.py KEYWORD_RULES.
 const KEYWORD_RULES = [
-  { kws: ['熔断', 'circuit', 'halt'], code: 'CB_LIKE' },
-  { kws: ['清算', 'liq', 'cascade'], code: 'LIQ_CASCADE' },
-  { kws: ['杠杆', 'leveraged', '2x', 'lev_etf'], code: 'LEV_ETF_AMP' },
-  { kws: ['盘前', 'pre-market', 'gap', '薄流动性'], code: 'GAP_ORACLE' },
-  { kws: ['人工', 'human', 'override', 'kill'], code: 'HUMAN_OVERRIDE' },
+  { kws: ['熔断', 'circuit', 'halt', '서킷브레이커', '거래정지'], code: 'CB_LIKE' },
+  { kws: ['清算', 'liq', 'cascade', '청산'], code: 'LIQ_CASCADE' },
+  { kws: ['杠杆', 'leveraged', '2x', 'lev_etf', '레버리지'], code: 'LEV_ETF_AMP' },
+  { kws: ['盘前', 'pre-market', 'gap', '薄流动性', '갭', '얇은 유동성'], code: 'GAP_ORACLE' },
+  { kws: ['人工', 'human', 'override', 'kill', '즉시 중지'], code: 'HUMAN_OVERRIDE' },
 ]
 
 const CB_THRESHOLD_PCT = -8.0

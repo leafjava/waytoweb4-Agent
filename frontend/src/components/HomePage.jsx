@@ -1,36 +1,29 @@
 import Hero from './Hero.jsx'
 import PrimitivesGrid from './PrimitivesGrid.jsx'
-import JudgeChecklist from './JudgeChecklist.jsx'
 import SecurityStrip from './SecurityStrip.jsx'
-import SpecSimulator from './SpecSimulator.jsx'
-import LiveDataPanel from './LiveDataPanel.jsx'
 import StatTicker from './StatTicker.jsx'
-import AcceptanceBar from './AcceptanceBar.jsx'
 import { useI18n } from '../i18n.jsx'
 
 export default function HomePage({ snapshot, onTryDemo }) {
   const { t } = useI18n()
 
   return (
-    <div className="space-y-10 pb-12">
+    <div className="home-page space-y-14 pb-12 md:space-y-20">
       <Hero onTryDemo={onTryDemo} />
       <StatTicker snapshot={snapshot} />
-      <AcceptanceBar />
       <PrimitivesGrid />
-      <JudgeChecklist />
-      <SpecSimulator />
       <SecurityStrip />
-      <LiveDataPanel snapshot={snapshot} />
 
-      <div className="text-center pt-4">
+      <div className="home-final-cta rounded-[32px] bg-[#1d1d1f] px-6 py-14 text-center text-white md:py-20">
+        <div className="mx-auto mb-6 max-w-xl text-3xl font-semibold tracking-[-0.035em] md:text-5xl">{t('home.headline')}</div>
         <button
           onClick={onTryDemo}
-          className="px-6 py-3 rounded-lg bg-sky-500 hover:bg-sky-400 text-slate-950 font-medium shadow-lg shadow-sky-500/30"
+          className="rounded-full bg-white px-6 py-3 font-medium text-[#1d1d1f] transition-transform hover:scale-[1.02]"
         >
           {t('home.cta')}
           <i className="fa fa-arrow-right ml-2"></i>
         </button>
-        <div className="text-xs text-slate-500 mt-2">{t('home.cta_sub')}</div>
+        <div className="mt-3 text-xs text-white/55">{t('home.cta_sub')}</div>
       </div>
     </div>
   )

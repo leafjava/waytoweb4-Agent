@@ -11,10 +11,9 @@ from typing import Optional
 class ReasonCode(str, Enum):
     """Closed-set reason codes emitted by RedLine.
 
-    These strings are part of the public contract: the on-chain passport
-    logs them as evidence and third-party auditors rely on them being
-    stable. Never invent a new code in flight -- add it here and bump a
-    versioned event log instead.
+    These strings are part of the application evidence contract and
+    third-party auditors rely on them being stable. Never invent a new code in
+    flight -- add it here and bump a versioned event log instead.
     """
 
     DD_LIMIT = "DD_LIMIT"            # drawdown >= spec.maxLossUsd -> TRIP
@@ -29,7 +28,7 @@ class ReasonCode(str, Enum):
 class PassportRef:
     """A reference to a minted on-chain Strategy Passport.
 
-    The passport is minted by the backend after face verification. The
+    The passport is minted by the backend after explicit human approval. The
     agents themselves never mint -- they only consume the reference to
     label their decisions and (in the case of RedLine) to issue a revoke
     request.

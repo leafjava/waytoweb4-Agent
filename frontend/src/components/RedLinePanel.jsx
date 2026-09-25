@@ -22,7 +22,7 @@ export default function RedLinePanel({ draft, snapshot, onAction }) {
       if (r?.side_effects) console.info('redline side effects:', r.side_effects)
       onAction?.()
     } catch (e) {
-      alert(`redline failed: ${e.message || e}`)
+      alert(`${t('red.failed')}: ${e.message || e}`)
     } finally {
       setBusy(null)
     }
@@ -32,13 +32,13 @@ export default function RedLinePanel({ draft, snapshot, onAction }) {
   const running = !!passport?.engine_running
 
   return (
-    <div className="bg-slate-900/40 border border-slate-800 rounded-lg p-4 space-y-4">
+    <div className="surface-card border border-black/10 rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm uppercase tracking-wider text-slate-400">
+        <h2 className="text-sm uppercase tracking-wider text-slate-500">
           <i className="fa fa-shield mr-2"></i> {t('red.title')}
         </h2>
         {running && (
-          <span className="text-xs text-emerald-300 flex items-center gap-1.5">
+          <span className="text-xs text-emerald-700 flex items-center gap-1.5">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 pulse-running"></span>
             {t('red.running')}
           </span>
@@ -48,7 +48,7 @@ export default function RedLinePanel({ draft, snapshot, onAction }) {
       <DrawdownGauge drawdown={drawdown} maxLoss={maxLoss} />
 
       <div>
-        <div className="text-xs text-slate-400 mb-1">{t('red.verdict')}</div>
+        <div className="text-xs text-slate-500 mb-1">{t('red.verdict')}</div>
         <VerdictBadge verdict={verdict} />
       </div>
 

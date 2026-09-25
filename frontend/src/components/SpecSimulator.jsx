@@ -125,6 +125,7 @@ function Slider({ label, value, min, max, step, onChange, format }) {
 }
 
 function Outcome({ tone, title, via, level, codes, note, bullet }) {
+  const { t } = useI18n()
   const palette = {
     rose: 'border-rose-700 bg-rose-900/20 text-rose-200',
     fuchsia: 'border-fuchsia-700 bg-fuchsia-900/20 text-fuchsia-200',
@@ -136,7 +137,7 @@ function Outcome({ tone, title, via, level, codes, note, bullet }) {
       <div className="flex items-center gap-2 text-sm">
         <span className="font-semibold">{level}</span>
         <span className="opacity-60">·</span>
-        <span className="text-xs opacity-80">via {via}</span>
+        <span className="text-xs opacity-80">{t('verdict.via')} {via}</span>
       </div>
       {codes?.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">

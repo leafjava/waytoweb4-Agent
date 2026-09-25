@@ -1,15 +1,14 @@
-// Tiny i18n: a flat key namespace, two locales (en / zh), localStorage
+// Tiny i18n: a flat key namespace, three locales (en / zh / ko), localStorage
 // persistence. Intentionally not using react-i18next -- 80 keys do not
 // justify a dependency.
 //
 // Translation rules baked into this file:
-//   * PRD §0 declaration (the long English sentence in Hero) is NOT
-//     translated -- it is a verbatim quote from the PRD that judges
-//     score against. See constants.js for the source string.
+//   * The English PRD §0 declaration remains verbatim in the English
+//     locale; Korean gets an accurate localized rendering.
 //   * Status enums (active / pending_face / revoked), verdict levels
 //     (HOLD / WATCH / TRIP), and reason codes (DD_LIMIT / CB_LIKE /
 //     etc.) are NOT translated -- they are code contracts that the
-//     on-chain event log and the agent/ schema share. Localising
+//     application evidence log and the agent/ schema share. Localising
 //     them would break auditability.
 
 import { createContext, useContext, useEffect, useState } from 'react'
@@ -23,16 +22,36 @@ const STRINGS = {
     'header.back_home': '← Back to Home',
     'header.reset': 'Reset',
     'header.lang.zh': '中文',
-    'header.lang.en': 'EN',
     'header.lang.ko': '한국어',
+    'header.lang.en': 'EN',
+    'header.execution': 'Execution',
+    'header.switch_language': 'Switch language',
+    'common.reset_failed': 'Reset failed',
 
     // ---- Hero ---------------------------------------------------------
     'hero.eyebrow': 'GWDC 2026 Korea · FuriosaAI × Bricksum · Challenge A + B',
+    'hero.tagline': 'AI agent controls for finance',
     'hero.title.line1': 'Copy-trading, locked by AI,',
     'hero.title.line2': 'unlocked by you.',
+    'hero.declaration': 'We built a copy-trading authorization agent: natural language produces a locked Spec, a human face-gate starts Paper copy-trading via waytoweb4, the Spec is minted as a revocable on-chain Strategy Passport, and a separate RedLine agent can halt the engine and burn the passport without looking at PnL.',
     'hero.product': 'NL → Spec → face → Paper copy-trading → on-chain passport → RedLine kill switch.',
     'hero.cta': 'Try the Demo',
     'hero.prd': 'PRD / Brief',
+    'motion.aria': 'Animated control graph showing the mandate moving through human approval, an on-chain passport, and the RedLine stop path.',
+    'motion.graph': 'Mandate control graph',
+    'motion.status': 'illustrated paper route',
+    'motion.node.spec': '01 · SPEC',
+    'motion.node.human': '02 · HUMAN',
+    'motion.node.passport': '03 · PASSPORT',
+    'motion.node.redline': '04 · REDLINE',
+    'motion.core': 'BOUNDED EXECUTION',
+    'motion.caption': 'The illustrated route locks the mandate, requires human approval, records a passport, and preserves the RedLine stop path.',
+    'motion.proof.spec_label': 'SPEC',
+    'motion.proof.spec_value': 'locked mandate',
+    'motion.proof.gate_label': 'GATE',
+    'motion.proof.gate_value': 'human approval',
+    'motion.proof.mode_label': 'MODE',
+    'motion.proof.mode_value': 'paper only',
 
     // ---- Primitives grid ----------------------------------------------
     'primitives.title': 'Four primitives',
@@ -41,13 +60,13 @@ const STRINGS = {
     'prim.follow.body': 'NL → frozen Spec. 1–2 round clarification; JSON-only emit; backend re-validates with Pydantic. Model never sees face or max-loss after lock.',
     'prim.face.title': 'Face Gate',
     'prim.face.tag': 'human-in-the-loop',
-    'prim.face.body': 'Face verification is the ONLY path to flip faceVerified=true. The agent has no API to do this. No LLM ever decides to start.',
+    'prim.face.body': 'Per-mandate human approval is the ONLY path to flip faceVerified=true. The agent has no API to do this. The camera is a local preview, not biometric matching.',
     'prim.passport.title': 'Strategy Passport',
-    'prim.passport.tag': 'keccak256 · mock | sepolia',
-    'prim.passport.body': 'Spec hashes via keccak256. Mint returns a 0x… tx hash; revoke returns a distinct second 0x… tx hash. Backend never lets the agent widen the cap.',
+    'prim.passport.tag': 'keccak256 · mock | local | testnet',
+    'prim.passport.body': 'Spec hashes via keccak256. Public-testnet mint/revoke return transaction hashes; offline simulation leaves those fields empty. Backend never lets the agent widen the cap.',
     'prim.redline.title': 'RedLine Agent',
     'prim.redline.tag': 'independent · no PnL',
-    'prim.redline.body': 'Hard rule gate fires first (DD_LIMIT, no model override). LLM classifier only scores structural impact (Hynix / leverage / gap).',
+    'prim.redline.body': 'Hard rule gate fires first (DD_LIMIT, no model override). The event classifier scores structural impact; offline output is explicitly marked mock.',
 
     // ---- Judge checklist ----------------------------------------------
     'judge.title': 'What the judges will check',
@@ -56,18 +75,18 @@ const STRINGS = {
     'judge.agent_vs_code': 'Agent vs code',
     'judge.agent_vs_code.body': 'Agent: clarify, spec_emit, event classification. Code: schema validation, face gate, start/stop, mint/revoke, hard drawdown gate.',
     'judge.kiln': 'Kiln gpt-oss-120b',
-    'judge.kiln.body': 'Follow multi-round clarify; RedLine event classifier. Mock fallback when KILN_API_KEY is unset (offline-safe).',
+    'judge.kiln.body': 'Follow multi-round clarify; RedLine event classifier. Offline mode is marked mock; live mode requires Kiln and never falls back.',
     'judge.tokens': 'Tokens split per flow',
     'judge.tokens.body': 'clarify / spec_emit / redline_hold / redline_trip / demo_inject — never a single total.',
     'judge.energy': 'Energy estimate',
     'judge.energy.body': '180W NPU-class assumption; energy_Wh = 180 × latency / 3600. Stated in README §9.',
     'judge.ontx': '≥1 on-chain tx',
-    'judge.ontx.body': 'Mint returns keccak256 tx hash; revoke returns a distinct second tx hash. Honest disclaimer: no Sepolia broadcast unless RPC + contract deployed.',
+    'judge.ontx.body': 'Testnet mint/revoke return transaction hashes and verified readback. Honest disclaimer: this build has not yet broadcast its required field transaction.',
     'judge.twice': 'Two controlled runs',
     'judge.twice.body': 'Run 1 (500U/50 loss) → engine trips at limit. Run 2 (smaller notional or Hynix inject) → trips sooner. Both leave a full event log.',
-    'judge.overshoot': '越权即停',
+    'judge.overshoot': 'Out-of-scope stops',
     'judge.overshoot.body': 'mode=grid_bot, paper=False, maxLoss>notional, expired expiry, blocked leader — all rejected at validation, no engine call.',
-    'judge.audit': '第三方可审计',
+    'judge.audit': 'Third-party auditable',
     'judge.audit.body': 'Passport + audit log alone let a third party answer: who, how much, face-verified?, why stopped? Every verdict carries reason_codes + source.',
 
     // ---- Spec simulator ----------------------------------------------
@@ -84,7 +103,7 @@ const STRINGS = {
     'sim.outcome.no_events': 'Without any events',
     'sim.outcome.no_events.note': 'engine reaches maxLoss=${maxLoss} in {sec}s; rule gate fires; model never gets a say',
     'sim.outcome.hynix': 'With Hynix event pack injected',
-    'sim.outcome.hynix.note': 'LLM classifier scores structural impact; worst move {pct}%',
+    'sim.outcome.hynix.note': 'Event classifier scores structural impact; worst move {pct}%',
     'sim.outcome.dash': '—',
     'sim.frozen_attr': 'model_may_override = false',
 
@@ -95,7 +114,7 @@ const STRINGS = {
     'sec.2.title': 'Inference',
     'sec.2.body': 'Kiln output is JSON; backend re-validates with Pydantic. No free-text Spec field is forwarded.',
     'sec.3.title': 'Trade',
-    'sec.3.body': 'Paper only (venue="paper"). Hard drawdown gate in code: if drawdown ≥ maxLoss → TRIP unconditionally. RedLine is a separate process.',
+    'sec.3.body': 'Paper only (venue="paper"). Hard drawdown gate in code: if drawdown ≥ maxLoss → TRIP unconditionally. Execution is an isolated subprocess.',
     'sec.4.title': 'Post-trade (audit)',
     'sec.4.body': 'Every RedLine verdict emits structured JSON with reason_codes + evidence + source. Third parties replay from passport + log alone.',
     'sec.5.title': 'What the AI cannot do',
@@ -121,14 +140,25 @@ const STRINGS = {
     // ---- Home page CTA -----------------------------------------------
     'home.cta': 'Try the Demo',
     'home.cta_sub': '3-minute walkthrough · PRD §7',
+    'home.headline': 'Human intent in. Controlled execution out.',
+
+    // ---- Live system metrics -----------------------------------------
+    'metrics.title': 'Live system metrics',
+    'metrics.source': 'counts derived from',
+    'metrics.passports': 'passports minted',
+    'metrics.events': 'audit events',
+    'metrics.tokens': 'Kiln tokens (in+out)',
+    'metrics.energy': 'energy @180W',
 
     // ---- Demo view: ChatPanel ----------------------------------------
     'chat.empty': 'Describe your copy-trading intent. Example: "follow leader-demo-001, 500 USD, max loss 50, 48h".',
+    'chat.title': 'Chat',
     'chat.user_prefix': 'User>',
     'chat.agent_prefix': 'Agent>',
     'chat.placeholder': 'Type your follow-trading intent...',
     'chat.send': 'Send',
     'chat.locked_note': 'Spec locked.',
+    'chat.clarifying': 'Please provide the missing mandate detail.',
 
     // ---- Demo view: SpecCard -----------------------------------------
     'spec.title': 'Spec',
@@ -142,6 +172,12 @@ const STRINGS = {
     'spec.paper': 'paper',
     'spec.lock_btn': 'Lock Spec & Mint Passport',
     'spec.locked_btn': 'Spec locked in passport',
+    'spec.intent_hash': 'intent hash',
+    'spec.prepare_btn': 'Prepare Passport',
+    'spec.confirm_mint_btn': 'Confirm & Mint Passport',
+    'spec.authorized_btn': 'Passport authorized',
+    'spec.working': 'Working…',
+    'spec.authorization_failed': 'Authorization failed',
 
     // ---- Demo view: PassportCard -------------------------------------
     'pass.title': 'Passport',
@@ -152,13 +188,69 @@ const STRINGS = {
     'pass.revoke_tx': 'revoke tx',
     'pass.face': 'face',
     'pass.face_verified': 'verified',
+    'pass.face_historical': 'verified · expired',
     'pass.face_not_verified': 'not verified',
     'pass.verify_face': 'Verify Face',
+    'pass.authorize_first': 'Authorize first',
     'pass.face_ok': 'Face OK',
+    'pass.verified_at': 'approved at',
+    'pass.method': 'method',
+    'pass.session': 'approval session',
+    'pass.gate_status': 'gate status',
+    'pass.gate_pending': 'pending',
+    'pass.gate_active': 'ready to start',
+    'pass.gate_consumed': 'used for this run',
+    'pass.gate_invalidated': 'invalidated',
+    'pass.gate_invalidated_help': 'This approval cannot authorize another run. Create a new frozen mandate and approve it again.',
     'pass.start_engine': 'Start Engine',
     'pass.engine_running': 'Engine running',
     'pass.copy': 'copy',
     'pass.copied': 'copied',
+    'pass.execution_backend': 'execution backend',
+    'pass.trader_id': 'trader ID',
+    'pass.execution_status': 'execution status',
+    'pass.action_failed': 'Action failed',
+
+    // ---- Human gate --------------------------------------------------
+    'gate.title': 'Approve this mandate',
+    'gate.subtitle': 'Execution cannot begin until a person reviews this exact paper-trading mandate and approves it now.',
+    'gate.close': 'Close human approval',
+    'gate.preview': 'Local camera preview',
+    'gate.camera.idle': 'Camera preview is waiting to start.',
+    'gate.camera.requesting': 'Requesting camera access…',
+    'gate.camera.ready': 'Local preview ready',
+    'gate.camera.denied': 'Camera access was denied. Allow camera access in the browser, then reopen this approval.',
+    'gate.camera.unsupported': 'This browser does not provide camera access. Use a current browser to approve the mandate.',
+    'gate.privacy': 'The preview stays in this browser. No image is captured, uploaded, stored, or used for training.',
+    'gate.mandate': 'Mandate under approval',
+    'gate.paper_only': 'Paper trading only',
+    'gate.consent': 'I am present and approve this leader, amount, loss limit, expiry, and paper-only execution.',
+    'gate.approve_start': 'Approve and start paper execution',
+    'gate.approving': 'Recording approval and starting…',
+    'gate.error.required': 'Approval was not recorded. Review the mandate and try again.',
+    'gate.error.generic': 'Approval could not be completed. Check the connection and try again.',
+
+    // ---- Inference evidence -----------------------------------------
+    'evidence.title': 'Inference workload & control evidence',
+    'evidence.subtitle': 'Per-flow inference demand is shown beside the authorization and stop timeline for this run.',
+    'evidence.model': 'model',
+    'evidence.mode': 'source',
+    'evidence.power': 'power assumption',
+    'evidence.flows': 'Token and energy by flow',
+    'evidence.calls': 'calls',
+    'evidence.sessions': 'active sessions',
+    'evidence.passports': 'passports',
+    'evidence.flow': 'flow',
+    'evidence.in': 'tokens in',
+    'evidence.out': 'tokens out',
+    'evidence.latency': 'latency',
+    'evidence.energy': 'energy est.',
+    'evidence.source': 'usage source',
+    'evidence.total': 'total',
+    'evidence.assumption': 'Energy is estimated as 180 W × API latency ÷ 3600. Offline values are simulated or estimated; final live evidence requires API-reported usage.',
+    'evidence.timeline': 'Authorization and control timeline',
+    'evidence.timeline_empty': 'Run the demo to build a replayable authorization and stop timeline.',
+    'evidence.run': 'run ID',
 
     // ---- Demo view: RedLinePanel -------------------------------------
     'red.title': 'RedLine',
@@ -167,6 +259,7 @@ const STRINGS = {
     'red.verdict': 'verdict',
     'red.inject_hynix': 'Inject Hynix',
     'red.trigger': 'Trigger RedLine',
+    'red.failed': 'RedLine action failed',
 
     // ---- VerdictBadge ------------------------------------------------
     'verdict.no_verdict': 'no verdict yet',
@@ -186,6 +279,21 @@ const STRINGS = {
     // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
     'demo.cond.title': 'Controlled runs (PRD §5)',
     'demo.cond.empty': 'No two-runs report yet. Run `python scripts/two_runs_demo.py` from the project root to populate this panel.',
+    'demo.cond.run': 'Run {number}',
+    'demo.cond.notional': 'notional',
+    'demo.cond.max_loss': 'max loss',
+    'demo.cond.drawdown_trip': 'drawdown @ TRIP',
+    'demo.cond.reason_codes': 'reason codes',
+    'demo.cond.mint_evidence': 'mint evidence',
+    'demo.cond.revoke_tx': 'revoke tx',
+    'demo.cond.status': 'status',
+    'demo.cond.generated_by': 'Generated by',
+    'demo.cond.disclaimer': 'Offline evidence is labelled and never presented as a public-chain transaction.',
+
+    // ---- Acceptance evidence ----------------------------------------
+    'acceptance.title': 'PRD §5 acceptance — every row tied to a file',
+    'acceptance.mapped': 'mapped',
+    'acceptance.footer': 'Each row links to the file or module that satisfies the check. Verify it with',
   },
 
   zh: {
@@ -196,6 +304,9 @@ const STRINGS = {
     'header.lang.zh': '中文',
     'header.lang.en': 'English',
     'header.lang.ko': '한국어',
+    'header.execution': '执行',
+    'header.switch_language': '切换语言',
+    'common.reset_failed': '重置失败',
 
     // ---- Hero ---------------------------------------------------------
     'hero.eyebrow': 'GWDC 2026 韩国站 · FuriosaAI × Bricksum · Challenge A + B',
@@ -360,160 +471,284 @@ const STRINGS = {
   },
   ko: {
     // ---- Header -------------------------------------------------------
-    // ---- Header -------------------------------------------------------
-    'header.try_demo': '데모 시작',
+    'header.try_demo': '데모 체험',
     'header.back_home': '← 홈으로',
     'header.reset': '초기화',
     'header.lang.zh': '中文',
-    'header.lang.en': 'EN',
     'header.lang.ko': '한국어',
+    'header.lang.en': 'EN',
+    'header.execution': '실행',
+    'header.switch_language': '언어 전환',
+    'common.reset_failed': '초기화 실패',
+
     // ---- Hero ---------------------------------------------------------
-    'hero.eyebrow': 'GWDC 2026 코리아 · FuriosaAI × Bricksum · Challenge A + B',
-    'hero.title.line1': '카피 트레이딩, AI가 잠그고,',
-    'hero.title.line2': '당신이 문을 엽니다.',
-    'hero.product': '자연어 → Spec → 얼굴 인증 → 모의 트레이딩 → 온체인 패스포트 → RedLine 킬 스위치.',
-    'hero.cta': '데모 시작',
-    'hero.prd': 'PRD / 과제서',
-    'primitives.title': '네 가지 핵심 요소',
-    // ---- Primitives grid ---------------------------------------------
+    'hero.eyebrow': 'GWDC 2026 한국 · FuriosaAI × Bricksum · Challenge A + B',
+    'hero.tagline': '금융을 위한 AI 에이전트 통제',
+    'hero.title.line1': '카피 트레이딩을 AI가 잠그고,',
+    'hero.title.line2': '멈추는 것은 당신입니다.',
+    'hero.declaration': '우리는 카피 트레이딩 승인 에이전트를 만들었습니다. 자연어로 잠긴 Spec을 생성하고, 사람의 페이스 게이트 승인을 거쳐 waytoweb4의 페이퍼 카피 트레이딩을 시작합니다. Spec은 철회 가능한 온체인 전략 패스포트로 민팅되며, 별도의 RedLine 에이전트가 손익을 보지 않고도 엔진을 중지하고 패스포트를 폐기할 수 있습니다.',
+    'hero.product': '자연어 → Spec → 페이스 게이트 → 페이퍼 카피 트레이딩 → 온체인 패스포트 → RedLine 킬 스위치.',
+    'hero.cta': '데모 체험',
+    'hero.prd': 'PRD / 브리프',
+    'motion.aria': '위임이 사람 승인, 온체인 패스포트, RedLine 정지 경로를 통과하는 과정을 보여 주는 제어 그래프.',
+    'motion.graph': '위임 제어 그래프',
+    'motion.status': '페이퍼 경로 예시',
+    'motion.node.spec': '01 · SPEC',
+    'motion.node.human': '02 · HUMAN',
+    'motion.node.passport': '03 · PASSPORT',
+    'motion.node.redline': '04 · REDLINE',
+    'motion.core': '제한된 실행',
+    'motion.caption': '위임을 잠그고 사람의 승인을 거쳐 패스포트를 기록하며 RedLine 정지 경로를 유지하는 흐름을 보여 줍니다.',
+    'motion.proof.spec_label': 'SPEC',
+    'motion.proof.spec_value': '위임 잠금',
+    'motion.proof.gate_label': '게이트',
+    'motion.proof.gate_value': '사용자 승인',
+    'motion.proof.mode_label': '모드',
+    'motion.proof.mode_value': '페이퍼 전용',
+
+    // ---- Primitives grid ----------------------------------------------
+    'primitives.title': '네 가지 핵심 구성요소',
     'prim.follow.title': 'Follow Agent',
     'prim.follow.tag': 'Kiln · gpt-oss-120b',
-    'prim.follow.body': '자연어를 잠긴 Spec으로. 1-2회 명확화; JSON 전용 출력; 백엔드는 Pydantic으로 재검증. 잠근 후 모델은 얼굴·손실한도를 보지 못함.',
-    'prim.face.title': '얼굴 게이트',
-    'prim.face.tag': '인간 개입',
-    'prim.face.body': '얼굴 인증은 faceVerified=true로 뒤집는 유일한 경로. Agent는 변경 API 없음. 모델이 시작을 결정하는 일 없음.',
+    'prim.follow.body': '자연어 → 고정된 Spec. 1–2회 명확화 질의; JSON 전용 출력; 백엔드가 Pydantic으로 재검증합니다. 잠긴 후에는 모델이 face나 최대 손실 한도를 볼 수 없습니다.',
+    'prim.face.title': '페이스 게이트',
+    'prim.face.tag': '사람이 개입',
+    'prim.face.body': '각 위임에 대한 사람의 승인이 faceVerified를 true로 바꾸는 유일한 경로입니다. 카메라는 로컬 미리보기이며 생체 인식 매칭이 아닙니다.',
     'prim.passport.title': '전략 패스포트',
-    'prim.passport.tag': 'keccak256 · mock | sepolia',
-    'prim.passport.body': 'Spec을 keccak256 해시. Mint는 0x... 트랜잭션 해시 반환; Revoke는 두 번째 다른 0x... 해시 반환. 백엔드는 모델이 손실한도를 풀지 못하게 함.',
+    'prim.passport.tag': 'keccak256 · mock | local | testnet',
+    'prim.passport.body': 'Spec은 keccak256으로 해시됩니다. 공개 테스트넷 민팅/철회는 트랜잭션 해시를 반환하며, 오프라인 시뮬레이션의 해시 필드는 비어 있습니다.',
     'prim.redline.title': 'RedLine Agent',
-    'prim.redline.tag': '독립 프로세스 · 수익 무시',
-    'prim.redline.body': '하드 게이트 우선 (DD_LIMIT, 모델 우회 불가). LLM 분류기는 구조적 충격만 평가 (하이닉스 / 레버리지 / 갭).',
-    // ---- Judge checklist ---------------------------------------------
-    'judge.title': '심사위원 검증 체크리스트',
-    'judge.user_need': '사용자 요구',
-    'judge.user_need.body': '개인 투자자 / 심사위원은 자연어로 카피 트레이딩을 위임하고 싶지만 Agent가 손실한도를 임의로 풀지 못할까 우려함.',
+    'prim.redline.tag': '독립 제어 · PnL 미사용',
+    'prim.redline.body': '하드 규칙 게이트가 먼저 작동합니다. 이벤트 분류기는 구조적 충격을 판정하며 오프라인 출력은 mock으로 명시됩니다.',
+
+    // ---- Judge checklist ----------------------------------------------
+    'judge.title': '심사위원 체크리스트',
+    'judge.user_need': '사용자 니즈',
+    'judge.user_need.body': '개인 투자자와 심사위원은 자연어로 카피 트레이딩을 위임하고 싶지만, 에이전트가 손실 한도를 넓힐 수 없어야 한다고 우려합니다.',
     'judge.agent_vs_code': 'Agent vs Code',
-    'judge.agent_vs_code.body': 'Agent 담당: 명확화, Spec 산출, 이벤트 분류. Code 담당: 필드 검증, 얼굴 게이트, 시작/정지, 패스포트 발행/소각, 손실한도 하드 게이트.',
+    'judge.agent_vs_code.body': 'Agent: 명확화, spec_emit, 이벤트 분류. Code: 스키마 검증, 페이스 게이트, 시작/정지, 민팅/철회, 드로다운 하드 게이트.',
     'judge.kiln': 'Kiln gpt-oss-120b',
-    'judge.kiln.body': 'Follow 다회 명확화 + RedLine 이벤트 분류. KILN_API_KEY 미설정 시 오프라인 Mock으로 자동 fallback.',
-    'judge.tokens': 'Token 단계별 분할',
-    'judge.tokens.body': 'clarify / spec_emit / redline_hold / redline_trip / demo_inject — 절대 합계만 보고하지 않음.',
+    'judge.kiln.body': 'Follow 다중 명확화 + RedLine 이벤트 분류. 오프라인은 mock으로 표시되며 live 모드는 Kiln 없이는 실행되지 않습니다.',
+    'judge.tokens': '플로우별 토큰 분리',
+    'judge.tokens.body': 'clarify / spec_emit / redline_hold / redline_trip / demo_inject — 총합 하나로만 보고하지 않습니다.',
     'judge.energy': '에너지 추정',
-    'judge.energy.body': '180W NPU 가정; energy_Wh = 180 × latency / 3600. README §9 명시.',
-    'judge.ontx': '온체인 tx ≥1건',
-    'judge.ontx.body': 'Mint는 keccak256 트랜잭션 해시 반환; Revoke는 두 번째 다른 해시 반환. 정직한 고지: Sepolia RPC 및 컨트랙트 배포 전 실제 트랜잭션 미발행.',
-    'judge.twice': '두 번의 통제 비교 실행',
-    'judge.twice.body': 'Run 1 (500U / 50 손실) → 엔진 한도 도달 시 정지. Run 2 (작은 금액 또는 하이닉스 주입) → 더 일찍 정지. 두 번 모두 전체 이벤트 로그 보관.',
-    'judge.overshoot': '권한 초과 시 즉시 정지',
-    'judge.overshoot.body': 'mode=grid_bot, paper=False, maxLoss>notional, 만료, 금지 Leader — 모두 검증 단계에서 거부, 엔진 호출 없음.',
+    'judge.energy.body': '180W NPU급 가정; energy_Wh = 180 × latency / 3600. README §9에 명시.',
+    'judge.ontx': '온체인 트랜잭션 ≥ 1건',
+    'judge.ontx.body': '테스트넷 민팅/철회는 트랜잭션 해시와 검증된 readback을 반환합니다. 필수 현장 트랜잭션은 아직 브로드캐스트하지 않았습니다.',
+    'judge.twice': '두 번의 조건 대조 실행',
+    'judge.twice.body': 'Run 1(500U / 손실 50) → 한도에서 정지. Run 2(더 작은 명목 금액 또는 하이닉스 이벤트 주입) → 더 일찍 정지. 두 실행 모두 전체 이벤트 로그를 남깁니다.',
+    'judge.overshoot': '권한 밖 실행 즉시 정지',
+    'judge.overshoot.body': 'mode=grid_bot, paper=False, maxLoss>notional, 만기 경과, 차단된 리더 — 모두 검증 단계에서 거부되며 엔진을 호출하지 않습니다.',
     'judge.audit': '제3자 감사 가능',
-    'judge.audit.body': '패스포트 + 로그만으로 제3자가 답��� 가능: 누구를, 얼마만큼, 얼굴 인증 여부, 왜 정지했는가. 모든 판결에 reason_codes + source 포함.',
-    // ---- Spec simulator ---------------------------------------------
+    'judge.audit.body': '패스포트 + 감사 로그만으로 제3자가 답할 수 있습니다: 누구를, 얼마나, face 인증 여부, 왜 멈췄는지. 모든 판정에는 reason_codes + source가 포함됩니다.',
+
+    // ---- Spec simulator ----------------------------------------------
     'sim.title': 'Spec 시뮬레이터',
-    'sim.notional': '원금 (USD)',
+    'sim.notional': '명목 금액 (USD)',
     'sim.maxloss': '최대 손실 (USD)',
-    'sim.expiry': '만료',
-    'sim.venue': '장소',
+    'sim.expiry': '만기',
+    'sim.venue': '거래 장소',
     'sim.mode': '유형',
     'sim.expiry_val': '+{hours}시간',
-    'sim.venue_val': '모의',
+    'sim.venue_val': '페이퍼',
     'sim.mode_val': '카피',
-    'sim.invalid': '최대 손실은 원금을 초과할 수 없음 — 백엔드가 이 Spec을 거부함.',
-    'sim.outcome.no_events': '이벤트 없음',
-    'sim.outcome.no_events.note': '{sec}초 후 엔진이 maxLoss=${maxLoss}에 도달; 하드 게이트 발동; 모델 개입 없음',
-    'sim.outcome.hynix': '하이닉스 이벤트 팩 주입',
-    'sim.outcome.hynix.note': 'LLM 분류기가 구조적 충격 평가; 최악 단일 변동 {pct}%',
+    'sim.invalid': '최대 손실은 명목 금액을 초과할 수 없습니다 — 백엔드가 이 Spec을 거부합니다.',
+    'sim.outcome.no_events': '이벤트 없이 방치하면',
+    'sim.outcome.no_events.note': '{sec}초 후 엔진이 maxLoss=${maxLoss} 도달; 하드 규칙 게이트 발동; 모델은 발언권 없음',
+    'sim.outcome.hynix': '하이닉스 이벤트 팩 주입 시',
+    'sim.outcome.hynix.note': '이벤트 분류기가 구조적 충격을 점수화; 최악 변동 {pct}%',
     'sim.outcome.dash': '—',
     'sim.frozen_attr': 'model_may_override = false',
-    // ---- Security strip ---------------------------------------------
+
+    // ---- Security strip ----------------------------------------------
     'sec.title': '보안 아키텍처',
     'sec.1.title': '거래 전',
-    'sec.1.body': '얼굴 인증 없으면 시작 불가. Spec 필드 화이트리스트 (extra="forbid"). 원금 ≤ 10k. maxLoss ≤ 원금. 만료 > 현재.',
+    'sec.1.body': '페이스 인증 없이는 시작 불가. Spec 필드 화이트리스트(extra="forbid"). 명목 금액 ≤ 1만. 최대 손실 ≤ 명목 금액. 만기 > 현재.',
     'sec.2.title': '추론 중',
-    'sec.2.body': 'Kiln 출력은 JSON; 백엔드가 Pydantic으로 재검증. 자유 텍스트 필드는 하류로 전달되지 않음.',
+    'sec.2.body': 'Kiln 출력은 JSON; 백엔드가 Pydantic으로 재검증합니다. 자유 텍스트 Spec 필드는 어디에도 전달되지 않습니다.',
     'sec.3.title': '거래 중',
-    'sec.3.body': '모의 거래만 (venue="paper"). 코드 하드 게이트: drawdown ≥ maxLoss이면 무조건 TRIP. RedLine은 독립 프로세스.',
-    'sec.4.title': '거래 후 (감사)',
-    'sec.4.body': '모든 RedLine 판결은 구조화된 JSON 출력, reason_codes + evidence + source 포함. 제3자는 패스포트 + 로그만으로 재구성 가능.',
-    'sec.5.title': 'AI가 할 수 없는 것',
-    'sec.5.body': 'maxLoss 변경. RedLine 비활성화. 얼굴 게이트 자체 열기. PnL을 보고 TRIP "면제". 스키마 금지 필드 주입.',
+    'sec.3.body': '페이퍼만 실행(venue="paper"). 코드 손실 하드 게이트: drawdown ≥ maxLoss이면 무조건 TRIP. 실행 워커는 격리된 서브프로세스입니다.',
+    'sec.4.title': '거래 후(감사)',
+    'sec.4.body': '모든 RedLine 판정은 reason_codes + evidence + source가 담긴 구조화 JSON을 출력합니다. 제3자는 패스포트 + 로그만으로 재현할 수 있습니다.',
+    'sec.5.title': 'AI가 할 수 없는 일',
+    'sec.5.body': 'maxLoss 변경. RedLine 비활성화. 페이스 게이트 통과. PnL을 보고 TRIP "면제". 스키마 금지 필드 주입.',
+
     // ---- Live data panel ---------------------------------------------
     'live.title': '실시간 증거',
-    'live.polled': '다음에서 폴링',
+    'live.polled': '폴링 대상',
     'live.polled.every': '1.5초마다',
     'live.latest': '최신 패스포트',
-    'live.no_passport': '아직 발행된 패스포트 없음. 데모를 열고 Spec을 잠그면 발행됨.',
+    'live.no_passport': '아직 민팅된 패스포트가 없습니다. 데모를 열고 Spec을 잠그고 민팅하세요.',
     'live.id': 'ID',
     'live.spec_hash': 'Spec 해시',
-    'live.mint_tx': 'Mint 트랜잭션',
-    'live.revoke_tx': 'Revoke 트랜잭션',
+    'live.mint_tx': '민팅 트랜잭션',
+    'live.revoke_tx': '철회 트랜잭션',
     'live.status': '상태',
-    'live.token_table': 'Token / 에너지 표',
-    'live.empty_table': '(아직 Kiln 호출 없음 — 데모를 열고 Spec을 실행하면 채워짐)',
-    'live.audit_count': '지금까지 감사 이벤트:',
-    'live.footer_note': '동일 내용이 다음에서도 제공됨',
-    'live.footer_note.tail': '. 제출 전 README §9에 붙여넣기.',
+    'live.token_table': '토큰 / 에너지 표',
+    'live.empty_table': '(아직 Kiln 호출 없음 — 데모를 열어 Spec을 실행하면 채워집니다)',
+    'live.audit_count': '지금까지의 감사 이벤트:',
+    'live.footer_note': '동일한 콘텐츠 제공 위치',
+    'live.footer_note.tail': '. 제출 전 README §9에 붙여넣으세요.',
+
     // ---- Home page CTA -----------------------------------------------
-    'home.cta': '데모 시작',
-    'home.cta_sub': '3분 둘러보기 · PRD §7',
+    'home.cta': '데모 체험',
+    'home.cta_sub': '3분 워크스루 · PRD §7',
+    'home.headline': '사람이 의도를 승인하고, 시스템이 실행을 통제합니다.',
+
+    // ---- Live system metrics -----------------------------------------
+    'metrics.title': '실시간 시스템 지표',
+    'metrics.source': '집계 출처',
+    'metrics.passports': '민팅된 패스포트',
+    'metrics.events': '감사 이벤트',
+    'metrics.tokens': 'Kiln 토큰 (입력+출력)',
+    'metrics.energy': '180W 기준 에너지',
+
     // ---- Demo view: ChatPanel ----------------------------------------
-    'chat.empty': '카피 트레이딩 의도를 한 문장으로 설명. 예: "leader-demo-001, 500 USD, 손실 50까지, 48시간".',
+    'chat.empty': '카피 트레이딩 의도를 설명해 주세요. 예: "leader-demo-001을 500 USD로, 최대 손실 50, 48시간".',
+    'chat.title': '대화',
     'chat.user_prefix': '사용자>',
     'chat.agent_prefix': 'Agent>',
-    'chat.placeholder': '카피 트레이딩 의도 입력...',
+    'chat.placeholder': '카피 트레이딩 의도를 입력하세요...',
     'chat.send': '전송',
-    'chat.locked_note': 'Spec 잠김.',
+    'chat.locked_note': 'Spec이 잠겼습니다.',
+    'chat.clarifying': '빠진 위임 조건을 입력해 주세요.',
+
     // ---- Demo view: SpecCard -----------------------------------------
     'spec.title': 'Spec',
     'spec.locked': '잠김',
-    'spec.empty': '아직 Spec 없음. 채팅에서 메시지를 보내 필드를 채움.',
+    'spec.empty': '아직 Spec이 없습니다. 채팅에서 메시지를 보내 필드를 채우세요.',
     'spec.leader': 'leader',
-    'spec.notional': '원금',
+    'spec.notional': '명목 금액',
     'spec.maxloss': '최대 손실',
-    'spec.expiry': '만료',
-    'spec.venue': '장소',
+    'spec.expiry': '만기',
+    'spec.venue': '거래 장소',
     'spec.paper': 'paper',
-    'spec.lock_btn': 'Spec 잠그고 패스포트 발행',
-    'spec.locked_btn': 'Spec이 패스포트에 잠김',
+    'spec.lock_btn': 'Spec 잠그고 패스포트 민팅',
+    'spec.locked_btn': 'Spec이 패스포트에 민팅됨',
+    'spec.intent_hash': 'intent 해시',
+    'spec.prepare_btn': '패스포트 준비',
+    'spec.confirm_mint_btn': '확인 및 패스포트 민팅',
+    'spec.authorized_btn': '패스포트 승인됨',
+    'spec.working': '처리 중…',
+    'spec.authorization_failed': '승인 실패',
+
     // ---- Demo view: PassportCard -------------------------------------
     'pass.title': '패스포트',
-    'pass.empty': '아직 패스포트 없음. 먼저 Spec을 잠그기.',
+    'pass.empty': '아직 패스포트가 없습니다. 먼저 Spec을 잠그세요.',
     'pass.id': 'ID',
     'pass.spec_hash': 'Spec 해시',
-    'pass.mint_tx': 'Mint 트랜잭션',
-    'pass.revoke_tx': 'Revoke 트랜잭션',
-    'pass.face': '얼굴',
+    'pass.mint_tx': '민팅 트랜잭션',
+    'pass.revoke_tx': '철회 트랜잭션',
+    'pass.face': '페이스',
     'pass.face_verified': '인증됨',
+    'pass.face_historical': '인증 기록 · 만료됨',
     'pass.face_not_verified': '미인증',
-    'pass.verify_face': '얼굴 인증',
-    'pass.face_ok': '얼굴 통과',
+    'pass.verify_face': '페이스 인증',
+    'pass.authorize_first': '먼저 위임 승인',
+    'pass.face_ok': '페이스 확인됨',
+    'pass.verified_at': '승인 시각',
+    'pass.method': '승인 방식',
+    'pass.session': '승인 세션',
+    'pass.gate_status': '게이트 상태',
+    'pass.gate_pending': '승인 대기',
+    'pass.gate_active': '시작 가능',
+    'pass.gate_consumed': '이번 실행에 사용됨',
+    'pass.gate_invalidated': '무효화됨',
+    'pass.gate_invalidated_help': '이 승인은 다른 실행에 사용할 수 없습니다. 새로운 고정 위임을 만들고 다시 승인하세요.',
     'pass.start_engine': '엔진 시작',
     'pass.engine_running': '엔진 실행 중',
     'pass.copy': '복사',
     'pass.copied': '복사됨',
+    'pass.execution_backend': '실행 백엔드',
+    'pass.trader_id': '트레이더 ID',
+    'pass.execution_status': '실행 상태',
+    'pass.action_failed': '작업 실패',
+
+    // ---- Human gate --------------------------------------------------
+    'gate.title': '이 위임을 승인하세요',
+    'gate.subtitle': '사람이 이 페이퍼 트레이딩 위임 내용을 직접 확인하고 지금 승인해야 실행할 수 있습니다.',
+    'gate.close': '사용자 승인 닫기',
+    'gate.preview': '로컬 카메라 미리보기',
+    'gate.camera.idle': '카메라 미리보기를 시작할 준비 중입니다.',
+    'gate.camera.requesting': '카메라 접근 권한을 요청하는 중…',
+    'gate.camera.ready': '로컬 미리보기 준비됨',
+    'gate.camera.denied': '카메라 접근이 거부되었습니다. 브라우저에서 카메라를 허용한 뒤 승인 화면을 다시 여세요.',
+    'gate.camera.unsupported': '이 브라우저에서는 카메라를 사용할 수 없습니다. 최신 브라우저에서 위임을 승인하세요.',
+    'gate.privacy': '미리보기는 이 브라우저 안에서만 처리됩니다. 이미지를 촬영·업로드·저장하거나 학습에 사용하지 않습니다.',
+    'gate.mandate': '승인할 위임 내용',
+    'gate.paper_only': '페이퍼 트레이딩 전용',
+    'gate.consent': '본인이 직접 이 리더, 금액, 손실 한도, 만료 시각과 페이퍼 전용 실행을 승인합니다.',
+    'gate.approve_start': '승인하고 페이퍼 실행 시작',
+    'gate.approving': '승인을 기록하고 실행하는 중…',
+    'gate.error.required': '승인이 기록되지 않았습니다. 위임 내용을 확인한 뒤 다시 시도하세요.',
+    'gate.error.generic': '승인을 완료하지 못했습니다. 연결 상태를 확인하고 다시 시도하세요.',
+
+    // ---- Inference evidence -----------------------------------------
+    'evidence.title': '추론 워크로드 및 통제 증거',
+    'evidence.subtitle': '이번 실행의 단계별 추론 수요를 승인 및 중지 타임라인과 함께 표시합니다.',
+    'evidence.model': '모델',
+    'evidence.mode': '출처',
+    'evidence.power': '전력 가정',
+    'evidence.flows': '단계별 토큰 및 에너지',
+    'evidence.calls': '호출',
+    'evidence.sessions': '활성 세션',
+    'evidence.passports': '패스포트',
+    'evidence.flow': '단계',
+    'evidence.in': '입력 토큰',
+    'evidence.out': '출력 토큰',
+    'evidence.latency': '지연 시간',
+    'evidence.energy': '에너지 추정',
+    'evidence.source': '사용량 출처',
+    'evidence.total': '합계',
+    'evidence.assumption': '에너지는 180 W × API 지연 시간 ÷ 3600으로 추정합니다. 오프라인 값은 시뮬레이션 또는 추정치이며, 최종 라이브 증거에는 API가 보고한 사용량이 필요합니다.',
+    'evidence.timeline': '승인 및 통제 타임라인',
+    'evidence.timeline_empty': '데모를 실행하면 재현 가능한 승인 및 중지 타임라인이 생성됩니다.',
+    'evidence.run': '실행 ID',
+
     // ---- Demo view: RedLinePanel -------------------------------------
     'red.title': 'RedLine',
     'red.running': '실행 중',
     'red.drawdown': '드로다운',
-    'red.verdict': '판결',
+    'red.verdict': '판정',
     'red.inject_hynix': '하이닉스 주입',
     'red.trigger': 'RedLine 트리거',
+    'red.failed': 'RedLine 작업 실패',
+
     // ---- VerdictBadge ------------------------------------------------
-    'verdict.no_verdict': '아직 판결 없음',
-    'verdict.via': '출처',
+    'verdict.no_verdict': '아직 판정 없음',
+    'verdict.via': '경로',
+
     // ---- EventLog ----------------------------------------------------
     'events.title': '최근 이벤트',
     'events.empty': '이벤트 없음',
+
     // ---- DrawdownGauge -----------------------------------------------
     'gauge.drawdown': '드로다운',
+
     // ---- Demo: token strip -------------------------------------------
-    'tokens.title': 'Token / 에너지 보고서',
+    'tokens.title': '토큰 / 에너지 리포트',
     'tokens.empty': '—',
 
     // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
-    'demo.cond.title': '통제 비교 실행 (PRD §5)',
-    'demo.cond.empty': '두 라운드 보고서 없음. 프로젝트 루트에서 `python scripts/two_runs_demo.py` 실행하여 이 패널 채우기.',
+    'demo.cond.title': '조건 비교 실행 (PRD §5)',
+    'demo.cond.empty': '아직 두 번의 비교 실행 보고서가 없습니다. 프로젝트 루트에서 `python scripts/two_runs_demo.py`를 실행하면 이 패널에 표시됩니다.',
+    'demo.cond.run': '실행 {number}',
+    'demo.cond.notional': '명목 금액',
+    'demo.cond.max_loss': '최대 손실',
+    'demo.cond.drawdown_trip': 'TRIP 시 드로다운',
+    'demo.cond.reason_codes': '사유 코드',
+    'demo.cond.mint_evidence': '민팅 증거',
+    'demo.cond.revoke_tx': '철회 트랜잭션',
+    'demo.cond.status': '상태',
+    'demo.cond.generated_by': '생성 스크립트:',
+    'demo.cond.disclaimer': '오프라인 증거는 명확히 표시하며 공개 체인 트랜잭션으로 제시하지 않습니다.',
+
+    // ---- Acceptance evidence ----------------------------------------
+    'acceptance.title': 'PRD §5 수락 기준 — 모든 항목을 코드 파일과 연결',
+    'acceptance.mapped': '연결됨',
+    'acceptance.footer': '각 항목은 해당 기준을 구현한 파일 또는 모듈과 연결됩니다. 다음 명령으로 확인하세요:',
   },
+
 }
 
 const I18nCtx = createContext({
@@ -539,19 +774,24 @@ export function I18nProvider({ children }) {
     } catch (_) {
       // localStorage unavailable (private window) -- just ignore.
     }
+    document.documentElement.lang = locale
   }, [locale])
 
   function setLocale(next) {
-    if (next !== 'en' && next !== 'zh' && next !== 'ko') return
+    if (!LOCALES.some((option) => option.code === next)) return
     setLocaleState(next)
   }
   function toggle() {
-    // Cycle: en -> zh -> ko -> en. Show the next locale's name in the
-    // switcher (handled by Header.jsx) so users see what they will get.
-    setLocaleState((cur) => (cur === 'en' ? 'zh' : cur === 'zh' ? 'ko' : 'en'))
+    setLocaleState((current) => {
+      const index = LOCALES.findIndex((option) => option.code === current)
+      return LOCALES[(index + 1) % LOCALES.length].code
+    })
   }
-  function t(key) {
-    return STRINGS[locale]?.[key] ?? STRINGS.en?.[key] ?? key
+  function t(key, values = {}) {
+    const message = STRINGS[locale]?.[key] ?? STRINGS.en?.[key] ?? key
+    return message.replace(/\{(\w+)\}/g, (match, name) => (
+      Object.prototype.hasOwnProperty.call(values, name) ? String(values[name]) : match
+    ))
   }
 
   return (

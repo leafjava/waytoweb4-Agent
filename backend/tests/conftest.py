@@ -68,7 +68,7 @@ def app_and_state(tmp_ledger: Path):  # noqa: F821 -- Path not imported; fix bel
     yield app, fresh
 
     # Cleanup: cancel engine tasks between tests.
-    asyncio.get_event_loop().run_until_complete(cancel_all())
+    asyncio.run(cancel_all())
     app.dependency_overrides.clear()
 
 

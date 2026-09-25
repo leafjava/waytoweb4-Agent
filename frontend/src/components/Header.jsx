@@ -5,77 +5,81 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
   const { locale, setLocale, t } = useI18n()
 
   return (
-    <header className="px-6 py-3 border-b border-slate-800 bg-slate-900/70 flex items-center gap-4">
+    <header className="site-header sticky top-0 z-40 flex min-w-0 items-center justify-center gap-2 overflow-hidden px-4 py-3 md:gap-3 md:px-8">
       <button
         onClick={onGoHome}
-        className="flex items-center gap-2 hover:opacity-80"
+        className="site-logo group flex h-10 w-10 shrink-0 items-center justify-center rounded-full md:h-11 md:w-11"
         title={t('header.back_home')}
       >
-        <i className="fa fa-bolt text-amber-400"></i>
-        <h1 className="text-lg font-semibold tracking-wide">
-          waytoweb4 copy-trading agent
-        </h1>
+        <span className="flex h-8 w-8 items-center justify-center text-sm transition-transform group-hover:scale-[1.03]">
+          <i className="fa fa-shield"></i>
+        </span>
+        <h1 className="site-wordmark hidden font-semibold sm:block">waytoweb4</h1>
       </button>
 
-      <div className="ml-auto flex items-center gap-3 text-xs">
-        <Pill label="Kiln" value={health?.kiln ?? '—'} />
-        <Pill label="Passport" value={health?.passport_backend ?? '—'} />
-
-        <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded overflow-hidden">
-          <i className="fa fa-globe px-2 text-slate-400"></i>
-          {LOCALES.map((loc) => {
-            const active = loc.code === locale
-            return (
-              <button
-                key={loc.code}
-                onClick={() => setLocale(loc.code)}
-                className={
-                  'px-2.5 py-1 text-xs font-mono transition-colors ' +
-                  (active
-                    ? 'bg-sky-500 text-slate-950 font-semibold'
-                    : 'text-slate-300 hover:bg-slate-700')
-                }
-                title={`Switch to ${loc.label}`}
-              >
-                {t(`header.lang.${loc.code}`)}
-              </button>
-            )
-          })}
+      <div className="site-header__actions flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs md:px-5">
+        <div className="hidden items-center gap-2 2xl:flex">
+          <Pill label="Kiln" value={health?.kiln ?? '—'} />
+          <Pill label="Passport" value={health?.passport_backend ?? '—'} />
+          <Pill label={t('header.execution')} value={health?.execution_backend ?? '—'} />
         </div>
 
-        {view === 'home' ? (
-          <button
-            onClick={onGoDemo}
-            className="px-3 py-1 rounded bg-sky-600 hover:bg-sky-500 text-white font-medium"
-          >
-            {t('header.try_demo')} <i className="fa fa-arrow-right ml-1"></i>
-          </button>
-        ) : (
-          <button
-            onClick={onGoHome}
-            className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200"
-          >
-            <i className="fa fa-arrow-left mr-1"></i> {t('header.back_home')}
-          </button>
-        )}
+        <div
+          className="nav-control flex min-h-9 items-center gap-1 px-1.5 py-1 text-slate-700"
+          title={t('header.switch_language')}
+        >
+          <i className="fa fa-globe"></i>
+          {LOCALES.map((option) => (
+            <button
+              key={option.code}
+              type="button"
+              aria-pressed={locale === option.code}
+              onClick={() => setLocale(option.code)}
+              className={`rounded-full px-2 py-1 font-mono transition-colors ${
+                locale === option.code
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+              title={`Switch to ${option.label}`}
+            >
+              {t(`header.lang.${option.code}`)}
+            </button>
+          ))}
+        </div>
 
         <button
           onClick={onReset}
-          className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200"
+          className="nav-control hidden min-h-9 px-3 py-1 text-slate-700 sm:block"
           title={t('header.reset')}
         >
           <i className="fa fa-rotate-right mr-1"></i> {t('header.reset')}
         </button>
       </div>
+
+      {view === 'home' ? (
+        <button
+          onClick={onGoDemo}
+          className="header-primary-action primary-button hidden min-h-9 px-4 py-1.5 text-sm sm:block"
+        >
+          {t('header.try_demo')} <i className="fa fa-arrow-right ml-1"></i>
+        </button>
+      ) : (
+        <button
+          onClick={onGoHome}
+          className="header-primary-action primary-button min-h-9 px-4 py-1.5 text-sm"
+        >
+          <i className="fa fa-arrow-left mr-1"></i> {t('header.back_home')}
+        </button>
+      )}
     </header>
   )
 }
 
 function Pill({ label, value }) {
   return (
-    <div className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-800 border border-slate-700">
-      <span className="text-slate-400">{label}:</span>
-      <span className="text-slate-100 font-mono">{value}</span>
+    <div className="flex items-center gap-1.5 rounded-full bg-black/[0.035] px-2.5 py-1">
+      <span className="text-slate-500">{label}</span>
+      <span className="font-mono text-[#1d1d1f]">{value}</span>
     </div>
   )
 }

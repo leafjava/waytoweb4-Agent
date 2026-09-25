@@ -12,6 +12,7 @@ from agent.follow_agent import Clarifier as AgentClarifier
 from agent.follow_agent import Emitter, build_kiln_client
 from agent.follow_agent.clarifier import REQUIRED_FIELDS, _looks_like_answer
 from agent.shared.exceptions import SpecValidationError
+from agent.shared.evidence import use_evidence_writer
 from fastapi import APIRouter, Depends, Request
 
 from ..deps import get_state
@@ -45,11 +46,12 @@ def spec_check(req: CheckRequest) -> CheckResponse:
 
 
 @router.post("/clarify", response_model=ClarifyResponse)
-def spec_clarify(req: ClarifyRequest, request: Request) -> ClarifyResponse:
-    client = _kiln()
-    clarifier = AgentClarifier(client)
-    draft_id = req.draft_id or "draft-pending"
-    q = clarifier.first_question(req.user_text)
+def spec_clarify(req: ClarifyRequest, request: Request, state: AppState = Depends(get_state)) -> ClarifyResponse:
+    with use_evidence_writer(state.evidence):
+        client = _kiln()
+        clarifier = AgentClarifier(client)
+        draft_id = req.draft_id or "draft-pending"
+        q = clarifier.first_question(req.user_text)
     if not q.field:
         return ClarifyResponse(
             draft_id=draft_id,
@@ -68,16 +70,17 @@ def spec_clarify(req: ClarifyRequest, request: Request) -> ClarifyResponse:
 
 
 @router.post("/emit", response_model=EmitResponse)
-def spec_emit(req: EmitRequest) -> EmitResponse:
-    client = _kiln()
-    emitter = Emitter(client)
-    emitter.add_user(req.user_text)
-    try:
-        spec = emitter.emit()
-    except SpecValidationError as e:
-        raise spec_error(str(e))
-    except Exception as e:  # noqa: BLE001 -- translate to HTTP
-        raise map_agent_error(e)
+def spec_emit(req: EmitRequest, state: AppState = Depends(get_state)) -> EmitResponse:
+    with use_evidence_writer(state.evidence):
+        client = _kiln()
+        emitter = Emitter(client)
+        emitter.add_user(req.user_text)
+        try:
+            spec = emitter.emit()
+        except SpecValidationError as e:
+            raise spec_error(str(e))
+        except Exception as e:  # noqa: BLE001 -- translate to HTTP
+            raise map_agent_error(e)
     payload = spec.model_dump(mode="json")
     # Force faceVerified off. Defence in depth.
     payload["faceVerified"] = False

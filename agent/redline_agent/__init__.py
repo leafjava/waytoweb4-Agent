@@ -32,6 +32,7 @@ from .llm_classifier import (
     CB_THRESHOLD_PCT,
     EventClassifier,
     HynixMockClassifier,
+    KilnEventClassifier,
     KEYWORD_RULES,
     MarketEvent,
 )
@@ -54,6 +55,7 @@ __all__ = [
     "hard_check",
     "EventClassifier",
     "HynixMockClassifier",
+    "KilnEventClassifier",
     "MarketEvent",
     "KEYWORD_RULES",
     "CB_THRESHOLD_PCT",

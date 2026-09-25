@@ -26,10 +26,13 @@ import json
 import os
 import re
 import time
+import uuid
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Protocol
+from urllib.parse import urlsplit
 
 from agent.shared.token_logger import get_default_logger
+from agent.shared.evidence import get_evidence_writer
 
 # ---- Environment configuration ---------------------------------------------
 
@@ -39,6 +42,29 @@ KILN_MODEL_ENV = "KILN_MODEL"
 
 DEFAULT_API_BASE = "https://api.kiln.ai/v1"
 DEFAULT_MODEL = "gpt-oss-120b"
+
+
+def _validate_api_base(value: str) -> str:
+    """Reject endpoints that could disclose the bearer key in cleartext.
+
+    The endpoint remains configurable for the event's Kiln-compatible
+    gateway, but live mode must never send credentials over HTTP or accept
+    URL components that can obscure the actual destination.
+    """
+    candidate = value.strip().rstrip("/")
+    parsed = urlsplit(candidate)
+    if (
+        parsed.scheme.lower() != "https"
+        or not parsed.hostname
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise RuntimeError(
+            "KILN_API_BASE must be an HTTPS URL without credentials, query, or fragment"
+        )
+    return candidate
 
 
 # ---- Public types -----------------------------------------------------------
@@ -69,6 +95,8 @@ class KilnReply:
     tokens_out: int
     latency_s: float
     model: str
+    usage_source: str = "api"
+    request_id: str | None = None
 
 
 class KilnClient(Protocol):
@@ -106,12 +134,12 @@ class MockKilnClient:
 
     Behaviour depends on the latest user message:
 
-      * if it asks a follow-up question (matches "leader", "额度",
-        "限亏", "expiry", etc.) -> returns a clarifying question
+      * if it asks a follow-up question (matches "leader", "amount",
+        "loss limit", "expiry", etc.) -> returns a clarifying question
       * otherwise -> returns a frozen demo Spec in JSON form
 
     The mock also recognises a small "trigger" language for the
-    redline-as-LLM-classifier path (海力士 / circuit breaker keywords
+    redline-as-LLM-classifier path (Hynix / circuit breaker keywords
     etc.) but the actual redline judgments are exercised in
     redline_agent tests; this mock is only for the follow agent.
     """
@@ -122,9 +150,11 @@ class MockKilnClient:
     # match keyword clusters, not exact strings. Keep these aligned
     # with the heuristic patterns in clarifier._looks_like_answer() so
     # the mock and the real flow agree on what counts as "filled".
+    # Amount/loss matchers accept English, Korean and Chinese phrasing;
+    # the ZH entries are input parsing, not user-visible copy.
     _LEADER_RE = re.compile(r"\bleader[-_a-zA-Z0-9]{1,32}\b")
-    _AMOUNT_RE = re.compile(r"(\d{2,5})\s*(u|usd|美元|元|\$)?", re.IGNORECASE)
-    _LOSS_RE = re.compile(r"(亏|止损|maxloss|stop\s*loss)", re.IGNORECASE)
+    _AMOUNT_RE = re.compile(r"(\d{2,5})\s*(u|usd|美元|元|달러|\$)?", re.IGNORECASE)
+    _LOSS_RE = re.compile(r"(亏|止损|maxloss|stop\s*loss|손실)", re.IGNORECASE)
 
     def chat(self, messages: Iterable[ChatMessage], flow_tag: str) -> KilnReply:
         msgs = list(messages)
@@ -145,13 +175,15 @@ class MockKilnClient:
 
         tokens_in = _total_tokens_in(msgs)
         tokens_out = _approx_tokens(reply_text)
-        get_default_logger().record(flow_tag, tokens_in, tokens_out, latency)
+        call_id = str(uuid.uuid4())
+        get_default_logger().record(flow_tag, tokens_in, tokens_out, latency, usage_source="estimated", model=self.model, request_id=call_id)
         return KilnReply(
             text=reply_text,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
             latency_s=latency,
             model=self.model,
+            usage_source="estimated", request_id=call_id,
         )
 
     # -- canned replies -----------------------------------------------------
@@ -162,7 +194,7 @@ class MockKilnClient:
         # expected to parse this with json.loads and then re-validate
         # via CopyTradingSpec; tests assert both paths.
         from datetime import datetime, timedelta, timezone
-        expiry = (datetime.now(timezone.utc) + timedelta(hours=48)).isoformat()
+        expiry = (datetime.now(timezone.utc) + timedelta(hours=48)).replace(microsecond=0).isoformat()
         payload = {
             "mode": "copy",
             "leaderId": "leader-demo-001",
@@ -178,12 +210,12 @@ class MockKilnClient:
     @staticmethod
     def _mock_clarify(text: str) -> str:
         if not MockKilnClient._LEADER_RE.search(text):
-            return "你想跟哪个 leader？给我一个 leader id（比如 leader-demo-001）。"
+            return "Which leader should I follow? Give me a leader id (e.g. leader-demo-001)."
         if not MockKilnClient._AMOUNT_RE.search(text):
-            return "跟多少额度（USD）？Demo 默认 500。"
+            return "How much notional (USD)? Demo default is 500."
         if not MockKilnClient._LOSS_RE.search(text):
-            return "限亏多少？Demo 默认 50（不超过本金）。"
-        return "字段都齐了，可以出 Spec。"
+            return "What is your loss limit? Demo default is 50 (cannot exceed notional)."
+        return "All required fields are present — ready to emit the Spec."
 
     @staticmethod
     def _mock_inject_response(text: str) -> str:
@@ -237,8 +269,12 @@ class HttpKilnClient:
 
         # Try the OpenAI-style usage block first; fall back to a rough
         # approximation if the provider omits it.
+        response_model = body.get("model")
+        if response_model != self.model:
+            raise RuntimeError(f"Kiln response model mismatch: expected {self.model!r}, got {response_model!r}")
         usage = body.get("usage") or {}
-        tokens_in = int(usage.get("prompt_tokens") or _total_tokens_in(messages))
+        usage_source = "api" if "prompt_tokens" in usage and "completion_tokens" in usage else "unavailable"
+        tokens_in = int(usage.get("prompt_tokens") or 0)
         tokens_out = int(usage.get("completion_tokens") or 0)
 
         try:
@@ -246,13 +282,15 @@ class HttpKilnClient:
         except (KeyError, IndexError, TypeError) as e:
             raise RuntimeError(f"Unexpected Kiln response shape: {body!r}") from e
 
-        get_default_logger().record(flow_tag, tokens_in, tokens_out, latency)
+        call_id = str(uuid.uuid4())
+        get_default_logger().record(flow_tag, tokens_in, tokens_out, latency, usage_source=usage_source, model=self.model, request_id=call_id)
         return KilnReply(
             text=text,
             tokens_in=tokens_in,
             tokens_out=tokens_out,
             latency_s=latency,
             model=self.model,
+            usage_source=usage_source, request_id=call_id,
         )
 
 
@@ -280,11 +318,20 @@ def build_kiln_client(env: Mapping[str, str] | None = None) -> KilnClient:
     need plumbing.
     """
     src: Mapping[str, str] = env if env is not None else os.environ  # type: ignore[assignment]
+    mode = (src.get("KILN_MODE") or _env("KILN_MODE") or "offline").lower()
     key = src.get(KILN_API_KEY_ENV) or _env(KILN_API_KEY_ENV)
-    if key:
+    if mode not in {"offline", "live"}:
+        raise RuntimeError(f"KILN_MODE must be 'offline' or 'live'; got {mode!r}")
+    if mode == "live":
+        if not key:
+            raise RuntimeError("KILN_MODE=live requires KILN_API_KEY; refusing mock fallback")
         base = src.get(KILN_API_BASE_ENV) or _env(KILN_API_BASE_ENV) or DEFAULT_API_BASE
         model = src.get(KILN_MODEL_ENV) or _env(KILN_MODEL_ENV) or DEFAULT_MODEL
-        return HttpKilnClient(api_base=base, api_key=key, model=model)
+        if model != DEFAULT_MODEL:
+            raise RuntimeError(f"Challenge A requires KILN_MODEL={DEFAULT_MODEL}; got {model!r}")
+        return HttpKilnClient(
+            api_base=_validate_api_base(base), api_key=key, model=DEFAULT_MODEL
+        )
     return MockKilnClient()
 
 

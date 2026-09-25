@@ -23,7 +23,7 @@ sleep 5
 curl -sf http://127.0.0.1:8000/api/health >/dev/null
 
 echo "==> [4/5] Booting frontend on :5173"
-(cd frontend && npx vite --host --port 5173) &
+(cd frontend && npx vite --host 127.0.0.1 --port 5173) &
 FRONTEND_PID=$!
 sleep 6
 curl -sf -o /dev/null http://127.0.0.1:5173/

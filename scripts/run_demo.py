@@ -10,8 +10,9 @@ Usage:
 
 Environment:
 
-    PASSPORT_BACKEND=mock|sepolia  (default mock)
-    KILN_API_KEY=...                (omit for the offline mock Kiln)
+    PASSPORT_BACKEND=mock|local|testnet  (default mock)
+    KILN_MODE=offline|live              (default offline)
+    KILN_API_KEY=...                    (required only for live Kiln)
     FRONTEND_ORIGIN=http://...      (default http://localhost:5173)
     BACKEND_PORT=8000               (override if needed)
     FRONTEND_PORT=5173              (override if needed)
@@ -20,7 +21,8 @@ Environment:
 from __future__ import annotations
 
 import os
-import signal
+import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -33,6 +35,15 @@ FRONTEND_DIR = ROOT / "frontend"
 
 BACKEND_PORT = int(os.environ.get("BACKEND_PORT", "8000"))
 FRONTEND_PORT = int(os.environ.get("FRONTEND_PORT", "5173"))
+
+
+def _port_is_free(host: str, port: int) -> bool:
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.bind((host, port))
+        return True
+    except OSError:
+        return False
 
 
 def _http_ok(url: str, timeout: float = 1.0) -> bool:
@@ -75,20 +86,63 @@ def _start_backend() -> subprocess.Popen:
 
 def _start_frontend() -> subprocess.Popen:
     npm_cmd = "npm.cmd" if sys.platform.startswith("win") else "npm"
-    cmd = [npm_cmd, "run", "dev", "--", "--port", str(FRONTEND_PORT), "--host"]
+    # Keep the unauthenticated demo and its backend proxy on loopback. An
+    # argument-less ``--host`` makes Vite listen on every network interface.
+    cmd = [
+        npm_cmd, "run", "dev", "--", "--port", str(FRONTEND_PORT),
+        "--host", "127.0.0.1", "--strictPort",
+    ]
     print(f"[boot] frontend: {' '.join(cmd)} (cwd={FRONTEND_DIR})")
     # Windows shells need shell=False but the .cmd is fine to invoke directly.
     return subprocess.Popen(cmd, cwd=str(FRONTEND_DIR))
 
 
+def _terminate_process_tree(proc: subprocess.Popen) -> None:
+    if proc.poll() is not None:
+        return
+    if sys.platform.startswith("win"):
+        # npm.cmd owns a child node.exe. Terminating only the command wrapper
+        # leaves Vite listening after the launcher exits.
+        taskkill = shutil.which("taskkill")
+        if not taskkill:
+            proc.terminate()
+            return
+        subprocess.run(  # noqa: S603 - fixed OS tool and numeric child PID.
+            [taskkill, "/PID", str(proc.pid), "/T", "/F"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        )
+    else:
+        proc.terminate()
+
+
 def main() -> int:
+    occupied = [
+        str(port)
+        for port in (BACKEND_PORT, FRONTEND_PORT)
+        if not _port_is_free("127.0.0.1", port)
+    ]
+    if occupied:
+        print(
+            "[error] required loopback port(s) already in use: "
+            + ", ".join(occupied)
+            + ". Stop the existing demo or set BACKEND_PORT/FRONTEND_PORT."
+        )
+        return 2
+
     procs: list[subprocess.Popen] = []
+    exit_code = 0
     try:
         procs.append(_start_backend())
         procs.append(_start_frontend())
 
         backend_ok = _wait_for(f"http://127.0.0.1:{BACKEND_PORT}/api/health", "backend")
         frontend_ok = _wait_for(f"http://127.0.0.1:{FRONTEND_PORT}/", "frontend")
+
+        if not backend_ok or not frontend_ok:
+            exit_code = 1
+            return exit_code
 
         print()
         print("=" * 60)
@@ -102,6 +156,7 @@ def main() -> int:
             time.sleep(0.5)
             if any(p.poll() is not None for p in procs):
                 # Someone died on its own; surface it.
+                exit_code = 1
                 for p in procs:
                     if p.returncode is not None and p.returncode != 0:
                         print(f"[error] child exited rc={p.returncode}: {p.args}")
@@ -111,7 +166,7 @@ def main() -> int:
     finally:
         for p in procs:
             try:
-                p.terminate()
+                _terminate_process_tree(p)
             except Exception:
                 pass
         for p in procs:
@@ -119,10 +174,10 @@ def main() -> int:
                 p.wait(timeout=4)
             except subprocess.TimeoutExpired:
                 try:
-                    p.kill()
+                    _terminate_process_tree(p)
                 except Exception:
                     pass
-    return 0
+    return exit_code
 
 
 if __name__ == "__main__":

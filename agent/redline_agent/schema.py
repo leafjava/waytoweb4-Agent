@@ -8,7 +8,7 @@ contract -- not a class that drifts between deployments.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Literal
 
@@ -44,9 +44,8 @@ class RedLineVerdict:
     """The structured output of a single RedLine judgment.
 
     `source` is purely for logging -- it tells the audit log whether
-    this verdict came from the hard rule gate (`rule_gate`) or from
-    the LLM classifier (`llm`). The on-chain event log includes this
-    field so a third party can replay exactly which path was taken.
+    this verdict came from the hard rule gate (`rule_gate`), the
+    deterministic offline classifier (`mock`), or live Kiln (`kiln`).
     """
 
     level: RedLineLevel
@@ -54,7 +53,7 @@ class RedLineVerdict:
     evidence: list[str]
     action: RedLineAction
     model_may_override_hard_limit: bool = False
-    source: Literal["rule_gate", "llm"] = "rule_gate"
+    source: Literal["rule_gate", "mock", "kiln"] = "rule_gate"
 
     def __post_init__(self) -> None:
         # The hard guard: the model must NEVER be allowed to override

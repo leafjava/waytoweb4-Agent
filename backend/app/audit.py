@@ -46,8 +46,16 @@ AUDIT_KINDS: frozenset[str] = frozenset(
     {
         "spec_clarify",
         "spec_emit",
+        "prepare",
+        "confirm",
+        "mint_simulated",
+        "revoke_simulated",
+        "revoke_confirmed",
+        "revoke_readback",
+        "revoke_uncertain",
         "mint",
         "face_verify",
+        "face_gate_invalidated",
         "engine_start",
         "engine_stop",
         "engine_tick",
@@ -55,6 +63,7 @@ AUDIT_KINDS: frozenset[str] = frozenset(
         "redline_judge",
         "demo_inject",
         "demo_reset",
+        "restart_reconcile",
     }
 )
 

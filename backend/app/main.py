@@ -7,7 +7,6 @@ inside AppState is per-instance so tests can swap state cleanly.
 
 from __future__ import annotations
 
-import asyncio
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -16,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .engine import cancel_all
+from .deps import close_passport_backend
 from .routers import engine, face, health, passport, redline, spec, state as state_router
 from .state import AppState
 from . import waytoweb4_mock
@@ -27,11 +27,13 @@ async def lifespan(app: FastAPI):
     ledger_path: Path = settings.ledger_path
     state = AppState(ledger_path=ledger_path)
     state.load()
+    await state.reconcile_after_restart()
     app.state.app_state = state
     try:
         yield
     finally:
         await cancel_all()
+        await close_passport_backend()
 
 
 def create_app() -> FastAPI:
@@ -43,7 +45,8 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[settings.frontend_origin, "http://localhost:5173"],
-        allow_credentials=True,
+        # The demo has no cookie-based authentication.
+        allow_credentials=False,
         allow_methods=["*"],
         allow_headers=["*"],
     )
