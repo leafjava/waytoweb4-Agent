@@ -8,7 +8,7 @@ export default function HomePage({ snapshot, onTryDemo }) {
   const { t } = useI18n()
 
   return (
-    <div className="home-page space-y-20 pb-12 md:space-y-28">
+    <div className="home-page space-y-14 pb-12 md:space-y-20">
       <Hero onTryDemo={onTryDemo} />
       <StatTicker snapshot={snapshot} />
       <PrimitivesGrid />
