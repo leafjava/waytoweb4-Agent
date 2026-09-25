@@ -9,6 +9,7 @@ import ConditionalRunPanel from './components/ConditionalRunPanel.jsx'
 import { apiPost } from './api'
 import { usePoll } from './usePoll'
 import InferenceEvidencePanel from './components/InferenceEvidencePanel.jsx'
+import { useI18n } from './i18n.jsx'
 
 const INITIAL_DRAFT = () => ({
   draft_id: 'draft-' + Math.random().toString(36).slice(2, 8),
@@ -29,6 +30,7 @@ async function fetchLatestTwoRuns() {
 }
 
 export default function App() {
+  const { t } = useI18n()
   const [view, setView] = useState('home')
   const [draft, setDraft] = useState(INITIAL_DRAFT)
   const { data: snapshot } = usePoll('/api/state', 1500)
@@ -38,7 +40,7 @@ export default function App() {
     try {
       await apiPost('/api/state/reset', null)
     } catch (e) {
-      alert(`reset failed: ${e.message || e}`)
+      alert(`${t('common.reset_failed')}: ${e.message || e}`)
       return
     }
     setDraft(INITIAL_DRAFT())

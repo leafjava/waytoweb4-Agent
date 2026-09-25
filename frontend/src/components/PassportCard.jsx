@@ -49,7 +49,7 @@ export default function PassportCard({ draft, snapshot, onAction }) {
       await apiPost(path, body ?? { passport_id: draft.passport_id })
       onAction?.()
     } catch (e) {
-      alert(`action failed: ${e.message || e}`)
+      alert(`${t('pass.action_failed')}: ${e.message || e}`)
     } finally {
       setBusy(null)
     }

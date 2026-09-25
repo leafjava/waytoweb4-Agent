@@ -30,7 +30,7 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
         <button
           onClick={toggle}
           className="nav-control flex min-h-9 items-center gap-1.5 px-3 py-1 text-slate-700"
-          title="Switch language"
+          title={t('header.switch_language')}
         >
           <i className="fa fa-globe"></i>
           <span className="font-mono">

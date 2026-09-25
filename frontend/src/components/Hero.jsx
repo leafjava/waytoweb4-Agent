@@ -1,4 +1,3 @@
-import { ONE_LINE_DECLARATION, ONE_LINE_PRODUCT } from '../constants'
 import { useI18n } from '../i18n.jsx'
 import ChainMandateMotion from './ChainMandateMotion.jsx'
 
@@ -10,7 +9,7 @@ export default function Hero({ onTryDemo }) {
       <div className="hero-command__beam" aria-hidden="true"></div>
       <div className="hero-command__layout relative grid min-w-0 items-center gap-10">
         <div className="hero-command__copy min-w-0">
-          <p className="mb-4 text-sm font-semibold tracking-tight text-[#0071e3]">AI agent controls for finance</p>
+          <p className="mb-4 text-sm font-semibold tracking-tight text-[#0071e3]">{t('hero.tagline')}</p>
           <h1 className="max-w-2xl text-5xl font-semibold leading-[1.02] tracking-[-0.05em] text-[#1d1d1f] md:text-7xl">
             {t('hero.title.line1')}
             <br />
@@ -18,11 +17,11 @@ export default function Hero({ onTryDemo }) {
           </h1>
 
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-[#6e6e73] md:text-xl">
-            {ONE_LINE_DECLARATION}
+            {t('hero.declaration')}
           </p>
 
           <p className="mt-4 max-w-xl text-xs leading-relaxed text-slate-500 md:text-sm">
-            {ONE_LINE_PRODUCT}
+            {t('hero.product')}
           </p>
 
           <div className="mt-7 flex flex-wrap items-center gap-3">

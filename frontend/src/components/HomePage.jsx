@@ -15,7 +15,7 @@ export default function HomePage({ snapshot, onTryDemo }) {
       <SecurityStrip />
 
       <div className="rounded-[32px] bg-[#1d1d1f] px-6 py-14 text-center text-white md:py-20">
-        <div className="mx-auto mb-6 max-w-xl text-3xl font-semibold tracking-[-0.035em] md:text-5xl">Human intent in. Controlled execution out.</div>
+        <div className="mx-auto mb-6 max-w-xl text-3xl font-semibold tracking-[-0.035em] md:text-5xl">{t('home.headline')}</div>
         <button
           onClick={onTryDemo}
           className="rounded-full bg-white px-6 py-3 font-medium text-[#1d1d1f] transition-transform hover:scale-[1.02]"

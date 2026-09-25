@@ -22,7 +22,7 @@ export default function RedLinePanel({ draft, snapshot, onAction }) {
       if (r?.side_effects) console.info('redline side effects:', r.side_effects)
       onAction?.()
     } catch (e) {
-      alert(`redline failed: ${e.message || e}`)
+      alert(`${t('red.failed')}: ${e.message || e}`)
     } finally {
       setBusy(null)
     }

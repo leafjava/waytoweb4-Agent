@@ -60,10 +60,10 @@ export default function AcceptanceBar() {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm uppercase tracking-wider text-slate-300">
           <i className="fa fa-check-square-o mr-2 text-emerald-400"></i>
-          PRD §5 acceptance — every row tied to a file
+          {t('acceptance.title')}
         </h2>
         <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-200 font-semibold">
-          {ROWS.length}/{ROWS.length} mapped
+          {ROWS.length}/{ROWS.length} {t('acceptance.mapped')}
         </span>
       </div>
       <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -84,7 +84,7 @@ export default function AcceptanceBar() {
         ))}
       </ul>
       <div className="mt-3 text-[11px] text-slate-400">
-        Each row links to the file or module that satisfies the check. <code>cat</code> the file to verify.
+        {t('acceptance.footer')} <code>cat</code>.
       </div>
     </section>
   )

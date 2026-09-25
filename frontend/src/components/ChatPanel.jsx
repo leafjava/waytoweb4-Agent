@@ -35,7 +35,7 @@ export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
           history: [
             ...d.history,
             { role: 'user', text: input },
-            { role: 'agent', text: r.question || '(clarifying question)' },
+            { role: 'agent', text: r.question || t('chat.clarifying') },
           ],
         }))
         setBusy(false)
@@ -53,7 +53,7 @@ export default function ChatPanel({ onSpecLocked, draft, setDraft }) {
   return (
     <div className="surface-card flex h-full flex-col overflow-hidden">
       <div className="border-b border-black/10 px-5 py-4 text-sm font-semibold text-[#1d1d1f]">
-        <i className="fa fa-comments mr-2"></i> Chat
+        <i className="fa fa-comments mr-2"></i> {t('chat.title')}
       </div>
 
       <div className="flex-1 space-y-3 overflow-y-auto p-5 text-sm">

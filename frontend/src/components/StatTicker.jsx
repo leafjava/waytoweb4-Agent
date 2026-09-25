@@ -4,6 +4,7 @@
 // lying to the judges (PRD honest-disclaimer rule).
 
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../i18n.jsx'
 
 function useAnimatedNumber(value, durationMs = 600) {
   const [display, setDisplay] = useState(value)
@@ -50,7 +51,7 @@ const ACCENT_TEXT = {
   slate: 'text-slate-500',
 }
 
-function Tile({ icon, value, label, accent = 'sky', suffix }) {
+function Tile({ icon, value, label, accent = 'sky', suffix, locale = 'en' }) {
   const v = useAnimatedNumber(typeof value === 'number' ? value : 0)
   return (
     <div className="metric-card relative overflow-hidden p-6 md:p-7">
@@ -58,7 +59,7 @@ function Tile({ icon, value, label, accent = 'sky', suffix }) {
       <div className="relative">
         <i className={`fa ${icon} ${ACCENT_TEXT[accent] || ACCENT_TEXT.sky} text-lg`}></i>
         <div className="mt-5 text-4xl font-semibold tracking-[-0.04em] text-[#1d1d1f] tabular-nums md:text-5xl">
-          {typeof value === 'number' ? v.toLocaleString() : value}
+          {typeof value === 'number' ? v.toLocaleString(locale === 'ko' ? 'ko-KR' : 'en-US') : value}
           {suffix && <span className="text-xl text-slate-500 ml-1">{suffix}</span>}
         </div>
         <div className="mt-1 text-xs uppercase tracking-wider text-slate-500">{label}</div>
@@ -105,6 +106,7 @@ function parseTokenTable(tokenReport) {
 }
 
 export default function StatTicker({ snapshot }) {
+  const { locale, t } = useI18n()
   const passports = snapshot?.passports || {}
   const passportCount = Object.keys(passports).length
   const eventCount = (snapshot?.events || []).length
@@ -114,17 +116,17 @@ export default function StatTicker({ snapshot }) {
     <section>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm uppercase tracking-wider text-slate-500">
-          <i className="fa fa-signal mr-2"></i> Live system metrics
+          <i className="fa fa-signal mr-2"></i> {t('metrics.title')}
         </h2>
         <span className="text-[10px] uppercase tracking-wider text-slate-500">
-          counts derived from <code>/api/state</code>
+          {t('metrics.source')} <code>/api/state</code>
         </span>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-        <Tile icon="fa-id-card" value={passportCount} label="passports minted" accent="emerald" />
-        <Tile icon="fa-list" value={eventCount} label="audit events" accent="sky" />
-        <Tile icon="fa-bolt" value={tok.tokensIn + tok.tokensOut} label="Kiln tokens (in+out)" accent="amber" suffix=" tok" />
-        <Tile icon="fa-bolt" value={Math.round(tok.energyWh * 1000) / 1000} label="energy @180W" accent="fuchsia" suffix=" Wh" />
+        <Tile icon="fa-id-card" value={passportCount} label={t('metrics.passports')} accent="emerald" locale={locale} />
+        <Tile icon="fa-list" value={eventCount} label={t('metrics.events')} accent="sky" locale={locale} />
+        <Tile icon="fa-bolt" value={tok.tokensIn + tok.tokensOut} label={t('metrics.tokens')} accent="amber" suffix=" tok" locale={locale} />
+        <Tile icon="fa-bolt" value={Math.round(tok.energyWh * 1000) / 1000} label={t('metrics.energy')} accent="fuchsia" suffix=" Wh" locale={locale} />
       </div>
     </section>
   )
