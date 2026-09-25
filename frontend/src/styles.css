@@ -1301,6 +1301,10 @@ body,.app-shell { color:var(--sentinel-ink); background:var(--sentinel-frame); }
 .site-logo > span {
   width:39px;
   height:39px;
+  min-width:39px;
+  min-height:39px;
+  flex:0 0 39px;
+  aspect-ratio:1/1;
   color:var(--sentinel-ink)!important;
   border:1px solid rgba(13,27,48,.52);
   border-radius:50%;
