@@ -4,6 +4,8 @@ import VerdictBadge from './VerdictBadge'
 import EventLog from './EventLog'
 import { apiPost } from '../api'
 import { useI18n } from '../i18n.jsx'
+import JsonView from './JsonView.jsx'
+import Advanced from './Advanced.jsx'
 
 export default function RedLinePanel({ draft, snapshot, onAction }) {
   const { t } = useI18n()
@@ -70,6 +72,10 @@ export default function RedLinePanel({ draft, snapshot, onAction }) {
       </div>
 
       <EventLog events={(snapshot?.events || []).slice().reverse().slice(0, 12)} />
+
+      <Advanced title="Hynix reasoning & verdict payload" storageKey="redline.verdict">
+        <JsonView value={verdict} />
+      </Advanced>
     </div>
   )
 }

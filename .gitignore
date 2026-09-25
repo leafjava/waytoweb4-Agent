@@ -40,3 +40,7 @@ htmlcov/
 
 # Local secrets (Kiln key, testnet private key). NEVER commit.
 .env
+
+__pycache__
+/__pycache__
+__pycache__/

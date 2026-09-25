@@ -276,6 +276,21 @@ const STRINGS = {
     'tokens.title': 'token / energy report',
     'tokens.empty': '—',
 
+    // ---- Lifecycle strip (Nerya pattern 4) -----------------------------
+    'life.label': 'Lifecycle',
+    'life.1.title': 'Spec locked',
+    'life.2.title': 'Face verified',
+    'life.3.title': 'Authorized',
+    'life.4.title': 'Running',
+    'life.5.title': 'Tripped',
+    'life.tripped_note': 'RedLine killed this passport. See audit log for reason codes.',
+
+    // ---- Advanced (Nerya pattern 2) ------------------------------------
+    'adv.show': 'Show details',
+    'adv.hide': 'Hide details',
+    'adv.raw': 'Raw',
+    'adv.structured': 'Structured',
+
     // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
     'demo.cond.title': 'Controlled runs (PRD §5)',
     'demo.cond.empty': 'No two-runs report yet. Run `python scripts/two_runs_demo.py` from the project root to populate this panel.',
@@ -464,6 +479,21 @@ const STRINGS = {
     // ---- Demo: token strip -------------------------------------------
     'tokens.title': 'Token / 能耗报告',
     'tokens.empty': '—',
+
+    // ---- Lifecycle strip (Nerya pattern 4) -----------------------------
+    'life.label': '生命周期',
+    'life.1.title': 'Spec 已锁定',
+    'life.2.title': '人脸已验证',
+    'life.3.title': '已授权',
+    'life.4.title': '运行中',
+    'life.5.title': '已熔断',
+    'life.tripped_note': 'RedLine 已撤销此护照。审计日志里有 reason_codes。',
+
+    // ---- Advanced (Nerya pattern 2) ------------------------------------
+    'adv.show': '展开详情',
+    'adv.hide': '收起详情',
+    'adv.raw': '原文',
+    'adv.structured': '结构化',
 
     // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
     'demo.cond.title': '控制对照运行 (PRD §5)',
@@ -728,6 +758,21 @@ const STRINGS = {
     // ---- Demo: token strip -------------------------------------------
     'tokens.title': '토큰 / 에너지 리포트',
     'tokens.empty': '—',
+
+    // ---- Lifecycle strip (Nerya pattern 4) -----------------------------
+    'life.label': '생애 주기',
+    'life.1.title': 'Spec 잠김',
+    'life.2.title': '얼굴 인증됨',
+    'life.3.title': '권한 부여',
+    'life.4.title': '실행 중',
+    'life.5.title': '트립됨',
+    'life.tripped_note': 'RedLine이 이 패스포트를 소각했습니다. reason_codes는 감사 로그에 있습니다.',
+
+    // ---- Advanced (Nerya pattern 2) ------------------------------------
+    'adv.show': '상세 보기',
+    'adv.hide': '상세 닫기',
+    'adv.raw': '원본',
+    'adv.structured': '구조화',
 
     // ---- ConditionalRunPanel (PRD §5 two-run) ------------------------
     'demo.cond.title': '조건 비교 실행 (PRD §5)',

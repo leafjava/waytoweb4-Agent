@@ -3,6 +3,9 @@ import { apiPost } from '../api'
 import { PASS_COLORS } from '../colors'
 import { useI18n } from '../i18n.jsx'
 import HumanGate from './HumanGate.jsx'
+import Pill, { TONE_FOR } from './Pill.jsx'
+import JsonView from './JsonView.jsx'
+import Advanced from './Advanced.jsx'
 
 function CopyableHash({ label, value, copyText, copiedText }) {
   const { t } = useI18n()
@@ -87,7 +90,7 @@ export default function PassportCard({ draft, snapshot, onAction }) {
           <i className="fa fa-id-card-o mr-2"></i> {t('pass.title')}
         </h2>
         <span className={`text-xs px-2 py-0.5 rounded ${palette.bg} ${palette.fg} border ${palette.border}`}>
-          {status}
+          <Pill tone={TONE_FOR[status] ?? 'neutral'}>{status}</Pill>
         </span>
       </div>
 
@@ -182,6 +185,10 @@ export default function PassportCard({ draft, snapshot, onAction }) {
           </div>
         )}
       </div>
+
+      <Advanced title="Raw passport payload" storageKey={`passport.${draft.passport_id}.raw`}>
+        <JsonView value={passport} />
+      </Advanced>
 
       <div className="grid grid-cols-2 gap-2 pt-2">
         <button

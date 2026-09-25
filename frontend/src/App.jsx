@@ -9,6 +9,7 @@ import ConditionalRunPanel from './components/ConditionalRunPanel.jsx'
 import { apiPost } from './api'
 import { usePoll } from './usePoll'
 import InferenceEvidencePanel from './components/InferenceEvidencePanel.jsx'
+import PassportLifecycleStrip from './components/PassportLifecycleStrip.jsx'
 import { useI18n } from './i18n.jsx'
 
 const INITIAL_DRAFT = () => ({
@@ -82,6 +83,11 @@ function DemoView({ snapshot, draft, setDraft }) {
         <ChatPanel draft={draft} setDraft={setDraft} onSpecLocked={() => {}} />
       </section>
       <section className="col-span-12 space-y-4 lg:col-span-7">
+        <PassportLifecycleStrip
+          status={draft.passport_id ? snapshot?.passports?.[draft.passport_id]?.status : null}
+          faceVerified={!!snapshot?.passports?.[draft.passport_id]?.face_verified}
+          engineRunning={!!snapshot?.passports?.[draft.passport_id]?.engine_running}
+        />
         <SpecCard draft={draft} setDraft={setDraft} onMinted={() => {}} />
         <PassportCard draft={draft} snapshot={snapshot} onAction={() => {}} />
         <RedLinePanel draft={draft} snapshot={snapshot} onAction={() => {}} />

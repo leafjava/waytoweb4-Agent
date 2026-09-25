@@ -1,5 +1,7 @@
 import { apiPost } from '../api'
 import { useI18n } from '../i18n.jsx'
+import JsonView from './JsonView.jsx'
+import Advanced from './Advanced.jsx'
 
 function requestId(prefix) {
   const id = globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2)
@@ -78,6 +80,10 @@ export default function SpecCard({ draft, setDraft, onMinted }) {
           {draft.mint?.spec_hash && <Row k={t('spec.intent_hash')} v={draft.mint.spec_hash} />}
         </div>
       )}
+
+      <Advanced title="Raw authorization payload" storageKey="spec.authorized">
+        <JsonView value={draft.mint} />
+      </Advanced>
 
       <div className="mt-4">
         <button
