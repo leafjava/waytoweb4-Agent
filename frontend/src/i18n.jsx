@@ -599,6 +599,7 @@ export function I18nProvider({ children }) {
     } catch (_) {
       // localStorage unavailable (private window) -- just ignore.
     }
+    document.documentElement.lang = locale
   }, [locale])
 
   function setLocale(next) {

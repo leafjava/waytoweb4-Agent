@@ -35,22 +35,6 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
           </span>
         </button>
 
-        {view === 'home' ? (
-          <button
-            onClick={onGoDemo}
-            className="primary-button hidden min-h-9 px-4 py-1.5 text-sm sm:block"
-          >
-            {t('header.try_demo')} <i className="fa fa-arrow-right ml-1"></i>
-          </button>
-        ) : (
-          <button
-            onClick={onGoHome}
-            className="nav-control min-h-9 px-3 py-1 text-slate-700"
-          >
-            <i className="fa fa-arrow-left mr-1"></i> {t('header.back_home')}
-          </button>
-        )}
-
         <button
           onClick={onReset}
           className="nav-control hidden min-h-9 px-3 py-1 text-slate-700 sm:block"
@@ -59,6 +43,22 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
           <i className="fa fa-rotate-right mr-1"></i> {t('header.reset')}
         </button>
       </div>
+
+      {view === 'home' ? (
+        <button
+          onClick={onGoDemo}
+          className="header-primary-action primary-button hidden min-h-9 px-4 py-1.5 text-sm sm:block"
+        >
+          {t('header.try_demo')} <i className="fa fa-arrow-right ml-1"></i>
+        </button>
+      ) : (
+        <button
+          onClick={onGoHome}
+          className="header-primary-action primary-button min-h-9 px-4 py-1.5 text-sm"
+        >
+          <i className="fa fa-arrow-left mr-1"></i> {t('header.back_home')}
+        </button>
+      )}
     </header>
   )
 }

@@ -1461,6 +1461,67 @@ body,.app-shell { color:var(--sentinel-ink); background:var(--sentinel-frame); }
   .sentinel-panel__track i { animation:none; }
 }
 
+/* Header and locale layout corrections. */
+.site-header .site-wordmark { color:var(--sentinel-ink); }
+.site-header__actions > .primary-button { position:static; }
+.header-primary-action {
+  position:absolute;
+  right:clamp(1.5rem,4.5vw,3.75rem);
+  top:15px;
+  min-width:148px;
+  min-height:48px;
+  color:#fff;
+  border:0;
+  border-radius:999px;
+  background:var(--sentinel-soft);
+  box-shadow:0 10px 24px rgba(11,26,50,.16);
+}
+.header-primary-action:hover { color:#fff; background:#182743; transform:translateY(-2px); }
+.site-header__actions > .nav-control,
+.site-header__actions > button { white-space:nowrap; }
+.site-header__actions .rounded-full.bg-black\/\[0\.035\] {
+  color:#4f5c72;
+  background:rgba(216,225,237,.48);
+}
+.hero-command .primary-button,
+.hero-command .secondary-button {
+  min-height:48px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding-inline:1.35rem;
+  border-radius:999px;
+  white-space:nowrap;
+}
+html[lang="ko"] .hero-command h1 {
+  max-width:13ch;
+  font-size:clamp(2.8rem,4.5vw,4.15rem);
+  line-height:1.04;
+  letter-spacing:-.055em;
+  word-break:keep-all;
+}
+html[lang="ko"] .hero-cinematic__declaration {
+  max-width:42rem;
+  word-break:keep-all;
+}
+
+@media (max-width:1023px) {
+  .header-primary-action {
+    position:static;
+    min-width:auto;
+    min-height:40px;
+    margin-left:.25rem;
+    color:var(--sentinel-accent);
+    border:1px solid rgba(74,120,176,.42);
+    background:rgba(255,255,255,.44);
+    box-shadow:none;
+  }
+}
+@media (max-width:640px) {
+  .header-primary-action { padding-inline:.8rem; }
+  html[lang="ko"] .hero-command h1 { font-size:clamp(2.55rem,11.5vw,3.35rem); }
+}
+
 @media (min-width:641px) and (max-width:1023px) {
   .home-primitives .feature-card:nth-child(2) { border-right:0; }
   .home-primitives .feature-card:nth-child(-n+2) { border-bottom:1px solid rgba(255,255,255,.11); }
