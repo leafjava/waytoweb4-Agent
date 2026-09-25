@@ -1,5 +1,7 @@
 # Integration handoff
 
+> 当前队友接手请先阅读 [`TEAM-HANDOFF-2026-09-25.md`](TEAM-HANDOFF-2026-09-25.md)。本文保留为实施阶段历史。
+
 Base: teammate `master` at `fdb3c8a`; integration branch
 `codex/chain-and-evidence`. The branch was checked again on 2026-09-23 and was
 not behind the teammate mainline.
