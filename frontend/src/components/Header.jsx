@@ -5,23 +5,20 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
   const { locale, toggle, t } = useI18n()
 
   return (
-    <header className="site-header sticky top-0 z-40 flex min-w-0 items-center gap-3 overflow-hidden border-b border-black/[0.06] bg-white/75 px-4 py-3 backdrop-blur-2xl md:px-8">
+    <header className="site-header sticky top-0 z-40 flex min-w-0 items-center justify-center gap-2 overflow-hidden px-4 py-3 md:gap-3 md:px-8">
       <button
         onClick={onGoHome}
-        className="group flex min-w-0 items-center gap-2.5"
+        className="site-logo group flex h-10 w-10 shrink-0 items-center justify-center rounded-full md:h-11 md:w-11"
         title={t('header.back_home')}
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-[#0071e3] text-sm text-white shadow-sm shadow-blue-500/20 transition-transform group-hover:scale-[1.03]">
+        <span className="flex h-8 w-8 items-center justify-center text-sm transition-transform group-hover:scale-[1.03]">
           <i className="fa fa-shield"></i>
         </span>
-        <h1 className="font-semibold tracking-[-0.015em] text-[#1d1d1f]">
-          <span className="sm:hidden">waytoweb4 agent</span>
-          <span className="hidden text-lg sm:inline">waytoweb4 copy-trading agent</span>
-        </h1>
       </button>
 
-      <div className="site-header__actions ml-auto flex min-w-0 items-center justify-end gap-2 text-xs">
-        <div className="hidden items-center gap-2 xl:flex">
+      <div className="site-header__actions flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs md:px-5">
+        <button onClick={onGoHome} className="header-wordmark hidden font-medium sm:block">waytoweb4</button>
+        <div className="hidden items-center gap-2 2xl:flex">
           <Pill label="Kiln" value={health?.kiln ?? '—'} />
           <Pill label="Passport" value={health?.passport_backend ?? '—'} />
           <Pill label={t('header.execution')} value={health?.execution_backend ?? '—'} />
