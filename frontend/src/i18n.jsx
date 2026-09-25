@@ -24,6 +24,7 @@ const STRINGS = {
     'header.reset': 'Reset',
     'header.lang.zh': '中文',
     'header.lang.en': 'EN',
+    'header.lang.ko': '한국어',
 
     // ---- Hero ---------------------------------------------------------
     'hero.eyebrow': 'GWDC 2026 Korea · FuriosaAI × Bricksum · Challenge A + B',
@@ -192,8 +193,9 @@ const STRINGS = {
     'header.try_demo': '进入 Demo',
     'header.back_home': '← 返回首页',
     'header.reset': '重置',
-    'header.lang.zh': 'English',
-    'header.lang.en': '中',
+    'header.lang.zh': '中文',
+    'header.lang.en': 'English',
+    'header.lang.ko': '한국어',
 
     // ---- Hero ---------------------------------------------------------
     'hero.eyebrow': 'GWDC 2026 韩国站 · FuriosaAI × Bricksum · Challenge A + B',
@@ -364,6 +366,7 @@ const STRINGS = {
     'header.reset': '초기화',
     'header.lang.zh': '中文',
     'header.lang.en': 'EN',
+    'header.lang.ko': '한국어',
     // ---- Hero ---------------------------------------------------------
     'hero.eyebrow': 'GWDC 2026 코리아 · FuriosaAI × Bricksum · Challenge A + B',
     'hero.title.line1': '카피 트레이딩, AI가 잠그고,',

@@ -1,8 +1,8 @@
 import { apiPost } from '../api'
-import { useI18n } from '../i18n.jsx'
+import { useI18n, LOCALES } from '../i18n.jsx'
 
 export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
-  const { locale, toggle, t } = useI18n()
+  const { locale, setLocale, t } = useI18n()
 
   return (
     <header className="px-6 py-3 border-b border-slate-800 bg-slate-900/70 flex items-center gap-4">
@@ -21,19 +21,27 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
         <Pill label="Kiln" value={health?.kiln ?? '—'} />
         <Pill label="Passport" value={health?.passport_backend ?? '—'} />
 
-        <button
-          onClick={toggle}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200"
-          title="Switch language"
-        >
-          <i className="fa fa-globe"></i>
-          <span className="font-mono">{
-            // Show the label of the NEXT locale so users see what they will get.
-            locale === 'en' ? t('header.lang.zh')
-              : locale === 'zh' ? t('header.lang.ko')
-              : t('header.lang.en')
-          }</span>
-        </button>
+        <div className="flex items-center gap-1 bg-slate-800 border border-slate-700 rounded overflow-hidden">
+          <i className="fa fa-globe px-2 text-slate-400"></i>
+          {LOCALES.map((loc) => {
+            const active = loc.code === locale
+            return (
+              <button
+                key={loc.code}
+                onClick={() => setLocale(loc.code)}
+                className={
+                  'px-2.5 py-1 text-xs font-mono transition-colors ' +
+                  (active
+                    ? 'bg-sky-500 text-slate-950 font-semibold'
+                    : 'text-slate-300 hover:bg-slate-700')
+                }
+                title={`Switch to ${loc.label}`}
+              >
+                {t(`header.lang.${loc.code}`)}
+              </button>
+            )
+          })}
+        </div>
 
         {view === 'home' ? (
           <button
