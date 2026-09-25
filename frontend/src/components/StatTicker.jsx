@@ -113,7 +113,7 @@ export default function StatTicker({ snapshot }) {
   const tok = parseTokenTable(snapshot?.token_report)
 
   return (
-    <section>
+    <section className="home-telemetry">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-sm uppercase tracking-wider text-slate-500">
           <i className="fa fa-signal mr-2"></i> {t('metrics.title')}
@@ -122,7 +122,7 @@ export default function StatTicker({ snapshot }) {
           {t('metrics.source')} <code>/api/state</code>
         </span>
       </div>
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
+      <div className="home-telemetry__rail grid grid-cols-2 gap-0 md:grid-cols-4">
         <Tile icon="fa-id-card" value={passportCount} label={t('metrics.passports')} accent="emerald" locale={locale} />
         <Tile icon="fa-list" value={eventCount} label={t('metrics.events')} accent="sky" locale={locale} />
         <Tile icon="fa-bolt" value={tok.tokensIn + tok.tokensOut} label={t('metrics.tokens')} accent="amber" suffix=" tok" locale={locale} />

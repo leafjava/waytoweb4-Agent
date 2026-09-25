@@ -19,7 +19,7 @@ export default function SecurityStrip() {
   const { t } = useI18n()
 
   return (
-    <section>
+    <section className="home-security">
       <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-6">
         <i className="fa fa-lock mr-2"></i> {t('sec.title')}
       </h2>

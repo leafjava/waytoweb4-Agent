@@ -18,11 +18,11 @@ export default function PrimitivesGrid() {
   const { t } = useI18n()
 
   return (
-    <section>
+    <section className="home-primitives">
       <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-4">
         <i className="fa fa-cubes mr-2"></i> {t('primitives.title')}
       </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="home-primitives__rail grid grid-cols-1 gap-0 md:grid-cols-2 lg:grid-cols-4">
         {PRIMITIVES_KEYS.map((p) => (
           <div
             key={p.prefix}

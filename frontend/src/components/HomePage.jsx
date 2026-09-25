@@ -8,13 +8,13 @@ export default function HomePage({ snapshot, onTryDemo }) {
   const { t } = useI18n()
 
   return (
-    <div className="space-y-20 pb-12 md:space-y-28">
+    <div className="home-page space-y-20 pb-12 md:space-y-28">
       <Hero onTryDemo={onTryDemo} />
       <StatTicker snapshot={snapshot} />
       <PrimitivesGrid />
       <SecurityStrip />
 
-      <div className="rounded-[32px] bg-[#1d1d1f] px-6 py-14 text-center text-white md:py-20">
+      <div className="home-final-cta rounded-[32px] bg-[#1d1d1f] px-6 py-14 text-center text-white md:py-20">
         <div className="mx-auto mb-6 max-w-xl text-3xl font-semibold tracking-[-0.035em] md:text-5xl">{t('home.headline')}</div>
         <button
           onClick={onTryDemo}

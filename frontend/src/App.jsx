@@ -77,7 +77,7 @@ function DemoView({ snapshot, draft, setDraft }) {
     return () => clearInterval(id)
   }, [])
   return (
-    <div className="grid grid-cols-12 gap-5 lg:gap-6">
+    <div className="demo-grid grid grid-cols-12 gap-5 lg:gap-6">
       <section className="col-span-12 min-h-[60vh] lg:col-span-5 lg:min-h-[70vh]">
         <ChatPanel draft={draft} setDraft={setDraft} onSpecLocked={() => {}} />
       </section>
