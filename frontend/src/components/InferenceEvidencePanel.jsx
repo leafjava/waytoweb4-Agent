@@ -25,7 +25,7 @@ export default function InferenceEvidencePanel({ snapshot }) {
   const number = new Intl.NumberFormat(locale === 'ko' ? 'ko-KR' : 'en-US')
 
   return (
-    <section className="overflow-hidden rounded-2xl surface-card shadow-xl shadow-black/20">
+    <section className="inference-evidence-panel overflow-hidden rounded-2xl surface-card shadow-xl shadow-black/20">
       <div className="flex flex-col gap-4 border-b border-black/10 p-5 md:flex-row md:items-start md:justify-between">
         <div>
           <h2 className="text-base font-semibold text-white">

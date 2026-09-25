@@ -17,7 +17,7 @@ function Card({ tone, title, badge, rows }) {
     sky: 'border-blue-200 bg-blue-50',
   }[tone]
   return (
-    <div className={`border ${palette} rounded-xl p-4`}>
+    <div className={`run-compare-card run-compare-card--${tone} border ${palette} rounded-xl p-4`}>
       <div className="flex items-center justify-between mb-3">
         <div className="text-sm font-semibold text-[#1d1d1f]">{title}</div>
         {badge && (
@@ -45,7 +45,7 @@ export default function ConditionalRunPanel({ latestRuns }) {
   const runs = latestRuns?.runs ?? []
   if (runs.length === 0) {
     return (
-      <section className="surface-card border border-black/10 rounded-xl p-4">
+      <section className="conditional-run-panel surface-card border border-black/10 rounded-xl p-4">
         <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-2">
           <i className="fa fa-clone mr-2"></i> {t('demo.cond.title')}
         </h2>
@@ -57,7 +57,7 @@ export default function ConditionalRunPanel({ latestRuns }) {
   }
 
   return (
-    <section className="surface-card border border-black/10 rounded-xl p-4">
+    <section className="conditional-run-panel surface-card border border-black/10 rounded-xl p-4">
       <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-3">
         <i className="fa fa-clone mr-2"></i> {t('demo.cond.title')}
       </h2>
