@@ -273,6 +273,47 @@ const STRINGS = {
     'gauge.drawdown': 'drawdown',
 
     // ---- Demo: token strip -------------------------------------------
+    // ---- Gate badges (advice #1) ---------------------------------------
+    'gate.subtitle.approval': 'Human gate',
+    'gate.approval.title': 'Approval Gate',
+    'gate.approval.b1': 'Follow Agent cannot start or stop the engine',
+    'gate.approval.b2': 'Face verified by an explicit human button',
+    'gate.approval.b3': 'Once revoked, faceVerified cannot be re-flipped',
+    'gate.subtitle.risk': 'Independent kill',
+    'gate.risk.title': 'Risk Gate',
+    'gate.risk.b1': 'RedLine fires before the LLM is asked',
+    'gate.risk.b2': 'Hard gate: drawdown >= maxLoss -> TRIP, no model override',
+    'gate.risk.b3': 'RedLine never reads PnL to waive a trip',
+
+    // ---- Budget strip (advice #3) --------------------------------------
+    'sim.budget.clarify': 'clarify rounds',
+    'sim.budget.rule_gate': 'rule gate',
+    'sim.budget.fires_first': 'fires first',
+    'sim.budget.llm_saved': 'LLM calls saved',
+
+    // ---- Readiness bar (advice #5) --------------------------------------
+    'ready.title': 'Readiness',
+    'ready.kiln': 'Kiln mode',
+    'ready.passport': 'Passport backend',
+    'ready.face': 'Face gate',
+    'ready.face_val': 'local button',
+    'ready.mints': 'Mints on file',
+    'ready.stop': 'Stop path',
+    'ready.stop_val': 'in-process',
+    'ready.fresh': 'live from',
+
+    // ---- Evidence view (advice #4) -------------------------------------
+    'evidence.heading': 'Can a stranger reconstruct this mandate?',
+    'evidence.sub': 'Every claim below is grounded in a file or a backend call.',
+    'evidence.runs.title': 'Two-run controlled experiment (PRD 5)',
+    'evidence.runs.empty': 'Run scripts/two_runs_demo.py to populate this panel.',
+    'evidence.live.title': 'Live passport state',
+    'evidence.live.empty': 'Mint a passport from the Demo view to populate.',
+    'evidence.events.title': 'Recent audit events',
+    'evidence.events.empty': 'No events yet.',
+
+    // ---- Header evidence link -----------------------------------------
+    'header.evidence': 'Evidence',
     'tokens.title': 'token / energy report',
     'tokens.empty': '—',
 
@@ -477,6 +518,47 @@ const STRINGS = {
     'gauge.drawdown': '回撤',
 
     // ---- Demo: token strip -------------------------------------------
+    // ---- Gate badges (advice #1) ---------------------------------------
+    'gate.subtitle.approval': '人工闸',
+    'gate.approval.title': 'Approval Gate',
+    'gate.approval.b1': 'Follow Agent 不能启停引擎',
+    'gate.approval.b2': '人脸验证靠明确的人工按钮',
+    'gate.approval.b3': '护照撤销后 faceVerified 不能再翻回',
+    'gate.subtitle.risk': '独立熔断',
+    'gate.risk.title': 'Risk Gate',
+    'gate.risk.b1': 'RedLine 在问 LLM 之前先发',
+    'gate.risk.b2': '硬闸:drawdown >= maxLoss -> TRIP,模型无权覆盖',
+    'gate.risk.b3': 'RedLine 从不看 PnL 来放行',
+
+    // ---- Budget strip (advice #3) --------------------------------------
+    'sim.budget.clarify': '澄清轮次',
+    'sim.budget.rule_gate': '硬闸',
+    'sim.budget.fires_first': '优先触发',
+    'sim.budget.llm_saved': '节省的 LLM 调用',
+
+    // ---- Readiness bar (advice #5) --------------------------------------
+    'ready.title': '就绪状态',
+    'ready.kiln': 'Kiln 模式',
+    'ready.passport': '护照后端',
+    'ready.face': '人脸闸',
+    'ready.face_val': '本地按钮',
+    'ready.mints': '已铸护照',
+    'ready.stop': '停止通道',
+    'ready.stop_val': '进程内',
+    'ready.fresh': '实时来自',
+
+    // ---- Evidence view (advice #4) -------------------------------------
+    'evidence.heading': '陌生人能复原这个 mandate 吗?',
+    'evidence.sub': '下面每个声明都可追溯到一份文件或一次后端调用.',
+    'evidence.runs.title': '两轮对照实验 (PRD 5)',
+    'evidence.runs.empty': '运行 scripts/two_runs_demo.py 填充此面板.',
+    'evidence.live.title': '护照实时状态',
+    'evidence.live.empty': '在 Demo 视图铸护照后这里会有数据.',
+    'evidence.events.title': '最近审计事件',
+    'evidence.events.empty': '暂无事件.',
+
+    // ---- Header evidence link -----------------------------------------
+    'header.evidence': '证据页',
     'tokens.title': 'Token / 能耗报告',
     'tokens.empty': '—',
 
@@ -756,6 +838,47 @@ const STRINGS = {
     'gauge.drawdown': '드로다운',
 
     // ---- Demo: token strip -------------------------------------------
+    // ---- Gate badges (advice #1) ---------------------------------------
+    'gate.subtitle.approval': '인간 게이트',
+    'gate.approval.title': 'Approval Gate',
+    'gate.approval.b1': 'Follow Agent는 엔진을 시작/정지할 수 없음',
+    'gate.approval.b2': '얼굴 검증은 명시적인 인간 버튼으로만',
+    'gate.approval.b3': '여권이 소각된 후 faceVerified를 다시 true로 뒤집을 수 없음',
+    'gate.subtitle.risk': '독립 킬 스위치',
+    'gate.risk.title': 'Risk Gate',
+    'gate.risk.b1': 'RedLine은 LLM에 묻기 전에 먼저 작동',
+    'gate.risk.b2': '하드 게이트: drawdown >= maxLoss -> TRIP, 모델 우회 불가',
+    'gate.risk.b3': 'RedLine은 결코 PnL을 보고 TRIP을 면제하지 않음',
+
+    // ---- Budget strip (advice #3) --------------------------------------
+    'sim.budget.clarify': '명료화 라운드',
+    'sim.budget.rule_gate': '하드 게이트',
+    'sim.budget.fires_first': '우선 발동',
+    'sim.budget.llm_saved': '절약된 LLM 호출',
+
+    // ---- Readiness bar (advice #5) --------------------------------------
+    'ready.title': '준비 상태',
+    'ready.kiln': 'Kiln 모드',
+    'ready.passport': '여권 백엔드',
+    'ready.face': '얼굴 게이트',
+    'ready.face_val': '로컬 버튼',
+    'ready.mints': '발행된 여권',
+    'ready.stop': '정지 경로',
+    'ready.stop_val': '프로세스 내',
+    'ready.fresh': '실시간 출처',
+
+    // ---- Evidence view (advice #4) -------------------------------------
+    'evidence.heading': '낯선 사람이 이 mandate를 재구성할 수 있을까?',
+    'evidence.sub': '아래의 모든 주장은 파일이나 백엔드 호출에 근거합니다.',
+    'evidence.runs.title': '두 라운드 통제 비교 실험 (PRD 5)',
+    'evidence.runs.empty': '이 패널을 채우려면 scripts/two_runs_demo.py를 실행하세요.',
+    'evidence.live.title': '여권 실시간 상태',
+    'evidence.live.empty': 'Demo 뷰에서 여권을 발행하면 여기에 데이터가 표시됩니다.',
+    'evidence.events.title': '최근 감사 이벤트',
+    'evidence.events.empty': '이벤트 없음.',
+
+    // ---- Header evidence link -----------------------------------------
+    'header.evidence': '증거 페이지',
     'tokens.title': '토큰 / 에너지 리포트',
     'tokens.empty': '—',
 

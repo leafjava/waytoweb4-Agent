@@ -10,6 +10,7 @@ import { apiPost } from './api'
 import { usePoll } from './usePoll'
 import InferenceEvidencePanel from './components/InferenceEvidencePanel.jsx'
 import PassportLifecycleStrip from './components/PassportLifecycleStrip.jsx'
+import EvidenceView from './components/EvidenceView.jsx'
 import { useI18n } from './i18n.jsx'
 
 const INITIAL_DRAFT = () => ({
@@ -55,16 +56,19 @@ export default function App() {
         view={view}
         onGoDemo={() => setView('demo')}
         onGoHome={() => setView('home')}
+        onGoEvidence={() => setView('evidence')}
       />
       <main className="mx-auto w-full max-w-[1280px] flex-1 overflow-x-clip px-4 pb-12 pt-6 md:px-8 md:pt-10">
         {view === 'home' ? (
           <HomePage snapshot={snapshot} onTryDemo={() => setView('demo')} />
-        ) : (
+        ) : view === 'demo' ? (
           <DemoView
             snapshot={snapshot}
             draft={draft}
             setDraft={setDraft}
           />
+        ) : (
+          <EvidenceView />
         )}
       </main>
     </div>

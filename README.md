@@ -133,6 +133,15 @@ API-reported usage from a live run is acceptable as final evidence.
 
 Contract: [`0x818A…87D`](https://sepolia.etherscan.io/address/0x818AF51261940013ba6c40aFa74937a3BFd1887D). Independent RPC readback returned version `2-cents`, the frozen spec hash, `humanConfirmed: true`, and final status `revoked`.
 
+## Generic trading agent vs waytoweb4-agent
+
+| | Generic trading agent | waytoweb4-agent |
+|---|---|---|
+| Model | goes straight from prompt to order | human gate is required to start |
+| Once profitable | keeps running regardless of risk | RedLine stops it the moment drawdown hits the cap, regardless of PnL |
+| Authorization | logged only | logged + Spec frozen into a revocable on-chain Passport |
+| Tokens | one aggregate total | split per flow (clarify / spec_emit / redline_hold / redline_trip / demo_inject) with per-flow energy @180W |
+
 ## Honest disclaimer: what is real and what is mock
 
 - **Kiln**: if `KILN_API_KEY` is set we call the real `gpt-oss-120b`
