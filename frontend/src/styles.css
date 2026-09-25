@@ -1526,6 +1526,12 @@ html[lang="ko"] .hero-cinematic__declaration {
   html[lang="ko"] .hero-command h1 { font-size:clamp(2.55rem,11.5vw,3.35rem); }
 }
 
+@media (min-width:1024px) {
+  .hero-cinematic .hero-command__copy {
+    margin-left:clamp(1.75rem,3.2vw,4rem);
+  }
+}
+
 @media (min-width:641px) and (max-width:1023px) {
   .home-primitives .feature-card:nth-child(2) { border-right:0; }
   .home-primitives .feature-card:nth-child(-n+2) { border-bottom:1px solid rgba(255,255,255,.11); }
