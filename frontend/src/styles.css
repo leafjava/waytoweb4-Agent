@@ -1527,8 +1527,35 @@ html[lang="ko"] .hero-cinematic__declaration {
 }
 
 @media (min-width:1024px) {
+  .hero-cinematic .hero-command__layout {
+    grid-template-columns:minmax(0,1fr)!important;
+  }
   .hero-cinematic .hero-command__copy {
-    margin-left:clamp(1.75rem,3.2vw,4rem);
+    max-width:58rem;
+    margin-left:clamp(2.5rem,4.5vw,5.5rem);
+  }
+  .hero-cinematic .hero-command h1 {
+    max-width:none;
+    font-size:clamp(3.8rem,4.8vw,4.7rem);
+    line-height:.96;
+    white-space:nowrap;
+  }
+  .hero-cinematic .sentinel-panel {
+    position:absolute;
+    right:clamp(2.25rem,4.5vw,4.75rem);
+    top:50%;
+    width:275px;
+    margin-top:-136px;
+    z-index:2;
+  }
+}
+
+@media (max-width:1023px) {
+  .hero-cinematic .sentinel-panel {
+    position:relative;
+    right:auto;
+    top:auto;
+    margin-top:0;
   }
 }
 
