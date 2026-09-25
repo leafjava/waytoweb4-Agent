@@ -14,10 +14,10 @@ export default function Header({ health, onReset, view, onGoDemo, onGoHome }) {
         <span className="flex h-8 w-8 items-center justify-center text-sm transition-transform group-hover:scale-[1.03]">
           <i className="fa fa-shield"></i>
         </span>
+        <h1 className="site-wordmark hidden font-semibold sm:block">waytoweb4</h1>
       </button>
 
       <div className="site-header__actions flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2 text-xs md:px-5">
-        <button onClick={onGoHome} className="header-wordmark hidden font-medium sm:block">waytoweb4</button>
         <div className="hidden items-center gap-2 2xl:flex">
           <Pill label="Kiln" value={health?.kiln ?? '—'} />
           <Pill label="Passport" value={health?.passport_backend ?? '—'} />

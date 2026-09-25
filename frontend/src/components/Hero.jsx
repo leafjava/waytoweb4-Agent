@@ -5,8 +5,8 @@ export default function Hero({ onTryDemo }) {
 
   return (
     <section className="hero-command hero-cinematic relative overflow-hidden px-6 py-12 md:px-14 md:py-16">
-      <video className="hero-cinematic__video" autoPlay muted loop playsInline disablePictureInPicture aria-hidden="true">
-        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260508_215831_c6a8989c-d716-4d8d-8745-e972a2eec711.mp4" type="video/mp4" />
+      <video className="hero-cinematic__video" autoPlay muted loop playsInline preload="auto" disablePictureInPicture aria-hidden="true" poster="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260912_105822_bf7c2d53-9957-4521-bbbf-7c1ab7a70130.png">
+        <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260912_105953_21ad8049-9088-4a00-bad3-aee6b5575a2b.mp4" type="video/mp4" />
       </video>
       <div className="hero-cinematic__veil" aria-hidden="true"></div>
       <div className="hero-command__beam" aria-hidden="true"></div>
@@ -51,6 +51,23 @@ export default function Hero({ onTryDemo }) {
             {t('hero.eyebrow')}
           </p>
         </div>
+        <aside className="sentinel-panel" aria-label={t('motion.aria')}>
+          <div className="sentinel-panel__head">
+            <div>
+              <span>{t('hero.tagline')}</span>
+              <strong>{t('motion.core')}</strong>
+            </div>
+            <div className="sentinel-panel__shield" aria-hidden="true">
+              <i className="fa fa-shield"></i>
+            </div>
+          </div>
+          <div className="sentinel-panel__steps">
+            <span><b>01</b>{t('motion.proof.spec_value')}</span>
+            <span><b>02</b>{t('motion.proof.gate_value')}</span>
+            <span><b>03</b>{t('motion.proof.mode_value')}</span>
+          </div>
+          <div className="sentinel-panel__track"><i></i></div>
+        </aside>
       </div>
     </section>
   )
